@@ -173,3 +173,31 @@ mismatched to the action space even where it fits the state space.
 Phase 2 is designed to find that out in two days rather than six weeks, and
 [PROJECT.md §15](PROJECT.md) is explicit that a clean negative is a publishable
 workshop result. Run it to settle the mechanism, and accept a null.
+
+---
+
+## GPU migration (available 2026-09-23)
+
+Three things change, and one logged finding needs re-testing rather than
+assuming it transfers.
+
+1. **Re-test the §12 stiffness finding on GPU.** [L88](adaptive_therapy/RESEARCH_LOG.md#L88)
+   records that an adaptive solver thrashes and that fixed-step is both
+   accurate and far faster — but that was measured on CPU under XLA's SIMD
+   vectorisation, which is exactly the execution model §12's warning is about.
+   GPU vmap has different divergence characteristics. The finding may hold, may
+   reverse, or may become irrelevant; it must be **re-measured, not carried
+   over**, and the result logged as a separate entry that links back to L88.
+
+2. **Drop the thread cap.** `research/phase2_gate.py` caps OMP/Eigen threads to
+   work around CPU-side XLA compilation OOM. On GPU that workaround is
+   unnecessary and would throttle host-side work; make it conditional on the
+   backend rather than deleting it, since the CPU path must stay reproducible.
+
+3. **Cohort and grid sizes become the binding constraint, not wall-clock.**
+   The Phase 2 grid is 12 runs ≈ 2.2 h on CPU. On GPU this is minutes, which
+   makes Phase 3's architecture × curriculum 2×2 and Phase 4's five tiers
+   affordable at larger n. **This is not licence to widen a declared search
+   space after seeing a result** — a cheaper run does not make a post-hoc grid
+   extension any less of a selection event (§20). Larger cohorts belong in the
+   NEXT registration, not in a re-run of the current one.
