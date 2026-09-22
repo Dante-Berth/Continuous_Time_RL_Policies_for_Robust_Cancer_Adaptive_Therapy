@@ -224,3 +224,251 @@ The four moves that separate "solid specialist paper" from "high-club," ranked b
 - Xiang J, Qi B, Tang Q, Cerou M, Zhao W. "Data-Driven Neural-ODE Modeling for Breast Cancer Tumor Dynamics and PFS." NeurIPS 2023 Workshop (DLDE).
 - Laurie M, Lu J. "Explainable deep learning for tumor dynamic modeling and OS prediction using Neural-ODE (TDNODE)." *npj Systems Biology* 2023. DOI 10.1038/s41540-023-00317-1.
 - Zhang J, Cunningham JJ, Brown JS, Gatenby RA. "Integrating evolutionary dynamics into treatment of mCRPC." (AT algorithm; ref'd by Strobl 2021.)
+
+
+---
+
+## PART VII — HOW THIS PROJECT WORKS (process)
+
+*Engineering method, not research content. Ported from the sibling repos
+`quant_crypto` and `herc_llm`. Every rule below exists because they paid for it,
+and each one defends a failure mode §13 already names — nothing is imported for
+its own sake.*
+
+### 17-bis. Where this comes from, and which shape we take
+
+Two sibling repos run **the same system at two scales**. `quant_crypto` is the
+13-module version: a monorepo of independent research lines, one research record
+per module, promoting into shared root-level laws. `herc_llm` is the
+**single-module** version — one package, one log, one `VERDICTS.md`, the same
+ladder and the same skills, flat.
+
+**This project takes the `herc_llm` shape**, because it is one research program
+with one question (§2), not thirteen competing lines. Concretely: a single
+`adaptive_therapy/RESEARCH_LOG.md`, a single `VERDICTS.md`, and root-level
+`LAWS.md` / `CLOSED.md` that start **empty** — this program has produced zero
+gated results, so it has earned zero generalizations, and seeding them would be
+precisely the dishonesty §19's two-confirmation rule exists to prevent.
+
+Three things are actually being ported:
+
+1. **The precedence ladder** — `RESEARCH_LOG` > `LAWS`/`CLOSED` > spec > roadmap (§18).
+2. **The promotion chain** — result → log entry → `VERDICTS` line → `CLOSED`
+   item → law, the last step requiring **two independent confirmations** (§19).
+3. **`/prereg` and `/logentry`** — the two skills that enforce the chain at the
+   only two moments it can break: before a run, and at the end of one (§20).
+
+Everything else here is support for those three.
+
+### 18. The precedence ladder
+
+Documents contradict each other as a program moves. There is **one** ladder, and
+it is global — not renegotiated per file. Higher wins, always:
+
+1. `adaptive_therapy/RESEARCH_LOG.md` — a logged, gated result. Nothing overrides it.
+2. `LAWS.md` / `CLOSED.md` — generalizations bought with ≥2 confirmations.
+3. **This document** — the spec. Read it; do not edit it to match a result.
+4. `ROADMAP.md`, `adaptive_therapy/PREREG.md` — committed plans.
+5. `CLAUDE.md` and the skills.
+
+A lower-rung doc asserting something about a higher rung is a **staleness bug in
+the lower doc** — fix it there, never "resolve" it by editing upward. A law that
+contradicts a logged result is a bug in the law.
+
+**Why this matters here:** §13's last row is *"fabricated citations creep back."*
+A ladder makes provenance structural rather than habitual — there is exactly one
+place a claim can be true, and everything else points at it.
+
+### 19. Past / present / future, and the promotion chain
+
+Three kinds of document, never mixed:
+
+| Kind | File | Rule |
+|---|---|---|
+| **Past** | `RESEARCH_LOG.md` | Append-only, forever. ≤40 lines/entry, hard cap. Newest at bottom. |
+| **Present** | `VERDICTS.md`, `CLOSED.md`, `LAWS.md` | Indices. One line per settled question, linking into the log. |
+| **Future** | `ROADMAP.md`, `PREREG.md` | Plans. Lowest rung; they go stale fastest and lose by default. |
+
+Results are promoted, never restated:
+
+```text
+run → RESEARCH_LOG entry → VERDICTS line → (cross-cutting) CLOSED item
+    → (≥2 closures, same mechanism) LAW
+```
+
+A law needs a **second independent confirmation**. One result is a verdict, not
+a law. Laws are stated *once* and referenced as `LAW L3` — restatements drift
+independently, which is how one finding ended up written out in 25 separate
+files in the sibling repo.
+
+**Entry format** (the `**Verdict:**` line is mandatory and machine-greppable):
+
+```text
+## [YYYY-MM-DD] — One-line summary
+**Verdict:** OPEN|FROZEN|CLOSED — takeaway · **Gate:** … · **Artifacts:** paths
+### Context / What was tried / Results / Decision
+```
+
+The **Gate** field carries §10's metrics — median TTP + IQR, cumulative
+exposure, the second endpoint, Wilcoxon p, seed count. A single-seed or
+mean-not-median result is then *visibly non-conforming in the log itself*, which
+is the cheapest available defence against §15's desk-reject list.
+
+The 40-line cap is the load-bearing part. In the sibling repo entries ran 1.5–2×
+over budget, and that overflow — not the number of entries — is why a log
+reached 5,000 lines. **If an entry will not fit, the run needed an artifact, not
+more prose.** (This already bit once, on this repo's first entry: the audit
+rejected it at 41 lines and the fix was to move a table into the artifact.)
+
+### 20. Pre-registration, and the declared search space
+
+Before any run that could produce a gateable result, append to `PREREG.md`:
+hypothesis (mechanism, not vibes), **exact** pass numbers, **kill criteria**,
+cohort/plane, planned artifacts, and the **declared search space**. ≤15 lines.
+
+> **If you cannot write a kill criterion, the experiment is not ready to run.**
+
+Step 0 is *check it isn't already dead* against `CLOSED.md`. Any mid-run change
+to criteria, grid or cohort is appended as a dated AMENDMENT, never edited in
+place — an amendment after seeing partial results is a **selection event** and
+must be declared in the log entry.
+
+**Why this matters here:** §11's Phase-2 STOP-OR-GO gate is exactly this, and it
+only works if written before the run. Registering it afterwards, once the number
+is known, is the difference between a clean negative result (§15's "rewards")
+and a rescued one. The declared-search-space clause is what stops "no edge"
+becoming "no edge *yet*, let me widen the grid."
+
+### 20-bis. `/logentry` — closing the loop
+
+`/prereg` opens a run; `/logentry` closes it. Run it at the end of any session
+that produced a result **or ruled out a direction** — a dead end that never got
+logged is one the program will re-propose in three months.
+
+Gather from the session, not from memory, transcribing numbers **from the final
+run's artifact** rather than an intermediate diagnostic; if a metric cannot be
+traced to a concrete output, say so instead of writing a number. State the
+prereg outcome as **met as registered** / **failed as registered** / **criteria
+amended mid-run (selection risk)**. Append the entry, never edit an existing
+one. **Update `VERDICTS.md` in the same commit** — the log is the archive, the
+index is how future sessions find it, and *an entry without an index update is
+invisible*. Promote program-level closures to `CLOSED.md` with a re-open
+condition. Verify with grep and `make audit`. Commit `[research] …`, staging
+only that result's files; do not push.
+
+The pairing is the point: `/prereg` makes the criteria unfalsifiable after the
+fact, `/logentry` makes the outcome permanent and findable. Either alone leaks.
+
+### 21. Enforcement — the rules are checks, not discipline
+
+The sibling repo's own verdict, verbatim: *"These rules were honour-system for
+months and drifted badly — do not go back to trusting the rule instead of the
+check."*
+
+`tools/doc_audit.py` runs in pre-commit and CI:
+
+- **Hard fail (exit 1):** every `RESEARCH_LOG.md#Lnnnn` link resolves.
+- **Warn:** append-only violations, index coverage, the 40-line budget,
+  past-tense content rotting in forward-looking docs.
+
+Append-only is deliberately *soft*: git history is immutable, so a hard fail
+there stays red forever and trains everyone to ignore the tool. Its actual
+damage — shifted line links — is caught hard by the link check. That asymmetry
+is the design, not an oversight.
+
+**Generated docs.** Any document mixing intent with live state is rendered from
+a source of truth with a `--check` mode that fails when stale. Status prose is
+*computed, never typed* — this is what stops a file accreting "as of <date>, …"
+paragraphs nobody updates.
+
+### 22. Literature with enforced provenance
+
+Directly answers this document's opening discipline rule and §13's last row.
+
+```text
+literature/
+  REVIEW_PROTOCOL.md   the stable spec — fields, tiers, rules
+  PAPERS.md            the index — GENERATED, never hand-edited
+  papers/<id>.md       one file per paper, front-matter + prose — source of truth
+  pdf/                 gitignored, never committed
+```
+
+- **ID scheme:** `doi-…` → `arxiv-…` → `pmc-…`, the filename *and* the table
+  key. **Never renumber an ID.**
+- **Provenance tier is the whole point:** `1°` = read from the PDF, with a page
+  locator on every quantitative cell. `2°` = seeded secondhand. **A `2°` cell
+  may not be cited in a design argument** — it may say "this direction exists",
+  never "X is true, therefore build Y".
+- **The §12-REF list starts entirely at `2°`.** Those citations resolve — that
+  was verified by hand — but resolving is not reading. This is the honest
+  starting state, and it makes the reading queue generate itself.
+- **Status lifecycle:** `queued → screened → reviewed`, or `rejected` with a
+  one-line reason **kept forever**. The rejections are what make the index a
+  measurement rather than a highlight reel.
+- **A paper is not evidence for this program.** Only a logged, gated run on our
+  own simulators is. The literature says what to test and what to control for;
+  it cannot say what is true here. It sits *below everything* on §18.
+
+This is the mechanism that would have caught the phantom UDE paper and the
+broken `[cite: topic-1.2.3]` placeholder automatically, at commit time.
+
+### 23. Killed work stays described
+
+When a phase dies, strike it through, link the entry that killed it, and **keep
+the description**:
+
+> *"Left described here rather than deleted, so a future session sees that it
+> was considered and why it was not built."*
+
+Applies immediately to §16's deferred set — Tier-3 within-episode drift, Q3
+mechanism-inference, the Q1 biology sweep, real-data replay. Each carries a
+**re-open condition** inline: re-opening requires **new data or a new mechanism,
+not a re-parametrization**.
+
+Two sections every roadmap phase carries, both taken wholesale:
+
+- **The traps this must not fall into** — named failure modes and where each is
+  handled in code. Here: the `vmap`-over-adaptive-solver stiffness bomb (§12),
+  the architecture-vs-curriculum confound (§8), and Kuznetsov's Hopf
+  oscillations breaking a naive TTP rule (§6.3).
+- **Honest prior** — the pre-registered expectation, written before the run,
+  including the expectation of failure. Here: a competent LSTM baseline is
+  strong, much of what is credited to "continuous time" elsewhere is really
+  benefit from *memory*, and the edge — if it exists — is likelier on Tier 4
+  (irregular sampling, where continuous time has a mechanical reason to help)
+  than on Tier 1. Saying so *in advance* is what makes a negative result
+  publishable rather than embarrassing.
+
+### 24. Code conventions
+
+- **One home per piece of logic.** A second copy of a TTP calculation or a
+  solver is a bug, not a convenience. Import it.
+- **`adaptive_therapy/` is imported and tested; `research/` is one-shot
+  scripts.** All I/O lives in `research/`, never in the package. The JSON
+  artifact is the record; the printed summary is convenience; **log entries
+  transcribe from the artifact**.
+- **Dated, evidenced comments on every config exception** — *why*, with the
+  incident. The single most transferable habit in both sibling repos.
+- **Tests assert invariants, not functions**, and are named for the invariant.
+- **Explicit seeds threaded as parameters**, never global seeding.
+- **Commits:** `[research]`, `[feat]`, `[fix]`, `[chore]`, `[docs]`. Subject
+  states the *finding*, not the file list. Stage only the result's own files.
+
+### 25. What this process costs, honestly
+
+It is overhead, and on a 4–9 page workshop paper with ~5 months of runway it is
+worth saying what it buys and what it does not.
+
+**Buys:** §13 risks 1, 2, 8 and 12 become structural rather than
+vigilance-based; a clean negative stays publishable because it was
+pre-registered; and the §12-REF list cannot silently regrow a fabricated entry.
+
+**Does not buy:** anything about whether the science works. The sibling repo ran
+this system for months and still closed most of its lines of inquiry. That is
+the system functioning correctly — it exists to make dead ends *cheap and
+legible*, not to prevent them.
+
+**Skip if:** a mechanism does not defend a named risk. Five root documents is
+already near the limit where a newcomer can orient; the sibling repo has
+thirteen and acknowledges this as a navigation problem. Do not add a sixth
+without a §13 row pointing at it.
