@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- research artifacts -------------------------------------------------
+# Outputs are regenerable from the script that wrote them; the JSON artifact is
+# the record a log entry transcribes from, not something git carries.
+research/outputs/
+outputs/
+
+# Downloaded PDFs. literature/papers/<id>.md is the source of truth and IS
+# committed; the PDFs are large, redistributable by nobody, and rebuildable
+# from the pdf_url in each front-matter block.
+literature/pdf/

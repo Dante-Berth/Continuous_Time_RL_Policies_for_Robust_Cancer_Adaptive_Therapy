@@ -1,0 +1,30 @@
+name: ci
+
+# Runs on every push and PR. The sibling repo's workflow was manual-trigger only
+# and covered 1 module of 13, which meant it caught nothing; this one runs the
+# same targets a developer runs locally.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --group dev
+      - name: lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+      - name: test
+        run: uv run pytest -m "not slow"
+      - name: research-record integrity
+        run: uv run python tools/doc_audit.py
+      - name: literature index
+        run: uv run python research/lit_table.py --check

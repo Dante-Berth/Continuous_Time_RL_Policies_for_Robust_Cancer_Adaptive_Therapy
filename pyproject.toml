@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neural-ode-adaptive-therapy"
+version = "0.1.0"
+description = "Continuous-time RL policies for robust cancer adaptive therapy."
+# 3.11, not the system 3.10: current diffrax/equinox releases target >=3.11, and
+# the sibling repo's CI matrix had to drop 3.10 for the same class of reason.
+requires-python = ">=3.11"
+dependencies = [
+    "jax>=0.6",
+    "equinox>=0.11",
+    "diffrax>=0.6",
+    "optax>=0.2",
+    "numpy>=1.26",
+    "scipy>=1.11",   # scipy.stats.wilcoxon — the paired test PROJECT.md §10 requires
+]
+
+[project.optional-dependencies]
+viz = ["matplotlib>=3.8"]
+# PROJECT.md §12: DTR-Bench/AhnChemoEnv is PyTorch/Gym and will not vmap. It is an
+# external validation anchor and the host for the recurrent-TD3 baseline (§13 row
+# "beating only weak baselines"), never part of the JAX simulator. Quarantined as
+# an extra so nothing under adaptive_therapy/ can import it by accident.
+baselines = ["torch>=2.2", "gymnasium>=0.29"]
+
+# Tooling goes in a dependency group, NOT an extra. As an extra it is never
+# installed into .venv and `uv run pytest` silently falls through to whatever
+# pytest is on PATH — a different interpreter, with a different set of installed
+# packages, than this file describes. (Lesson taken verbatim from herc_llm.)
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.15", "pre-commit>=3.7"]
+
+[tool.setuptools]
+packages = [
+    "adaptive_therapy",
+    "adaptive_therapy.envs",
+    "adaptive_therapy.policies",
+    "adaptive_therapy.rl",
+    "adaptive_therapy.eval",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+# JAX entrypoints must set os.environ (XLA flags, thread counts) before importing
+# jax, which is an unavoidable module-level import that is not at the top.
+ignore = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["adaptive_therapy/tests"]
+addopts = "--import-mode=importlib"
+markers = [
+    "slow: full rollouts or cohort solves; deselect with -m 'not slow'",
+]
