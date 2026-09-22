@@ -24,6 +24,19 @@ Run: uv run python research/phase2_gate.py
 
 from __future__ import annotations
 
+import os
+
+# MUST precede the jax import. Measured 2026-09-22 on this 20-core CPU box: XLA
+# spawns a compilation thread per core, each needing arena for the fused
+# rollout graph (52 sequential solver calls x vmap over the cohort), and they
+# collectively exhaust it -- "LLVM ERROR: Unable to allocate section memory"
+# with 21 GB still free. Capping the threads fixes it (ODE training: 3 updates
+# at n=200 in 8.4 s). Set here rather than in the environment so the run is
+# reproducible from the script alone.
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+    os.environ.setdefault(_v, "4")
+os.environ.setdefault("XLA_FLAGS", "--xla_cpu_multi_thread_eigen=false")
+
 import json
 import time
 from pathlib import Path
