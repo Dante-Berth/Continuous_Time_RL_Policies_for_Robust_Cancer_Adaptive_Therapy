@@ -116,3 +116,64 @@ because the headline looked too easy, and it materially weakens the
 interpretation (the gate passes on scale, not on mechanism). It does not change
 the registered pass/fail outcome, which stands as recorded. Any future
 separability claim must report this control alongside the headline.
+
+## [2026-09-22] — Phase 2 STOP-OR-GO: does a continuous-time policy beat a discrete one on LV under a Tier-1 shift, at matched exposure?
+
+**Hypothesis.** A Neural-ODE policy carries an inductive bias for continuous
+tumour dynamics that a discrete MLP lacks, so under a parameter shift outside
+the training range it should schedule *better per unit of drug* — longer TTP at
+the same cumulative exposure. Mechanism, not vibes: the tumour state evolves
+continuously between monitoring visits, and an ODE-structured hidden state
+integrates that interval explicitly rather than treating it as one opaque step.
+
+**Why LV, and why exposure-matched.** LV is the only family with untreated
+dynamic range (Phase 1: 28.1 d [21–47], 29% censored; Hahnfeldt 7.0 d and
+Kuznetsov 14.0 d at zero IQR). And TTP rises monotonically with dose on LV
+(u=0→28 d, 0.25→42, 0.5→74, 0.75→246, 1.0→295 d), so a pure-TTP gate is won by
+constant maximum dosing and measures aggression, not skill.
+
+**Success criteria — ALL must hold.**
+1. **Exposure-matched TTP:** median TTP(ODE) − median TTP(MLP) > **0** at
+   matched median cumulative exposure (within ±10%), on the **Tier-1 shifted**
+   cohort.
+2. **Paired Wilcoxon p < 0.05** across matched virtual patients (same θ, both
+   architectures).
+3. Holds at **≥ 3 seeds**, reported as median + range, and at **both** exposure
+   penalty weights.
+4. Both arms must beat the **untreated** control on TTP — an arm that does not
+   is not a policy, and the comparison between two non-policies is meaningless.
+
+**Kill criteria — no re-parametrization, no grid widening.**
+- **Criterion 1 fails (ODE ≤ MLP at matched exposure)** ⇒ **STOP. Write the
+  negative result.** The multi-mechanism curriculum does not rescue an
+  architecture that loses on one clean family. Do NOT widen the network, add
+  training steps, tune the learning rate, or try a third architecture.
+- **Criterion 2 fails (p ≥ 0.05) with criterion 1 passing** ⇒ the effect is not
+  distinguishable from noise at this cohort size. Report as a null; do not
+  enlarge the cohort to chase significance.
+- **Either arm fails to beat untreated** ⇒ a training bug, not a result. Fix
+  and re-run; the re-run is registered as an AMENDMENT.
+
+**Cohort/plane.** LV only. Train on θ in the `sampling.py` ranges; **Tier-1
+test** on θ drawn outside them (r_S and r_R scaled ×1.5, K ×0.6 — fixed here,
+before any run). 200 train / 200 test patients, burden-only observation with
+σ=0.05 multiplicative noise, weekly decisions over 365 d, dose ∈ {0, ½, 1}.
+
+**Declared search space.** Architecture ∈ {MLP, Neural-ODE} × exposure weight ∈
+{0.05, 0.20} × seed ∈ {0,1,2} = 12 runs. Hidden width 64 and learning rate 3e-4
+for BOTH arms, fixed, not tuned. Parameter counts reported; if they differ by
+more than 2× the comparison is confounded and must be re-run matched.
+
+**Standing criteria.** Median + IQR never means; cumulative exposure reported
+with every TTP; burden-integral as the second endpoint; paired Wilcoxon; ≥3
+seeds. TTP by the running-nadir rule, with `from_baseline` alongside.
+
+**Planned artifacts.** `adaptive_therapy/policies/{mlp,ode_rnn}.py`,
+`adaptive_therapy/rl/ppo.py`, `research/phase2_gate.py`,
+`research/outputs/phase2_gate.json`, `research/outputs/phase2_gate.png`.
+
+**Honest prior.** The edge is expected to be SMALL or ABSENT here. Tier-1 is a
+parameter shift, not a mechanism shift, and the continuous-time advantage has a
+mechanical reason to appear under *irregular sampling* (Tier 4) rather than
+under regular weekly visits. A null on this gate is a publishable result per
+PROJECT.md §15 and is the registered, expected outcome.
