@@ -89,9 +89,8 @@ MoE should be assessed on cluster purity, never parameter recovery.
 **Verdict:** OPEN — simulator + endpoints complete; two spec corrections recorded · **Gate:** n-a (infrastructure; no policy trained, no comparison made) · **Artifacts:** `research/phase1_cohorts.py`, `research/outputs/phase1_cohorts.json`, `research/outputs/phase1_untreated_trajectories.png`, 42 tests
 
 ### Context
-Phase 1 per §11: PK, reward, LHS + untreated sanity gate with rejection log,
-stiffness bucketing, and `eval/metrics.py` — including the non-monotone TTP
-rule §6.3 says to define up front.
+Phase 1 per §11: PK, reward, LHS + sanity gate, stiffness bucketing, and
+`eval/metrics.py` with the non-monotone TTP rule §6.3 requires up front.
 
 ### What was tried
 TTP rule = **running-nadir + 28 d confirmation** (RECIST-style): progression
@@ -125,3 +124,41 @@ Proceed to Phase 2 **on LV**. Discrimination must come from the treated arms:
 untreated Hahnfeldt/Kuznetsov progress within one monitoring interval, so that
 comparison has no dynamic range. LV is the only family where untreated patients
 routinely survive the horizon.
+
+## [2026-09-22] — Phase 2 gate blocked on CPU by transient LLVM JIT allocator failure; parked for GPU
+**Verdict:** OPEN — infrastructure blocker, NOT a research result; the registered gate is unrun · **Gate:** n-a (no cell completed; 0/12 shards) · **Artifacts:** `research/phase2_gate.py`, `research/outputs/phase2_gate.log`
+
+### Context
+Phase 2's stop-or-go gate was registered [2026-09-22] and its arms built and
+tested (51 tests, params matched at 3076 each). Three launch attempts all died
+before any cell completed.
+
+### What was tried
+`LLVM ERROR: Unable to allocate section memory` / `allocateMappedMemory failed`,
+from ~16 XLA compilation threads at once. Three mitigations, in order:
+1. **Thread caps** (`OMP/OPENBLAS/MKL_NUM_THREADS=4`, Eigen off) — **no effect**;
+   XLA's compilation pool does not read those variables.
+2. **Subprocess isolation per cell** + JSON shards + resume — correct and kept,
+   but did not by itself avoid the failure.
+3. **Retry ×3 per cell** — the failure recurred faster than cells completed.
+
+### Results
+**The failure is transient fragmentation, not exhaustion.** Evidence: it fires
+with **22 GB free** and no large processes; a single cell failed in isolation at
+16:01 and the *identical call* succeeded at 16:04 in 4.6 s; `ulimit -v` is
+unlimited. Training and evaluation each run fine in isolation at every batch
+size tested (n=200 eval 0.9 s; ODE train 3 updates 8.5 s). So this is
+address-space fragmentation in LLVM's JIT allocator on this CPU box, unrelated
+to the research question.
+
+**No result is claimed.** 0/12 cells completed; the registered gate stands
+unrun, with its criteria and declared grid unchanged.
+
+### Decision
+**Park for GPU (available 2026-09-23).** The pathology is CPU-XLA-specific, and
+the grid is minutes rather than hours on GPU. Kept: subprocess isolation, shard
+resume (a completed cell is never recomputed), and retry — all are correct
+regardless of backend. On GPU, also **re-measure the §12 stiffness finding**
+[L88](RESEARCH_LOG.md#L88): it was measured under XLA SIMD vectorisation, which
+is the execution model that warning is about, so it must not be assumed to
+transfer.

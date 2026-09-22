@@ -181,7 +181,7 @@ workshop result. Run it to settle the mechanism, and accept a null.
 Three things change, and one logged finding needs re-testing rather than
 assuming it transfers.
 
-1. **Re-test the §12 stiffness finding on GPU.** [L88](adaptive_therapy/RESEARCH_LOG.md#L88)
+1. **Re-test the §12 stiffness finding on GPU.** [L87](adaptive_therapy/RESEARCH_LOG.md#L88)
    records that an adaptive solver thrashes and that fixed-step is both
    accurate and far faster — but that was measured on CPU under XLA's SIMD
    vectorisation, which is exactly the execution model §12's warning is about.
