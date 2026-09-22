@@ -227,3 +227,6 @@ outputs/
 # committed; the PDFs are large, redistributable by nobody, and rebuildable
 # from the pdf_url in each front-matter block.
 literature/pdf/
+
+# Phase 2 run log (regenerable; the JSON artifact is the record)
+research/outputs/*.log
