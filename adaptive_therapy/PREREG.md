@@ -107,3 +107,12 @@ a controller.
 **Planned artifacts.** `research/phase0_identifiability.py`,
 `research/outputs/phase0_identifiability.json`,
 `research/outputs/phase0_separability.png`.
+
+**AMENDMENT [2026-09-22, post-hoc]:** after seeing balanced accuracy 0.996, a
+growth-magnitude-only control was added that was NOT registered — a 1-NN on the
+single scalar `log B(365) − log B(0)`. It scores **0.824**, itself above the
+registered 0.80 gate. This is declared as a **selection event**: it was run
+because the headline looked too easy, and it materially weakens the
+interpretation (the gate passes on scale, not on mechanism). It does not change
+the registered pass/fail outcome, which stands as recorded. Any future
+separability claim must report this control alongside the headline.

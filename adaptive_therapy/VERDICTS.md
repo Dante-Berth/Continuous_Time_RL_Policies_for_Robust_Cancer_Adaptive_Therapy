@@ -15,6 +15,9 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 ## OPEN
 
 - **Simulator sound and the three families are mechanistically distinguishable** — untreated log10 dynamic ranges 0.3 / 2.2 / 2.7, distinct turning-point counts → [L13](RESEARCH_LOG.md#L13)
+- **Phase 0 gate PASSED: the three families are separable from burden alone** — median balanced accuracy 0.996 [0.993–1.000], 3 seeds, 0% collisions; Q3 needs no reframe → [L48](RESEARCH_LOG.md#L48)
+- **…but the margin is SCALE, not mechanism** — a growth-magnitude-only control scores 0.824, itself above the 0.80 gate; report it beside any separability claim → [L48](RESEARCH_LOG.md#L48)
+- **θ is not recoverable from burden, worst in Kuznetsov (6/8 flat)** — LV `r_R` flat at a 49-decade CI, independently reproducing arXiv 2608.18387; assess the MoE on cluster purity, never parameter recovery → [L48](RESEARCH_LOG.md#L48)
 - **Kuznetsov's apparent dynamics depend on the horizon** — 0 turning points at 365 d, ≥2 and a dormancy excursion to ~1e-7 by 1000 d; the sanity-gate window is a modelling choice → [L13](RESEARCH_LOG.md#L13)
 
 ## CLOSED — do not re-litigate

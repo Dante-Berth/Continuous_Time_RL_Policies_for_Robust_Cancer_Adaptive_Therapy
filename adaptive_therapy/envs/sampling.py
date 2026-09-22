@@ -1,0 +1,142 @@
+"""Latin-hypercube sampling of virtual-patient cohorts.
+
+A virtual patient is `(model_id, theta)`. This module owns the per-family theta
+ranges and the untreated sanity gate that decides which draws are kept.
+
+RANGES ARE PROVISIONAL. They are order-of-magnitude plausible and internally
+consistent, but every literature source for them is currently `2` (unread) in
+literature/PAPERS.md, so per REVIEW_PROTOCOL.md 0.3 none of them may be cited
+as justification for a design choice. They are here to make the machinery
+runnable, and must be replaced with sourced values -- read the PDFs, add the
+locators, promote the rows to `1` -- before any number computed from them
+appears in a paper. Tracked as such rather than silently pretended to be final.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import numpy as np
+
+from adaptive_therapy.envs import hahnfeldt, kuznetsov, lotka_volterra
+from adaptive_therapy.envs.base import ModelId
+
+# (low, high) per theta component, sampled log-uniformly where the range spans
+# more than one order of magnitude.
+THETA_RANGES: dict[ModelId, dict[str, tuple[float, float]]] = {
+    "lotka_volterra": {
+        "r_S": (0.015, 0.045),
+        "r_R": (0.004, 0.014),  # cost of resistance: r_R < r_S by construction
+        "K": (5e3, 2e4),
+        "d_S": (0.0, 0.01),
+        "d_R": (0.0, 0.01),
+        "d_D": (0.8, 2.0),
+    },
+    "hahnfeldt": {
+        "a": (0.10, 0.30),
+        "b": (3.0, 9.0),
+        "d": (0.004, 0.015),
+        "e": (0.3, 1.2),
+        "K_max": (5e3, 2e4),
+    },
+    "kuznetsov": {
+        "s": (0.05, 0.20),
+        "p": (0.08, 0.20),
+        "g": (1e7, 4e7),
+        "m": (1e-10, 8e-10),
+        "dd": (0.002, 0.008),
+        "a": (0.010, 0.030),
+        "b": (1e-9, 4e-9),
+        "n": (5e-8, 2e-7),
+    },
+}
+
+# Initial-condition ranges. For LV these are two of the four factors Strobl
+# showed matter (PROJECT.md 6.1), so they are sampled rather than fixed.
+IC_RANGES: dict[ModelId, dict[str, tuple[float, float]]] = {
+    "lotka_volterra": {"f_R": (0.001, 0.10), "n_0": (0.30, 0.85)},
+    "hahnfeldt": {"v_0": (50.0, 500.0)},
+    "kuznetsov": {"t_0": (1e4, 5e5)},
+}
+
+_FAMILY_MODULES = {
+    "lotka_volterra": lotka_volterra,
+    "hahnfeldt": hahnfeldt,
+    "kuznetsov": kuznetsov,
+}
+
+
+@dataclass(frozen=True)
+class Cohort:
+    """A sampled cohort, post-gate."""
+
+    model_id: ModelId
+    thetas: np.ndarray  # (n, n_theta)
+    y0s: np.ndarray  # (n, state_dim)
+    n_requested: int
+    n_rejected: int
+
+    @property
+    def n(self) -> int:
+        return self.thetas.shape[0]
+
+    @property
+    def rejection_rate(self) -> float:
+        return self.n_rejected / max(self.n_requested, 1)
+
+
+def _lhs(n: int, d: int, rng: np.random.Generator) -> np.ndarray:
+    """Latin hypercube on [0,1]^d: one stratified sample per row, per column."""
+    cut = np.linspace(0, 1, n + 1)
+    u = rng.uniform(size=(n, d))
+    points = cut[:n, None] + u * (cut[1] - cut[0])
+    for j in range(d):
+        points[:, j] = rng.permutation(points[:, j])
+    return points
+
+
+def _scale(unit: np.ndarray, lo: float, hi: float) -> np.ndarray:
+    """Map [0,1] to [lo,hi], log-uniformly when the range spans >1 decade."""
+    if lo > 0 and hi / lo > 10:
+        return np.exp(np.log(lo) + unit * (np.log(hi) - np.log(lo)))
+    return lo + unit * (hi - lo)
+
+
+def sample_cohort(model_id: ModelId, n: int, seed: int = 0) -> Cohort:
+    """LHS-sample `n` virtual patients, then apply the untreated sanity gate."""
+    rng = np.random.default_rng(seed)
+    theta_spec = THETA_RANGES[model_id]
+    ic_spec = IC_RANGES[model_id]
+
+    n_draw = int(n * 1.6) + 16  # headroom so the gate still leaves ~n
+    unit = _lhs(n_draw, len(theta_spec) + len(ic_spec), rng)
+
+    thetas = np.column_stack(
+        [_scale(unit[:, j], *rng_) for j, rng_ in enumerate(theta_spec.values())]
+    )
+    ics = np.column_stack(
+        [_scale(unit[:, len(theta_spec) + j], *rng_) for j, rng_ in enumerate(ic_spec.values())]
+    )
+
+    if model_id == "lotka_volterra":
+        # Enforce the cost of resistance rather than rejecting draws that
+        # violate it: r_R >= r_S is a different biology, not a bad sample.
+        r_S, r_R = thetas[:, 0], thetas[:, 1]
+        thetas[:, 1] = np.minimum(r_R, r_S * 0.95)
+
+    mod = _FAMILY_MODULES[model_id]
+    y0s = np.stack(
+        [np.asarray(mod.initial_state(thetas[i], *ics[i]), dtype=float) for i in range(n_draw)]
+    )
+
+    keep = np.isfinite(thetas).all(axis=1) & np.isfinite(y0s).all(axis=1)
+    keep &= (y0s > 0).all(axis=1)
+
+    idx = np.flatnonzero(keep)[:n]
+    return Cohort(
+        model_id=model_id,
+        thetas=thetas[idx],
+        y0s=y0s[idx],
+        n_requested=n_draw,
+        n_rejected=int(n_draw - keep.sum()),
+    )
