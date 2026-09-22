@@ -41,3 +41,69 @@ added; a smoke run that needs tuning to pass is a failing smoke run.
 none apply to a deterministic single-patient shape check. It is registered
 because it is the first run this record ever sees, and the protocol should be
 exercised on something harmless before it matters.
+
+## [2026-09-22] — Phase 0: practical identifiability of θ and separability of the three families from burden-only
+
+**Hypothesis.** Two claims, deliberately separated because they have different
+consequences. (a) **Identifiability:** θ is only *weakly* identifiable from the
+scalar burden — some directions in θ-space are recoverable, others are flat,
+and the flat directions are why a discrete policy that implicitly estimates θ
+should fail under shift. This is expected to FAIL in the recovery direction;
+arXiv 2608.18387 proves `r_R` is weakly identifiable on this same LV model, so
+a result showing clean recovery would indicate a bug in our Fisher/profile code,
+not a discovery. (b) **Separability:** despite (a), the three families produce
+burden trajectories distinguishable *from each other*. Separability is the
+weaker and more useful property — Tier-2 and any future mixture encoder depend
+on it, and it can hold even where θ-recovery fails.
+
+**Success criteria.**
+1. **Identifiability, per family:** report the Fisher information matrix
+   eigenspectrum and the profile likelihood for every θ component. A component
+   is `identifiable` if its 95% profile-likelihood CI is bounded and spans
+   < 1 order of magnitude; `weak` if bounded but wider; `flat` if unbounded
+   within the sampled range. **No pass/fail threshold is attached to this** — it
+   is a measurement, and its value is the classification itself.
+2. **Separability (this is the gate):** a nearest-neighbour classifier on
+   log-burden trajectories alone must identify the generating family with
+   **balanced accuracy ≥ 0.80** over a held-out third of the cohort, with the
+   confusion matrix reported. Chance is 0.33.
+3. **Trajectory collision:** report the fraction of cross-family trajectory
+   pairs whose burden curves agree within measurement noise (relative L2
+   < 5%) over the full window. Report per family-pair, not pooled.
+
+**Kill criteria — no re-parametrization, no grid widening.**
+- **Balanced accuracy < 0.80** ⇒ the families are NOT separable under
+  burden-only. **Stop, and reframe Q3 before writing any encoder** (PROJECT.md
+  §5). Do not rescue by lengthening the window, widening θ ranges, or adding an
+  observable — each of those changes the research question rather than answering
+  it. A reframe is the registered outcome here, not a failure of the run.
+- **Balanced accuracy ≥ 0.80 but one family-pair collides > 20%** ⇒ that pair is
+  the hard case; Tier-2 must be reported per-pair rather than pooled, and the
+  claim "mechanism shift" is restricted to the separable pairs.
+- Any NaN in a profile likelihood that is not traceable to a solver failure ⇒
+  fix the code before reading any number from this run.
+
+**Cohort/plane.** All three families. n = 300 per family (900 total) via Latin
+hypercube over the per-family θ ranges in `envs/*.py`, untreated (u=0), the
+observation window fixed at **t ∈ [0, 365] d** with 52 weekly samples —
+clinically plausible monitoring, and fixed BEFORE seeing any result. Burden
+observed with multiplicative lognormal noise σ=0.05. Patients failing the
+untreated sanity gate are logged and excluded, with the rejection count reported.
+
+**Declared search window — the one real degree of freedom.** The 365 d window is
+declared here and **may not be changed after seeing the accuracy**. The smoke run
+already showed Kuznetsov looks monotone at 365 d and oscillates by 1000 d, so a
+longer window would likely raise separability — which is exactly why extending it
+post-hoc would be a selection event. If a second window is ever run, it is a
+NEW registration reported alongside this one, never a replacement.
+
+**Seeds.** 3 LHS seeds (0, 1, 2); report balanced accuracy as median + range
+across seeds, not a single number.
+
+**Standing policy criteria: N/A.** No policy is trained here — no TTP, exposure,
+second endpoint or Wilcoxon applies. This is a property of the simulator, not of
+a controller.
+
+**Planned artifacts.** `research/phase0_identifiability.py`,
+`research/outputs/phase0_identifiability.json`,
+`research/outputs/phase0_separability.png`.
