@@ -38,6 +38,8 @@ for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
 os.environ.setdefault("XLA_FLAGS", "--xla_cpu_multi_thread_eigen=false")
 
 import json
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -136,6 +138,52 @@ def run_one(arch_name, weight, seed):
     }
 
 
+def _run_worker() -> int:
+    """Execute ONE cell of the grid and write it to its own JSON shard.
+
+    Each cell runs in a FRESH PROCESS. Measured 2026-09-22: running the 12
+    cells in one process dies with "LLVM ERROR: Unable to allocate section
+    memory" roughly 10 min in, with 21 GB still free, while any single cell
+    runs fine in isolation. The cost is cumulative -- XLA's compilation cache
+    grows across cells until the arena is exhausted -- so capping threads does
+    not help and subprocess isolation does. Same reason the sibling repo runs
+    its sweep folds in spawned subprocesses.
+    """
+    arch, weight, seed = sys.argv[2], float(sys.argv[3]), int(sys.argv[4])
+    shard = OUT / "phase2_shards" / f"{arch}_w{weight}_s{seed}.json"
+    shard.parent.mkdir(parents=True, exist_ok=True)
+    shard.write_text(json.dumps(run_one(arch, weight, seed)))
+    return 0
+
+
+def _spawn(arch, weight, seed) -> dict:
+    """Run one cell in a subprocess and read back its shard."""
+    shard = OUT / "phase2_shards" / f"{arch}_w{weight}_s{seed}.json"
+    if shard.exists():  # resume: a completed cell is never recomputed
+        return json.loads(shard.read_text())
+
+    # Retry on the LLVM section-memory failure. Measured 2026-09-22: it is
+    # TRANSIENT address-space fragmentation in the JIT allocator, not
+    # exhaustion -- the box has 22 GB free when it fires, and the identical
+    # call succeeds minutes later. Retrying in a fresh process is therefore
+    # the correct response; a hard failure here would throw away an
+    # otherwise-complete grid for a reason unrelated to the research.
+    last = None
+    for attempt in range(3):
+        try:
+            subprocess.run(
+                [sys.executable, __file__, "--worker", arch, str(weight), str(seed)],
+                check=True,
+                cwd=Path(__file__).resolve().parent.parent,
+            )
+            return json.loads(shard.read_text())
+        except (subprocess.CalledProcessError, json.JSONDecodeError) as exc:
+            last = exc
+            print(f"    retry {attempt + 1}/3 for {arch} w={weight} seed={seed}")
+            time.sleep(20)
+    raise RuntimeError(f"cell {arch} w={weight} seed={seed} failed 3x") from last
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     print("=" * 74)
@@ -150,7 +198,7 @@ def main() -> int:
     for w in EXPOSURE_WEIGHTS:
         for arch in ARCHS:
             for s in SEEDS:
-                r = run_one(arch, w, s)
+                r = _spawn(arch, w, s)
                 runs.append(r)
                 print(
                     f"  w={w:<5.2f} {arch:8s} seed {s}: TTP {r['ttp_median']:6.1f} d "
@@ -223,4 +271,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--worker":
+        raise SystemExit(_run_worker())
     raise SystemExit(main())
