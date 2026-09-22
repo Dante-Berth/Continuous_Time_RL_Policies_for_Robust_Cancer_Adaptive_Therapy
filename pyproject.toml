@@ -19,7 +19,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-viz = ["matplotlib>=3.8"]
+viz = [
+    "matplotlib>=3.8",
+]
 # PROJECT.md §12: DTR-Bench/AhnChemoEnv is PyTorch/Gym and will not vmap. It is an
 # external validation anchor and the host for the recurrent-TD3 baseline (§13 row
 # "beating only weak baselines"), never part of the JAX simulator. Quarantined as

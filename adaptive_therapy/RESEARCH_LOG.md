@@ -64,11 +64,10 @@ d(log burden)/d(log θ), per-component profile CI.
 ### Results
 **Met as registered — PASS**, and separately **weaker than it looks**.
 
-A post-hoc control (declared as an AMENDMENT/selection event in PREREG.md):
-1-NN on the **single scalar** log B(365) − log B(0) scores **0.824** — already
-above the registered gate on its own. Full 52-point shape adds only +0.17. The
-families differ in gross growth magnitude (log-growth LV +0.39, Hahnfeldt +4.26,
-Kuznetsov +3.24±6.40), so **the gate passes on scale, not on mechanism**.
+A post-hoc control (declared an AMENDMENT/selection event in PREREG.md): 1-NN
+on the **single scalar** log B(365) − log B(0) scores **0.824**, already above
+the gate alone; the full 52-point shape adds only +0.17. The families differ in
+gross growth magnitude, so **the gate passes on scale, not mechanism**.
 
 θ recovery fails as expected (per-component classes in the artifact). LV
 **`r_R` flat at a 49-decade CI, sensitivity 2.1e-3** — independently reproducing
@@ -85,3 +84,44 @@ control beside it; (2) Tier-2 on untreated dynamics is an easy test — the real
 one is under treatment, where mechanisms diverge beyond scale; (3) Kuznetsov's
 6/8 flat directions mean an encoder targeting its θ is near-hopeless, so the
 MoE should be assessed on cluster purity, never parameter recovery.
+
+## [2026-09-22] — Phase 1 infrastructure: TTP rule fixed, sanity gate built, and PROJECT.md §12's stiffness prescription measured wrong
+**Verdict:** OPEN — simulator + endpoints complete; two spec corrections recorded · **Gate:** n-a (infrastructure; no policy trained, no comparison made) · **Artifacts:** `research/phase1_cohorts.py`, `research/outputs/phase1_cohorts.json`, `research/outputs/phase1_untreated_trajectories.png`, 42 tests
+
+### Context
+Phase 1 per §11: PK, reward, LHS + untreated sanity gate with rejection log,
+stiffness bucketing, and `eval/metrics.py` — including the non-monotone TTP
+rule §6.3 says to define up front.
+
+### What was tried
+TTP rule = **running-nadir + 28 d confirmation** (RECIST-style): progression
+when burden exceeds the best response so far by +20% and stays there.
+`ttp_from_baseline` computed alongside so rule-sensitivity stays visible. Gate
+criteria **magnitude-only, never shape**, so oscillatory patients survive
+(§6.3). 200 LHS patients/family.
+
+### Results
+**Three corrections, all measured rather than assumed.**
+
+1. **§12's stiffness prescription is wrong for this simulator.** The flagged
+   Hahnfeldt patients are not stiff — fixed-step dt0=0.05 agrees with dt0=0.005
+   to ~1e-4. They have a *fast transient*, which makes the ADAPTIVE controller
+   thrash: `Kvaerno5`+PID exceeds 200k steps and **fails even batched alone**,
+   while fixed-step solves 24 in 23.5 ms; a 200-patient adaptive batch did not
+   finish in 600 s. Fixed-step is the default; the flag means "re-verify at a
+   finer step", not "switch solvers".
+2. **My first TTP rule was wrong and a test caught it.** Running-nadir alone
+   still fired at d10 on a rise-then-dormancy trajectory. Correct behaviour:
+   fires *earlier* than baseline on a responder-relapse (d186 vs d277 — the
+   baseline rule credits 91 unearned days) and *identically* when a tumour
+   progresses before responding. Both directions tested.
+3. **Untreated TTP is resolution-limited.** At weekly sampling Hahnfeldt
+   progresses at 7.0 d and Kuznetsov at 14.0 d with **zero IQR** — one to two
+   monitoring intervals. LV: 28.1 d [21–47], 29% censored. Gate rejected 0/200
+   on all families; 71/200 Hahnfeldt carry a fast transient.
+
+### Decision
+Proceed to Phase 2 **on LV**. Discrimination must come from the treated arms:
+untreated Hahnfeldt/Kuznetsov progress within one monitoring interval, so that
+comparison has no dynamic range. LV is the only family where untreated patients
+routinely survive the horizon.
