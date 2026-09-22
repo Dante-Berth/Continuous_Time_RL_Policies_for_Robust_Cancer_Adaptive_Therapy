@@ -14,7 +14,8 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## OPEN
 
-*(nothing yet)*
+- **Simulator sound and the three families are mechanistically distinguishable** — untreated log10 dynamic ranges 0.3 / 2.2 / 2.7, distinct turning-point counts → [L13](RESEARCH_LOG.md#L13)
+- **Kuznetsov's apparent dynamics depend on the horizon** — 0 turning points at 365 d, ≥2 and a dormancy excursion to ~1e-7 by 1000 d; the sanity-gate window is a modelling choice → [L13](RESEARCH_LOG.md#L13)
 
 ## CLOSED — do not re-litigate
 
