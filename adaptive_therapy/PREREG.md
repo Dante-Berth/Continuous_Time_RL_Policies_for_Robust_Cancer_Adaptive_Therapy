@@ -177,3 +177,12 @@ parameter shift, not a mechanism shift, and the continuous-time advantage has a
 mechanical reason to appear under *irregular sampling* (Tier 4) rather than
 under regular weekly visits. A null on this gate is a publishable result per
 PROJECT.md §15 and is the registered, expected outcome.
+
+**AMENDMENT [2026-09-22, before any run]:** the registration declared hidden
+width 64 for BOTH arms and required parameter counts within 2×. Building them
+showed that gives MLP 516 vs ODE-RNN 3076 — a 5.96× gap, which my own criterion
+rejects as confounded. **MLP width is therefore 384, giving exactly 3076
+parameters (ratio 1.00); ODE-RNN stays at width 64, hidden 16.** Declared before
+any training run, so this is a specification fix, not a selection event: no
+result has been seen. The ODE arm is now the *smaller-width* network, and a win
+for it cannot be attributed to capacity.
