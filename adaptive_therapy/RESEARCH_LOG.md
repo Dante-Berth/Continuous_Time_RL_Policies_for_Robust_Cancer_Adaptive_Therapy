@@ -420,3 +420,40 @@ algorithm** (SAC-discrete or recurrent TD3), both arms, not a PPO re-tune — ow
 to decide before anything is built. Standing lessons for it: keep the
 closed-loop gate; make the primary TTP estimator censoring-aware, since the
 progressor-only median has now inverted the paired result in three runs.
+
+## [2026-09-23] — Phase 2c FAILED on PQN, the first VALID run: both arms closed-loop, and the ODE-RNN progresses earlier in 264/283 and 337/359 untied pairs
+**Verdict:** CLOSED — failed as registered; kill ⇒ STOP: no continuous-time edge on LV Tier-1 with either trainer · **Gate:** capped median TTP (median of 3 seeds) ODE vs MLP w0.05: 357 vs 357 / w0.20: 224 vs 357 d · exposure 194 vs 280 / 194 vs 268 (−31%, −27%; unmatched) · burden-integral 1.31e6 vs 1.42e6 / 1.47e6 vs 1.42e6 · one-sided Wilcoxon p(ODE later) = 1.0 / 1.0 · 3 seeds × 200 pts · **Artifacts:** `research/outputs/phase2c_gate.json`, `research/outputs/phase2c_policies/`
+
+### Context
+PREREG Phase 2c, committed before any PQN run on the gate cohorts (8cd3a80).
+PQN (arxiv-2407.04811) for BOTH arms after PPO left the ODE-RNN open-loop
+([L312](RESEARCH_LOG.md#L312), [L391](RESEARCH_LOG.md#L391)). Grid unchanged.
+
+### What was tried
+Table-4 PQN, fixed; LayerNorm Q-readouts, 3090 vs 3091 params; greedy eval.
+19 s per MLP cell, 130 s per ODE-RNN cell, CPU. Untreated control 21.0 d.
+
+### Results
+**(0) validity PASSES — first time in any Phase-2 run.** Closed-loop MLP
+0.37–0.54, ODE-RNN 0.15–0.31; every cell ≥ 0.10.
+**(2) fails at both weights:** per matched patient ODE later / earlier =
+19 / **264** (w0.05) and 22 / **337** (w0.20). More ODE patients progress at all
+(censored 47% vs 71%; 42% vs 68%). **(1)**: capped medians tie at the horizon
+at w0.05 (357 = 357) and ODE −133 d at w0.20; exposure unmatched at both.
+Per-seed capped TTP — MLP 357 in all six cells; ODE 308/357/357 and 56/224/357.
+
+**Exposure caveat, stated not resolved:** MLP doses ~40% more (mean dose
+0.72–0.78 vs ODE 0.48–0.81), and on LV more drug alone lengthens TTP, so the
+registered test cannot say the ODE is worse *at equal drug*. Descriptive, post
+hoc, cell-level: the two ODE cells that land at MLP-like exposure (296, 249)
+are the clearly worse ones (capped 308 d, 25% censored; 56 d, 18% censored)
+against MLP's 357 d at 245–282 — the gap is not only dose.
+
+**Across trainers:** the paired direction now points to MLP in all four
+Phase-2 runs (L275, L312, L391, here), under two algorithms.
+
+### Decision
+**STOP, as registered.** Written as "no continuous-time edge with either
+trainer". Phase 3 does not proceed on this basis. Promotion to CLOSED.md,
+ROADMAP strikes, and whether Tier 4 (irregular sampling) is registered as a
+NEW hypothesis — the owner's call.
