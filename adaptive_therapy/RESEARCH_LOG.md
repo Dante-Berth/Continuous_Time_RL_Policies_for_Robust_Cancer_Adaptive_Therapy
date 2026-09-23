@@ -271,3 +271,40 @@ Void run 1. Fixes: y0 from shifted θ; TTP **raises** on non-finite burden
 and estimator unchanged; pooled censoring added as a secondary. PREREG
 AMENDMENT pre-commits that **run 2 is final** — a result it produces is not
 re-graded, whichever way it points.
+
+## [2026-09-23] — Phase 2 STOP-OR-GO FAILED: no continuous-time edge on LV under a Tier-1 shift; ODE-RNN progresses earlier in 227–234 of ~250 untied pairs
+**Verdict:** CLOSED — failed as registered (run 2, final per AMENDMENT); kill criterion ⇒ STOP · **Gate:** median TTP ODE vs MLP, w=0.05: 199.5 vs 49 d / w=0.20: 21 vs 49 d · exposure 306 vs 256 (+20%) / 178 vs 220 (−19%), never matched · burden-integral 9.9e5 vs 1.49e6 / 1.37e6 vs 1.50e6 · Wilcoxon p=3.7e-18 / 1.0e-36 · 3 seeds × 200 pts · **Artifacts:** `research/outputs/phase2_gate.json`, `research/outputs/phase2_gate.log`
+
+### Context
+Registered gate, PREREG [2026-09-22] + both AMENDMENTs; run 1 void
+([L242](RESEARCH_LOG.md#L242)). Untreated Tier-1 control: 21.0 d, 22% censored.
+
+### What was tried
+Declared grid unchanged: {MLP, ODE-RNN} × w {0.05, 0.20} × seeds {0,1,2}, params
+3076 each, width/LR fixed, 300 PPO updates, CPU. Median = per-seed medians.
+
+### Results
+Per-seed TTP (d) at exposure — **w=0.05** MLP 49/70/49 @ 256/278/178; ODE
+56/301/200 @ 178/306/354. **w=0.20** MLP 49/49/49 @ 233/220/178; ODE 21/42/21 @
+177/178/280. Censoring pooled: w=0.05 ODE 49% vs MLP 70%; w=0.20 58% vs 72%.
+
+- **Criterion 1 fails at both weights:** exposure never within ±10%, and at
+  w=0.20 ODE is −28 d. Criterion 3 (both weights) therefore fails.
+- **The +150.5 d at w=0.05 is a progressor-only artifact.** Paired per patient
+  (censored = horizon): ODE later 48 / **earlier 227** / tied 325; at w=0.20
+  11 / **234** / 355. More ODE patients progress at all (lower censoring). The
+  registered test points to MLP at both weights.
+- **Second endpoint cuts the other way:** ODE burden-integral lower at both
+  weights — at w=0.20 with 19% *less* drug. It holds burden down, then
+  progresses earlier. Mechanism not tested here; none claimed.
+- **Criterion 4, recorded not re-adjudicated:** ODE at w=0.20 ties untreated
+  (21 = 21 d), which the registration calls a training bug. It is treating (58%
+  vs 22% progression-free); the tie is the progressor-only median. The AMENDMENT
+  allows run 3 only for a crash or non-finite rollout, so **no re-run**.
+- ODE seeds split: 2 of 6 cells near-max dose (0.85, 0.98).
+
+### Decision
+**STOP, as registered.** Phase 3 (multi-ODE 2×2) does not proceed: the
+curriculum cannot rescue an architecture that loses the clean case. Planned
+artifact `phase2_gate.png` not produced. Program direction (CLOSED.md item,
+ROADMAP strikes, Tier-4 as a *new* registration) is left to the owner.

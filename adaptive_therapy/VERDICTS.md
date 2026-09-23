@@ -29,7 +29,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## CLOSED — do not re-litigate
 
-*(nothing yet)*
+- **Phase 2 FAILED: no continuous-time edge on LV under Tier-1 at matched exposure** — exposure never matched (+20% / −19%); ODE-RNN progresses earlier in 227 and 234 paired patients vs 48 and 11 later (p=3.7e-18, 1.0e-36); its +150 d median at w=0.05 is a progressor-only artifact; lower burden-integral than MLP at both weights. Do not re-run with wider nets, more steps, tuned LR, a curriculum or a third architecture → [L275](RESEARCH_LOG.md#L275)
 
 ## Standing constraints (inherited from the spec, not re-derivable here)
 
