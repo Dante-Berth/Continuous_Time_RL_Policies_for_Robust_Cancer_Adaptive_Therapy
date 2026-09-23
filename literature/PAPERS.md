@@ -11,7 +11,7 @@ index; the judgment lives in `papers/<id>.md`.
 > uv run python research/lit_table.py --check   # exit 1 if stale
 > ```
 
-**Provenance status: 0/15 read from the PDF (`1°`); 15 are `2°` (100%).**
+**Provenance status: 1/16 read from the PDF (`1°`); 15 are `2°` (94%).**
 
 A `2°` row is seeded from PROJECT.md §12-REF — the citation resolves, but
 the paper has not been read. **A `2°` cell may not be cited in a design**
@@ -41,6 +41,7 @@ to our design", and it is the only section most readers need.
 | `mechanism` | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | 2° | The Tier-2 mechanism shift. Bottleneck is vasculature, not competition, so an LV-tuned threshold has no reason to transfer. |
 | `mechanism` | [url-neurips-2019-latent-odes](papers/url-neurips-2019-latent-odes.md) | 2° | The encoder for the MoE latent model AND the Q4 irregular-sampling baseline the pure-liquid policy must beat. Do not reinvent it. |
 | `mechanism` | [doi-10.1126-scirobotics.adc8892](papers/doi-10.1126-scirobotics.adc8892.md) | 2° | The OOD-robustness claim for continuous-time policies, in another domain. The architecture we are porting into oncology. |
+| `mechanism` | [arxiv-2407.04811](papers/arxiv-2407.04811.md) | 1° | Adopted as the Phase 2c trainer for BOTH arms after PPO left the ODE-RNN open-loop (L312, L391); its stability theorem is a wide-network result, which our 16-unit ODE hidden state is not. |
 
 ## Read next
 
@@ -82,13 +83,14 @@ what promotes a row to `1°` and makes it citable in a design argument.
 | [doi-10.1126-scirobotics.adc8892](papers/doi-10.1126-scirobotics.adc8892.md) | Science Robotics 2023 | policy | none | n/a | none | no | 2° | queued |
 | [doi-10.1371-journal.pone.0120007](papers/doi-10.1371-journal.pone.0120007.md) | PLOS One 2015 | model | hahnfeldt | full-state | none | no | 2° | queued |
 | [url-iclr-2024-metaphysica](papers/url-iclr-2024-metaphysica.md) | ICLR 2024 | model | none | n/a | none | no | 2° | queued |
+| [arxiv-2407.04811](papers/arxiv-2407.04811.md) | arXiv:2407.04811v2, 23 Oct 2024 (PDF header: under review at ICLR 2025) | theory | none | n/a | none | no | 1° | reviewed |
 | [doi-10.1155-2017-1642976](papers/doi-10.1155-2017-1642976.md) | Wiley / Computational and Mathematical Methods in Medicine 2017 | model | kuznetsov | full-state | none | no | 2° | queued |
 | [url-neurips-2023-dlde-dnode](papers/url-neurips-2023-dlde-dnode.md) | NeurIPS 2023 Workshop (DLDE) | model | other | burden-only | OS | no | 2° | queued |
 
 ## What the pile looks like
 
-- **Model families:** `hahnfeldt` 2, `kuznetsov` 2, `lotka-volterra` 4, `none` 3, `other` 4
-- **Observability:** `burden-only` 6, `full-state` 6, `n/a` 3
+- **Model families:** `hahnfeldt` 2, `kuznetsov` 2, `lotka-volterra` 4, `none` 4, `other` 4
+- **Observability:** `burden-only` 6, `full-state` 6, `n/a` 4
 - **Bearing on identifiability (PROJECT.md §5):** 1
 
-*Generated 2026-09-22 by `research/lit_table.py`.*
+*Generated 2026-09-23 by `research/lit_table.py`.*
