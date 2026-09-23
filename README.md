@@ -89,19 +89,22 @@ of the JAX simulator. Nothing under `adaptive_therapy/` may import it.
 
 ### GPU
 
-The lockfile installs **CPU JAX**. The GPU wheel is a different distribution:
+The lockfile's default is **CPU JAX**; CUDA JAX is a locked extra:
 
 ```bash
-uv pip install --upgrade "jax[cuda12]"
+make setup-gpu      # uv sync --group dev --extra gpu
 uv run python -c "import jax; print(jax.default_backend(), jax.devices())"
 ```
 
-This has **not been run on a GPU here** (no CUDA device on the development
-machine), so treat it as the documented intent rather than a verified path. Two
-things in [ROADMAP.md](ROADMAP.md) are conditional on it, and one is a trap:
-the §12 stiffness finding at [L88] was measured under XLA's CPU SIMD
-vectorisation — the exact execution model that warning concerns — so it must be
-**re-measured on GPU, not carried over**.
+Verified 2026-09-23 on an RTX 4090 (driver CUDA 13.2): 51/51 tests pass, and
+cohort solves agree with CPU to 5.6e-7 relative
+([L166](adaptive_therapy/RESEARCH_LOG.md#L166)). Once installed, **GPU becomes
+the default for every `uv run`**; force CPU per command with `JAX_PLATFORMS=cpu`.
+
+**For this workload the GPU is slower, not faster.** Rollouts are small batches
+of short sequential solves, so they are kernel-launch-bound: a 200-patient
+rollout is 9× slower on GPU, a PPO update 17–40× slower. Phase 2 therefore runs
+on CPU (see the note in `research/phase2_gate.py`).
 
 ---
 

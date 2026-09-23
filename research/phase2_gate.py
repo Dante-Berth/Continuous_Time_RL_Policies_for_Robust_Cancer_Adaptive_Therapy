@@ -19,23 +19,40 @@ Measured on LV: TTP rises monotonically with dose (u=0 -> 28 d, 0.25 -> 42,
 0.5 -> 74, 0.75 -> 246, 1.0 -> 295). A pure-TTP gate is therefore won by
 constant maximum dosing and would measure aggression, not scheduling skill.
 
-Run: uv run python research/phase2_gate.py
+Run: JAX_PLATFORMS=cpu uv run python research/phase2_gate.py
+
+CPU, not GPU -- measured 2026-09-23 on an RTX 4090 vs this 32-core box, after
+the PPO recompile fix: one update costs 5.5 s (MLP) / 6.4 s (ODE-RNN) on GPU
+against 0.14 s / 0.37 s on CPU. Batch-32 rollouts of 52 sequential solves are
+kernel-launch-bound, so the GPU is 17-40x slower (L166: 9x for bare rollouts).
 """
 
 from __future__ import annotations
 
+import importlib.util
 import os
 
-# MUST precede the jax import. Measured 2026-09-22 on this 20-core CPU box: XLA
-# spawns a compilation thread per core, each needing arena for the fused
-# rollout graph (52 sequential solver calls x vmap over the cohort), and they
-# collectively exhaust it -- "LLVM ERROR: Unable to allocate section memory"
-# with 21 GB still free. Capping the threads fixes it (ODE training: 3 updates
-# at n=200 in 8.4 s). Set here rather than in the environment so the run is
-# reproducible from the script alone.
-for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
-    os.environ.setdefault(_v, "4")
-os.environ.setdefault("XLA_FLAGS", "--xla_cpu_multi_thread_eigen=false")
+# MUST precede the jax import, so the backend is inferred from whether the CUDA
+# plugin is installed (`make setup-gpu`) and not overridden by JAX_PLATFORMS=cpu.
+ON_GPU = (
+    importlib.util.find_spec("jax_cuda12_plugin") is not None
+    and os.environ.get("JAX_PLATFORMS", "") != "cpu"
+)
+
+if ON_GPU:
+    # 2026-09-23: GPU reductions (scatter-add in the PPO gradient) may reorder
+    # float32 sums between runs. Forced deterministic so a shard is reproducible
+    # and a resumed grid is not a mix of two numerical histories.
+    os.environ.setdefault("XLA_FLAGS", "--xla_gpu_deterministic_ops=true")
+else:
+    # CPU only. 2026-09-22: added against "LLVM ERROR: Unable to allocate
+    # section memory" with 21 GB free. L128 measured these caps to have NO
+    # effect; the real cause was a per-update recompile in ppo.py exhausting
+    # vm.max_map_count (fixed 2026-09-23). Kept, not deleted, so the CPU path
+    # reproduces the configuration every Phase 2 attempt has run under.
+    for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ.setdefault(_v, "4")
+    os.environ.setdefault("XLA_FLAGS", "--xla_cpu_multi_thread_eigen=false")
 
 import json
 import subprocess
@@ -122,6 +139,7 @@ def run_one(arch_name, weight, seed):
     med, q1, q3 = ttp.median_iqr()
     return {
         "arch": arch_name,
+        "backend": jax.default_backend(),
         "exposure_weight": weight,
         "seed": seed,
         "ttp_median": med,
@@ -141,13 +159,11 @@ def run_one(arch_name, weight, seed):
 def _run_worker() -> int:
     """Execute ONE cell of the grid and write it to its own JSON shard.
 
-    Each cell runs in a FRESH PROCESS. Measured 2026-09-22: running the 12
-    cells in one process dies with "LLVM ERROR: Unable to allocate section
-    memory" roughly 10 min in, with 21 GB still free, while any single cell
-    runs fine in isolation. The cost is cumulative -- XLA's compilation cache
-    grows across cells until the arena is exhausted -- so capping threads does
-    not help and subprocess isolation does. Same reason the sibling repo runs
-    its sweep folds in spawned subprocesses.
+    Each cell runs in a FRESH PROCESS, so no cell inherits another's JIT
+    cache or memory mappings. Added 2026-09-22 against the LLVM section-memory
+    crash; that crash turned out to be a per-update recompile in ppo.py that
+    crossed vm.max_map_count WITHIN one cell (fixed 2026-09-23), so isolation
+    alone never fixed it -- but it bounds any per-process growth, and is kept.
     """
     arch, weight, seed = sys.argv[2], float(sys.argv[3]), int(sys.argv[4])
     shard = OUT / "phase2_shards" / f"{arch}_w{weight}_s{seed}.json"
@@ -160,14 +176,16 @@ def _spawn(arch, weight, seed) -> dict:
     """Run one cell in a subprocess and read back its shard."""
     shard = OUT / "phase2_shards" / f"{arch}_w{weight}_s{seed}.json"
     if shard.exists():  # resume: a completed cell is never recomputed
-        return json.loads(shard.read_text())
+        r = json.loads(shard.read_text())
+        # ...unless it came from the other backend: CPU and GPU float32 histories
+        # are not interchangeable (PREREG [2026-09-23] criterion iii).
+        if r.get("backend") == jax.default_backend():
+            return r
 
-    # Retry on the LLVM section-memory failure. Measured 2026-09-22: it is
-    # TRANSIENT address-space fragmentation in the JIT allocator, not
-    # exhaustion -- the box has 22 GB free when it fires, and the identical
-    # call succeeds minutes later. Retrying in a fresh process is therefore
-    # the correct response; a hard failure here would throw away an
-    # otherwise-complete grid for a reason unrelated to the research.
+    # Retry in a fresh process. Added 2026-09-22 when L128 read the LLVM crash
+    # as transient; it was deterministic (see _run_worker), so a retry of the
+    # same cell fails the same way. Kept only as cheap insurance against a
+    # genuinely transient infrastructure failure -- never against a bug.
     last = None
     for attempt in range(3):
         try:
@@ -248,6 +266,7 @@ def main() -> int:
 
     result = {
         "prereg": "adaptive_therapy/PREREG.md [2026-09-22] + AMENDMENT",
+        "backend": jax.default_backend(),
         "verdict": verdict,
         "untreated_control_ttp": unt_med,
         "tier1_shift": TIER1,

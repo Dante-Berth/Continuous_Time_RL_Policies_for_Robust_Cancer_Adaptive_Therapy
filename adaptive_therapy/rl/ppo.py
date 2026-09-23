@@ -110,13 +110,22 @@ def train(
         updates, opt_state = opt.update(grads, opt_state, eqx.filter(pol, eqx.is_array))
         return eqx.apply_updates(pol, updates), opt_state, loss
 
+    # Jitted ONCE per train() call. 2026-09-23: called eagerly, this rollout
+    # recompiled on every update (rollout() builds a fresh scan body each call,
+    # so the cache never hits): +1 compile and ~270 JIT memory mappings per
+    # update, which crossed the kernel's vm.max_map_count=65530 around update
+    # 240 -- the "LLVM ERROR: Unable to allocate section memory" of L128.
+    @eqx.filter_jit
+    def collect(pol, theta, y0, k):
+        return _batch_rollout(pol, theta, y0, k, ep, rw)
+
     history = []
     for it in range(cfg.n_updates):
         key, k_sel, k_roll = jax.random.split(key, 3)
         idx = jax.random.choice(k_sel, n, (min(cfg.batch_patients, n),), replace=False)
         batch = {"theta": thetas[idx], "y0": y0s[idx], "key": k_roll}
 
-        old = _batch_rollout(policy, batch["theta"], batch["y0"], k_roll, ep, rw)
+        old = collect(policy, batch["theta"], batch["y0"], k_roll)
         batch["old_logp"] = jax.lax.stop_gradient(old["logp"])
 
         for _ in range(cfg.n_epochs):

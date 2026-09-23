@@ -203,3 +203,38 @@ Fixed-step stays default on both backends, for the right reason now; `gate.py`
 comment corrected. ROADMAP's "minutes on GPU" is unsupported for rollouts:
 Phase 2's backend is chosen by measured per-update cost, not assumed. **3-patient check preceded the amendment — selection risk
 on the diagnostic only; registered criteria were untouched.**
+
+## [2026-09-23] — L128's "transient" LLVM crash was a deterministic PPO recompile leak hitting vm.max_map_count; fixed
+**Verdict:** OPEN — infrastructure fix, NOT a research result; Phase 2 gate unblocked, still unrun · **Gate:** n-a (0/12 cells; no policy compared) · **Artifacts:** `adaptive_therapy/rl/ppo.py`, `adaptive_therapy/tests/test_policies.py`
+
+### Context
+Phase 2 relaunched on CPU (GPU measured slower, [L166](RESEARCH_LOG.md#L166)).
+Cell 1 died with [L128](RESEARCH_LOG.md#L128)'s `LLVM ERROR: Unable to allocate
+section memory`, 119 GB available.
+
+### What was tried
+Checked kernel limits: `vm.max_map_count = 65530`. Sampled the worker's
+`/proc/<pid>/maps`: **+380 mappings/s, linear**, crossing 65530 in ~3 min.
+Counted XLA backend compiles vs PPO updates, cache warm: 2 updates → 3,
+8 → 9, 32 → 33. **Exactly one compile per update**, ~270 mappings each.
+
+### Results
+**Cause:** `train()` collected `old_logp` with an *eager* `_batch_rollout`.
+`rollout()` builds a fresh scan body per call, so the cache never hit: one
+recompile per update, and its JIT code mappings never freed. 300 updates ×
+~270 ≈ 81k > 65530 ⇒ every cell crashes ~update 240. **Deterministic, not
+transient.** L128's mechanism (fragmentation), its evidence (a single cell
+"succeeding minutes later" = a shorter run, never 300 updates) and its
+retries were all wrong; the thread caps were irrelevant, as it found.
+
+**Fix:** `collect = eqx.filter_jit(...)` built once per `train()`. After: 2
+compiles and +1236 mappings per `train()` call **whatever** the update count.
+Regression test fails on the old code, passes on the new; 52/52 tests.
+Side effect: CPU PPO update 0.52 → 0.14 s (MLP), 0.98 → 0.37 s (ODE-RNN).
+
+### Decision
+Relaunch Phase 2 on CPU with the registered grid and criteria **unchanged** —
+this touches how `old_logp` is computed (cached vs recompiled executable), not
+what is computed, and no result had been seen. Subprocess isolation and retry
+are kept, with comments corrected. The GPU per-update figure (17–40× slower)
+is measured post-fix; L166's rollout figure had no recompiles in its timed loop.

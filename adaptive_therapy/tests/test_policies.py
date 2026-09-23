@@ -127,3 +127,32 @@ def test_treatment_reduces_burden_relative_to_no_treatment():
     full = rollout(Always(2), th, y0, KEY, ep, rw, pk, greedy=True)
     assert float(full["burden"][-1]) < float(none["burden"][-1])
     assert float(full["dose"].mean()) > float(none["dose"].mean())
+
+
+def test_ppo_compiles_a_fixed_number_of_times_regardless_of_update_count():
+    # 2026-09-23: the old-logp rollout ran eagerly and recompiled every update;
+    # at 300 updates the JIT mappings crossed vm.max_map_count and crashed every
+    # Phase 2 cell with "LLVM ERROR: Unable to allocate section memory".
+    import jax.monitoring as mon
+
+    from adaptive_therapy.rl.ppo import PPOConfig, train
+
+    n = [0]
+
+    def count(event, *_a, **_k):
+        n[0] += event == "/jax/core/compile/backend_compile_duration"
+
+    c = sample_cohort("lotka_volterra", 8, seed=0)
+    ep = EpisodeConfig(n_visits=4, model_id="lotka_volterra")
+    th, y0 = jnp.asarray(c.thetas), jnp.asarray(c.y0s)
+    compiles = {}
+    mon.register_event_duration_secs_listener(count)
+    try:
+        for u in (2, 2, 6):  # first call warms eager-op caches
+            n[0] = 0
+            cfg = PPOConfig(n_updates=u, batch_patients=4, n_epochs=1)
+            train(MLPPolicy(jax.random.PRNGKey(0)), th, y0, jax.random.PRNGKey(1), cfg, ep)
+            compiles[u] = n[0]
+    finally:
+        mon.unregister_event_duration_listener(count)
+    assert compiles[6] == compiles[2]
