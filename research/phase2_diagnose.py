@@ -63,11 +63,11 @@ def main() -> int:
         train_c = sample_cohort(g.FAM, g.N_TRAIN, seed=seed)
         th, y0 = (jnp.asarray(a) for a in g.tier1_cohort(g.N_TEST, seed))
         rw = RewardConfig(exposure_penalty=weight)
-        for arch in g.ARCHS:
+        for arch in g.REGISTRATIONS["phase2b"]["archs"]:
             k_init, k_train, k_eval = jax.random.split(jax.random.PRNGKey(seed), 3)
             rows = []
             for n in CHECKPOINTS:
-                pol = g.ARCHS[arch](k_init)
+                pol = g.REGISTRATIONS["phase2b"]["archs"][arch](k_init)
                 if n:
                     pol, _ = train(
                         pol,

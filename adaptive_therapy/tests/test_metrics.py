@@ -206,3 +206,16 @@ def test_a_one_sided_wilcoxon_rejects_only_in_the_stated_direction():
     assert paired_wilcoxon(worse, b)["p_value"] < 0.05  # two-sided: "significant"
     assert paired_wilcoxon(worse, b, alternative="greater")["p_value"] > 0.5
     assert paired_wilcoxon(b, worse, alternative="greater")["p_value"] < 0.025
+
+
+def test_the_capped_median_cannot_reward_letting_more_patients_progress():
+    # Arm A: 3 of 4 never progress, one fails at d10. Arm B: all 4 progress,
+    # late. The progressor-only median prefers B (it saw A's single early
+    # failure); the capped median correctly prefers A.
+    from adaptive_therapy.eval.metrics import TTPResult
+
+    h = 357.0
+    a = TTPResult(np.array([10.0, h, h, h]), np.array([False, True, True, True]), "t")
+    b = TTPResult(np.array([200.0, 210.0, 220.0, 230.0]), np.zeros(4, bool), "t")
+    assert b.median_iqr()[0] > a.median_iqr()[0]
+    assert a.median_iqr_capped()[0] > b.median_iqr_capped()[0]

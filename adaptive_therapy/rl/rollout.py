@@ -41,8 +41,13 @@ def rollout(
     rw: RewardConfig,
     pk: PKConfig | None = None,
     greedy: bool = False,
+    eps=None,
 ):
-    """Run one patient. Returns per-visit trajectories for training and eval."""
+    """Run one patient. Returns per-visit trajectories for training and eval.
+
+    Actions: sampled from softmax(logits) (PPO), argmax if `greedy`, or
+    epsilon-greedy over the outputs read as Q-values when `eps` is given (PQN).
+    """
     pk = pk or PKConfig()
     cfg = SolverConfig(t0=0.0, t1=ep.visit_interval, dt0=0.05, n_save=2)
 
@@ -57,11 +62,17 @@ def rollout(
         obs = normalise_obs(noisy, baseline)
 
         logits, h2 = policy(obs, h, ep.visit_interval)
-        action = jnp.where(
-            greedy,
-            jnp.argmax(logits),
-            jax.random.categorical(k_act, logits),
-        )
+        if eps is None:
+            action = jnp.where(
+                greedy,
+                jnp.argmax(logits),
+                jax.random.categorical(k_act, logits),
+            )
+        else:
+            k_coin, k_rand = jax.random.split(k_act)
+            explore = jax.random.uniform(k_coin) < eps
+            random_a = jax.random.randint(k_rand, (), 0, logits.shape[-1])
+            action = jnp.where(explore & ~greedy, random_a, jnp.argmax(logits))
         logp = jax.nn.log_softmax(logits)[action]
         dose = DOSE_LEVELS[action]
 
@@ -94,6 +105,14 @@ def rollout(
     return traj
 
 
+def batch_rollout(policy, thetas, y0s, key, ep, rw, greedy=False, eps=None):
+    """`rollout` vmapped over a cohort, one PRNG key per patient."""
+    keys = jax.random.split(key, thetas.shape[0])
+    return jax.vmap(lambda th, y, k: rollout(policy, th, y, k, ep, rw, greedy=greedy, eps=eps))(
+        thetas, y0s, keys
+    )
+
+
 def replay(policy, obs: jnp.ndarray, ep: EpisodeConfig):
     """Re-run the policy over a STORED observation sequence, no simulator.
 
@@ -112,7 +131,9 @@ def replay(policy, obs: jnp.ndarray, ep: EpisodeConfig):
     return logits, values
 
 
-def observation_dependence(policy, obs: jnp.ndarray, ep: EpisodeConfig, key) -> float:
+def observation_dependence(
+    policy, obs: jnp.ndarray, ep: EpisodeConfig, key, greedy: bool = False
+) -> float:
     """How much the action distribution depends on WHICH patient is observed.
 
     Each patient's observation history is swapped for another patient's, and
@@ -121,7 +142,15 @@ def observation_dependence(policy, obs: jnp.ndarray, ep: EpisodeConfig, key) -> 
     same dosing for every patient whatever their tumour does; that is not a
     feedback policy. Added 2026-09-23 after Phase 2's ODE-RNN arm went open-loop
     in 4/6 cells unnoticed (RESEARCH_LOG L312).
+
+    `greedy=True` scores the argmax action instead (a Q-network acts greedily,
+    and softmax of Q-values is not its policy): the result is then the fraction
+    of patient-visits whose greedy dose changes when the history is swapped.
     """
     perm = jax.random.permutation(key, obs.shape[0])
-    p = jax.nn.softmax(jax.vmap(lambda o: replay(policy, o, ep)[0])(obs), axis=-1)
+    logits = jax.vmap(lambda o: replay(policy, o, ep)[0])(obs)
+    if greedy:
+        p = jax.nn.one_hot(jnp.argmax(logits, axis=-1), logits.shape[-1])
+    else:
+        p = jax.nn.softmax(logits, axis=-1)
     return float(0.5 * jnp.abs(p - p[perm]).sum(-1).mean())

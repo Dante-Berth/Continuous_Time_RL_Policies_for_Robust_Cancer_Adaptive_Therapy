@@ -22,9 +22,10 @@ from adaptive_therapy.policies.base import N_ACTIONS
 class MLPPolicy(eqx.Module):
     layers: list
     critic: list
+    norm: eqx.nn.LayerNorm | None
     width: int = eqx.field(static=True)
 
-    def __init__(self, key, width: int = 384):
+    def __init__(self, key, width: int = 384, layer_norm: bool = False):
         # 384, not 64: it is what makes this arm parameter-matched to the
         # ODE-RNN (3076 each, ratio 1.00). See the PREREG amendment
         # [2026-09-22]. A 64-wide MLP has 516 params against the ODE arm's
@@ -35,6 +36,9 @@ class MLPPolicy(eqx.Module):
             eqx.nn.Linear(1, width, key=k1),
             eqx.nn.Linear(width, N_ACTIONS, key=k2),
         ]
+        # Optional LayerNorm on the hidden layer: the Q-network regulariser PQN's
+        # stability argument relies on (arxiv-2407.04811 p.6). Off for PPO.
+        self.norm = eqx.nn.LayerNorm(width) if layer_norm else None
         self.critic = [
             eqx.nn.Linear(1, width, key=k3),
             eqx.nn.Linear(width, 1, key=k4),
@@ -47,7 +51,8 @@ class MLPPolicy(eqx.Module):
 
     def __call__(self, obs, state, dt, key=None):
         x = jnp.atleast_1d(obs)
-        h = jax.nn.tanh(self.layers[0](x))
+        z = self.layers[0](x)
+        h = jax.nn.tanh(self.norm(z) if self.norm is not None else z)
         return self.layers[1](h), state
 
     def value(self, obs, state) -> jnp.ndarray:

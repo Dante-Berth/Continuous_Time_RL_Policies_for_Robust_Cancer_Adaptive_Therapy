@@ -19,7 +19,7 @@ import jax.numpy as jnp
 import optax
 
 from adaptive_therapy.envs.reward import RewardConfig
-from adaptive_therapy.rl.rollout import EpisodeConfig, replay, rollout
+from adaptive_therapy.rl.rollout import EpisodeConfig, batch_rollout, replay
 
 
 @dataclass(frozen=True)
@@ -68,13 +68,6 @@ def _entropy(logits):
     return -(jax.nn.softmax(logits) * jax.nn.log_softmax(logits)).sum(-1)
 
 
-def _batch_rollout(policy, thetas, y0s, key, ep, rw, greedy=False):
-    keys = jax.random.split(key, thetas.shape[0])
-    return jax.vmap(lambda th, y, k: rollout(policy, th, y, k, ep, rw, greedy=greedy))(
-        thetas, y0s, keys
-    )
-
-
 def train(
     policy,
     thetas,
@@ -111,7 +104,7 @@ def train(
     # vm.max_map_count=65530 near update 240 -- the LLVM crash of L128/L207.
     @eqx.filter_jit
     def collect(pol, theta, y0, k):
-        traj = _batch_rollout(pol, theta, y0, k, ep, rw)
+        traj = batch_rollout(pol, theta, y0, k, ep, rw)
         v = traj["value"]
         adv = jax.vmap(lambda rr, vv: _gae(rr, vv, cfg))(traj["reward"] * cfg.reward_scale, v)
         ret = adv + v
@@ -168,7 +161,7 @@ def evaluate(policy, thetas, y0s, key, ep=None, rw=None, greedy: bool = True):
     """Deterministic evaluation rollout. Returns burden and dose trajectories."""
     ep = ep or EpisodeConfig()
     rw = rw or RewardConfig()
-    traj = _batch_rollout(policy, thetas, y0s, key, ep, rw, greedy=greedy)
+    traj = batch_rollout(policy, thetas, y0s, key, ep, rw, greedy=greedy)
     return {
         "burden": jnp.asarray(traj["burden"]),
         "dose": jnp.asarray(traj["dose"]),

@@ -32,10 +32,11 @@ class ODERNNPolicy(eqx.Module):
     cell: eqx.nn.GRUCell
     head: eqx.nn.Linear
     critic: eqx.nn.Linear
+    norm: eqx.nn.LayerNorm | None
     hidden: int = eqx.field(static=True)
     max_steps: int = eqx.field(static=True)
 
-    def __init__(self, key, width: int = 64, hidden: int = 16):
+    def __init__(self, key, width: int = 64, hidden: int = 16, layer_norm: bool = False):
         k1, k2, k3, k4, k5 = jax.random.split(key, 5)
         self.hidden = hidden
         # Fixed-step flow with a bounded step count. Phase 1 measured that an
@@ -55,6 +56,10 @@ class ODERNNPolicy(eqx.Module):
         self.vf = [eqx.nn.Linear(hidden, width, key=k1), out]
         self.cell = eqx.nn.GRUCell(1, hidden, key=k3)
         self.head = eqx.nn.Linear(hidden, N_ACTIONS, key=k4)
+        # Optional LayerNorm between the post-observation state and the head,
+        # for PQN (arxiv-2407.04811 p.6). Normalises the READOUT only; the
+        # recurrent state itself is carried un-normalised.
+        self.norm = eqx.nn.LayerNorm(hidden) if layer_norm else None
         self.critic = eqx.nn.Linear(hidden, 1, key=k5)
 
     def initial_state(self) -> jnp.ndarray:
@@ -82,7 +87,7 @@ class ODERNNPolicy(eqx.Module):
     def __call__(self, obs, state, dt, key=None):
         h = jax.lax.cond(dt > 0.0, lambda: self.flow(state, dt), lambda: state)
         h = self.cell(jnp.atleast_1d(obs), h)
-        return self.head(h), h
+        return self.head(self.norm(h) if self.norm is not None else h), h
 
     def value(self, obs, state) -> jnp.ndarray:
         return self.critic(state)[0]

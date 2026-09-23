@@ -77,6 +77,22 @@ class TTPResult:
             float(np.percentile(obs, 75)),
         )
 
+    def median_iqr_capped(self) -> tuple[float, float, float]:
+        """Median and IQR of TTP capped at the horizon, over ALL patients.
+
+        Censoring here is administrative -- every arm shares one horizon -- so a
+        censored patient truly lasted >= the horizon and min(TTP, horizon) is
+        exactly known for everyone. Unlike `median_iqr`, this cannot reward a
+        policy for letting MORE patients progress. 2026-09-23: the
+        progressor-only median inverted the paired result in all three Phase 2
+        runs (RESEARCH_LOG L275, L312, L391).
+        """
+        return (
+            float(np.median(self.days)),
+            float(np.percentile(self.days, 25)),
+            float(np.percentile(self.days, 75)),
+        )
+
 
 def _finite_burden(burden: np.ndarray) -> np.ndarray:
     """Refuse a non-finite trajectory rather than score it.
