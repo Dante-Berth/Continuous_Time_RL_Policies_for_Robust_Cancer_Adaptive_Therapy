@@ -123,6 +123,14 @@ def test_confirmation_window_is_in_days_not_samples():
     assert abs(d.days[0] - s.days[0]) < 15.0  # within one sparse interval
 
 
+@pytest.mark.parametrize("rule", [ttp_running_nadir, ttp_from_baseline])
+def test_a_diverged_trajectory_is_refused_never_scored_as_censored(rule):
+    ts = np.arange(10) * 7.0
+    b = np.vstack([np.linspace(1.0, 2.0, 10), np.full(10, np.nan)])
+    with pytest.raises(ValueError, match="non-finite"):
+        rule(b, ts)
+
+
 def test_median_iqr_ignores_censored_patients():
     b = np.stack([100.0 * np.exp(0.01 * TS), np.full(TS.size, 100.0)])
     r = ttp_running_nadir(b, TS)

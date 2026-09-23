@@ -238,3 +238,36 @@ this touches how `old_logp` is computed (cached vs recompiled executable), not
 what is computed, and no result had been seen. Subprocess isolation and retry
 are kept, with comments corrected. The GPU per-update figure (17–40× slower)
 is measured post-fix; L166's rollout figure had no recompiles in its timed loop.
+
+## [2026-09-23] — Phase 2 run 1 INVALID: half the Tier-1 test cohort started above carrying capacity, and diverged rollouts scored as censored
+**Verdict:** OPEN — run 1's FAIL is void, NOT a negative result; gate re-run as a declared AMENDMENT · **Gate:** n-a (12/12 cells ran; cohort invalid) · **Artifacts:** `research/outputs/phase2_gate_run1_invalid.json`, `research/phase2_gate.py`, `adaptive_therapy/eval/metrics.py`
+
+### Context
+First complete Phase 2 run on CPU after the leak fix ([L207](RESEARCH_LOG.md#L207)).
+Printed FAIL: w=0.05 ΔTTP +213.5 d at exposure 306 vs 103; w=0.20 −17.5 d at
+178 vs 65. Two signals said the inputs were broken before any reading of them:
+untreated control 75% censored, and burden-integral median NaN in 6/12 cells.
+
+### What was tried
+Constant-dose solves of the Tier-1 cohort with no policy in the loop; per-patient
+checks against the shifted K and d_D; the same with y0 re-derived from shifted K.
+
+### Results
+**Cause:** `tier1_cohort` scaled K ×0.6 *after* y0 = n_0·K was built from the
+unshifted K. **86–99 of 200** test patients started above capacity, so ~60% of
+untreated tumours *shrank*. LV's drug term (1 − d_D·u)·crowding turns positive
+above K when d_D > 1: at u=1, **28–35/200 diverged to NaN — every one above K
+with d_D > 1**. NaN never exceeds the nadir, so the TTP rule scored each as
+*censored*, the best possible outcome. Re-deriving y0 from shifted K: 0 above
+K, 0 non-finite. Training cohorts: 0 above K, 0 non-finite — only test was hit.
+
+Also found: the script's PASS omitted criterion 1's exposure match; and the
+registered estimator is a median over **progressors only** (84–94% censored per
+cell in run 1), so it must be read beside censoring.
+
+### Decision
+Void run 1. Fixes: y0 from shifted θ; TTP **raises** on non-finite burden
+(regression test); PASS requires the exposure match. Registered criteria, grid
+and estimator unchanged; pooled censoring added as a secondary. PREREG
+AMENDMENT pre-commits that **run 2 is final** — a result it produces is not
+re-graded, whichever way it points.

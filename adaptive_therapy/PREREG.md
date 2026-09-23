@@ -220,3 +220,17 @@ gates**: per-patient success (throw=False) of Kvaerno5 and Tsit5 adaptive at bot
 tolerances over ALL kept patients, split flagged vs bulk, CPU only (backend parity
 already passed). Declared post hoc; it may revise L88's *mechanism*, never
 Phase 2's criteria.
+
+**AMENDMENT [2026-09-23, AFTER run 1 completed — selection event, declared]:**
+run 1 ran 12/12 and printed FAIL, but its Tier-1 test cohort was invalid (see
+RESEARCH_LOG, run-1 entry): y0 was built from the *unshifted* K, putting 43–50%
+of test patients above carrying capacity — they shrink untreated, and 14–18%
+diverge to NaN under full dose, which the TTP rule scored as *censored*. Per
+this entry's "bug ⇒ fix and re-run as an AMENDMENT" clause: (1) y0 re-derived
+from the shifted K, keeping each patient's sampled f_R and n_0; (2) non-finite
+burden now raises instead of scoring; (3) PASS now also requires the ±10%
+exposure match that criterion 1 always stated. **Unchanged:** hypothesis,
+criteria, shift multipliers, grid, seeds, width, LR, n, and the estimator
+(median over progressors). **Added secondary:** pooled censoring rate per arm.
+**Run 2 is final.** Its verdict stands whatever it shows; a run 3 is justified
+only by a crash or a non-finite rollout, and would void run 2, never re-grade it.

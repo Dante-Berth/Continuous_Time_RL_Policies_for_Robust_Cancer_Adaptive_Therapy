@@ -95,13 +95,25 @@ TIER1 = {"r_S": 1.5, "r_R": 1.5, "K": 0.6}
 
 
 def tier1_cohort(n: int, seed: int):
-    """Sample, then push theta outside the training box."""
+    """Sample, then push theta outside the training box.
+
+    y0 is RE-DERIVED from the shifted K, keeping each patient's sampled
+    resistant fraction f_R and fill level n_0 = (S+R)/K. 2026-09-23: run 1
+    shifted K after y0 was built from the unshifted K, which put 86-99 of 200
+    test patients ABOVE their carrying capacity. Those tumours shrink untreated
+    (the control was 75% censored), and with d_D > 1 the drug term
+    (1 - d_D u) * crowding turns positive above K, so full dose blew 28-35 of
+    them up to NaN -- scored as censored. Scaling y0 by K'/K is exact because
+    lotka_volterra.initial_state is linear in K.
+    """
     c = sample_cohort(FAM, n, seed=seed + 1000)
     th = c.thetas.copy()
     names = list(THETA_RANGES[FAM].keys())
     for k, mult in TIER1.items():
         th[:, names.index(k)] *= mult
-    return th, c.y0s
+    k_idx = names.index("K")
+    y0 = c.y0s * (th[:, k_idx] / c.thetas[:, k_idx])[:, None]
+    return th, y0
 
 
 def untreated_ttp(thetas, y0s):
@@ -254,12 +266,22 @@ def main() -> int:
             "exposure_matched_within_10pct": bool(matched),
             "wilcoxon": w_test,
             "both_beat_untreated": bool(beats_untreated),
+            # Secondary, declared before run 2: the median is over PROGRESSORS
+            # only, so it must be read beside how many patients progressed.
+            "censoring_mlp": float(np.mean(np.concatenate([m["ttp_censored"] for m in mlp]))),
+            "censoring_ode": float(np.mean(np.concatenate([o["ttp_censored"] for o in ode]))),
             "criterion_1_ode_beats_mlp": bool(d_ttp > 0),
             "criterion_2_significant": bool(w_test["p_value"] < 0.05),
         }
 
+    # Criterion 1 is "ODE > MLP AT MATCHED EXPOSURE". Run 1's version of this
+    # line omitted the match, so a TTP win bought with 3x the drug could have
+    # printed PASS (2026-09-23; run 1 failed on TTP anyway).
     passed = all(
-        v["criterion_1_ode_beats_mlp"] and v["criterion_2_significant"] and v["both_beat_untreated"]
+        v["criterion_1_ode_beats_mlp"]
+        and v["exposure_matched_within_10pct"]
+        and v["criterion_2_significant"]
+        and v["both_beat_untreated"]
         for v in verdicts.values()
     )
     verdict = "PASS — proceed to Phase 3" if passed else "FAIL — STOP, write the negative result"
@@ -281,7 +303,8 @@ def main() -> int:
             f"  w={w}: dTTP {v['delta_ttp_median']:+7.1f} d  "
             f"exposure {v['exposure_ode']:.0f} vs {v['exposure_mlp']:.0f} "
             f"(matched={v['exposure_matched_within_10pct']})  "
-            f"p={v['wilcoxon']['p_value']:.4f}"
+            f"p={v['wilcoxon']['p_value']:.4f}  "
+            f"censored ode {v['censoring_ode']:.0%} mlp {v['censoring_mlp']:.0%}"
         )
     print(f"  VERDICT: {verdict}")
     print(f"  -> {OUT / 'phase2_gate.json'}")

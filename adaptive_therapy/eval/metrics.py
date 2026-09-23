@@ -78,6 +78,21 @@ class TTPResult:
         )
 
 
+def _finite_burden(burden: np.ndarray) -> np.ndarray:
+    """Refuse a non-finite trajectory rather than score it.
+
+    2026-09-23: NaN never compares above the nadir, so a blown-up rollout was
+    silently scored CENSORED -- the best possible outcome. That happened to
+    14-18% of Phase 2's first Tier-1 cohort under full dose and corrupted the
+    gate. A diverged patient is a simulator or cohort bug, never a TTP.
+    """
+    burden = np.atleast_2d(np.asarray(burden, dtype=float))
+    bad = ~np.isfinite(burden).all(axis=1)
+    if bad.any():
+        raise ValueError(f"{int(bad.sum())}/{bad.size} burden trajectories are non-finite")
+    return burden
+
+
 def _confirmed_crossing(above: np.ndarray, ts: np.ndarray, confirm_days: float) -> int:
     """First index where `above` holds continuously for `confirm_days`.
 
@@ -113,7 +128,7 @@ def ttp_running_nadir(
     confirm_days: float = DEFAULT_CONFIRM_DAYS,
 ) -> TTPResult:
     """THE primary endpoint. `burden` (n, T), `ts` (T,) in days."""
-    burden = np.atleast_2d(np.asarray(burden, dtype=float))
+    burden = _finite_burden(burden)
     ts = np.asarray(ts, dtype=float)
     n = burden.shape[0]
 
@@ -142,7 +157,7 @@ def ttp_from_baseline(
 
     Kept so every result can show how sensitive it is to the TTP rule.
     """
-    burden = np.atleast_2d(np.asarray(burden, dtype=float))
+    burden = _finite_burden(burden)
     ts = np.asarray(ts, dtype=float)
     n = burden.shape[0]
 
