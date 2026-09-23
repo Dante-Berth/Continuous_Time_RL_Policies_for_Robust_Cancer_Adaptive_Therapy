@@ -1,9 +1,16 @@
 # Task orchestration. Every target is runnable via `uv run`, so a bare checkout
 # needs only `make setup`.
-.PHONY: setup lint fmt test audit lit-check all
+.PHONY: setup setup-gpu lint fmt test audit lit-check all
 
 setup:
 	uv sync --group dev
+
+# CUDA JAX from the lock. Verified 2026-09-23: once installed, a bare `uv run`
+# KEEPS it and GPU becomes the default backend for everything, tests included
+# (51 tests: 109 s on GPU vs ~15 s on CPU). Force CPU per command with
+# JAX_PLATFORMS=cpu; `make setup` (exact sync) removes the extra entirely.
+setup-gpu:
+	uv sync --group dev --extra gpu
 
 lint:
 	uv run ruff check .

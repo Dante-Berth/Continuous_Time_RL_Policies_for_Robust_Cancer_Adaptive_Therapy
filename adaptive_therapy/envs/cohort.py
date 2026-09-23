@@ -59,8 +59,11 @@ def solve_one_patient(
     ts = jnp.linspace(cfg.t0, cfg.t1, cfg.n_save)
 
     if cfg.stiff:
-        # The stiff bucket only. Adaptive stepping is correct here and the
-        # batch is small enough that the worst-case step count is affordable.
+        # The stiff bucket only, per PROJECT.md 12. Caution, measured
+        # 2026-09-23 (RESEARCH_LOG L166): on Hahnfeldt, Kvaerno5+PID at these
+        # tolerances hits max_steps on EVERY patient, while adaptive Tsit5
+        # solves all of them. Do not route a real cohort here without
+        # re-measuring on that cohort's family.
         solver = diffrax.Kvaerno5()
         controller = diffrax.PIDController(rtol=1e-6, atol=1e-8)
     else:

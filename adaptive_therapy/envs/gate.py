@@ -37,21 +37,20 @@ MAX_GROWTH_FACTOR = 1e6  # unbounded blow-up => solver/parameter pathology
 
 # "Fast-transient" proxy: the largest one-step relative jump in burden.
 #
-# MEASURED 2026-09-22, and the result revises PROJECT.md 12's prescription.
-# The flagged Hahnfeldt patients are NOT stiff in the sense that needs an
-# implicit solver -- fixed-step Tsit5 at dt0=0.05 agrees with dt0=0.005 to
-# ~1e-4 relative on every one of them. What they have is a fast early
-# transient (vasculature equilibrating), which an ADAPTIVE controller thrashes
-# on: Kvaerno5 + PIDController exceeds 200k steps and fails on these patients
-# even when they are batched ALONE, while fixed-step solves all 24 in 23.5 ms
-# with finite results.
+# MEASURED 2026-09-22 (RESEARCH_LOG L88), MECHANISM CORRECTED 2026-09-23 (L166).
+# Fixed-step Tsit5 at dt0=0.05 agrees with dt0=0.005 to ~1e-4 relative on the
+# flagged patients, on CPU and GPU alike -- so fixed-step is the default and
+# PROJECT.md 12's "send the stiff bucket to Kvaerno5" is wrong here.
 #
-# So the mitigation is not "bucket the stiff ones off to an implicit solver".
-# It is "fixed-step is the default for this simulator, and this flag marks
-# patients to re-verify against a finer step rather than to re-solve
-# adaptively". The bucketing machinery is kept because a genuinely stiff family
-# may yet appear -- but on current evidence the stiff bucket should be EMPTY,
-# and a non-empty one is a signal to check accuracy, not to switch solvers.
+# L88 attributed Kvaerno5's failure to these patients' fast transient. L166
+# measured that wrong: Kvaerno5+PID succeeds on 0/71 flagged AND 0/129
+# unflagged patients alike (~58% of steps rejected), while ADAPTIVE Tsit5 at the same
+# tolerance solves all 200 in ~600 steps. The failure belongs to Kvaerno5 on
+# this system, not to adaptive stepping and not to this flag.
+#
+# So this flag predicts nothing about solver failure. It marks patients whose
+# burden jumps >10x in one save interval -- worth re-verifying against a finer
+# fixed step. The bucketing seam is kept for a genuinely stiff family.
 FAST_TRANSIENT_REL_JUMP = 10.0
 
 
@@ -148,9 +147,9 @@ def bucket_by_stiffness(
 
     PROJECT.md 12 prescribes sending the second bucket to an implicit solver.
     On measurement that is WRONG for this simulator (see the constant above):
-    the flagged patients are accurate under fixed-step and are the ones that
-    make an adaptive controller fail. Use this split to RE-VERIFY the flagged
-    patients against a finer fixed step, not to switch them to Kvaerno5.
+    the flagged patients are accurate under fixed-step, and Kvaerno5 fails on
+    flagged and unflagged patients alike. Use this split to RE-VERIFY the
+    flagged patients against a finer fixed step, not to switch them to Kvaerno5.
 
     Kept as a seam because a genuinely stiff family may appear later; the key
     is still named `stiff` so call sites do not have to change if it does.

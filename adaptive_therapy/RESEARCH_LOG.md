@@ -162,3 +162,44 @@ regardless of backend. On GPU, also **re-measure the §12 stiffness finding**
 [L88](RESEARCH_LOG.md#L88): it was measured under XLA SIMD vectorisation, which
 is the execution model that warning is about, so it must not be assumed to
 transfer.
+
+## [2026-09-23] — §12 stiffness finding re-measured on GPU: transfers, but L88's mechanism is wrong — Kvaerno5 fails on every patient, adaptive Tsit5 on none
+**Verdict:** OPEN — L88's *decision* (fixed-step default) confirmed on a 2nd backend; its *mechanism* corrected · **Gate:** n-a (solver diagnostic, deterministic; 200 Hahnfeldt LHS, seed 0; no policy) · **Artifacts:** `research/gpu_stiffness.py`, `research/outputs/gpu_stiffness.json`
+
+### Context
+ROADMAP forbade carrying [L88](RESEARCH_LOG.md#L88) to GPU (measured ad hoc,
+CPU-XLA SIMD). PREREG [2026-09-23]; both backends in one process, same patients.
+
+### What was tried
+Registered: (i) fixed-step dt0 0.05 vs 0.005 on the 71 flagged patients; (ii)
+Kvaerno5+PID at L88's 1e-6/1e-8 on the flagged batch; (iii) CPU↔GPU parity.
+Diagnostic: loose tolerance 1e-4/1e-6. **Post hoc (declared AMENDMENT):**
+per-patient success, `throw=False`, Kvaerno5 vs *adaptive* Tsit5, flagged vs bulk.
+
+### Results
+**Registered: all pass — transfers.** (i) 8.9e-5 on both; (ii) Kvaerno5 hits
+max_steps on both; (iii) parity 5.6e-7. (RTX 4090, CUDA 12, float32.)
+
+**Post hoc — L88's mechanism does not survive:**
+
+| solver, tol | flagged ok | bulk ok | rejected |
+|---|---|---|---|
+| Kvaerno5 1e-6 | 0/71 | 0/129 | 58% |
+| Kvaerno5 1e-4 | 46/71 | 69/129 | 59% |
+| Tsit5 adaptive 1e-6 | 71/71 (724 steps) | 129/129 (578) | 13–18% |
+
+1. **Adaptive stepping does not thrash; Kvaerno5 does.** Tsit5+PID at L88's own
+   tolerance solves all 200 in ~600 steps.
+2. **The fast-transient flag does not predict failure** — unflagged patients
+   fail as often, and at 1e-4 *more* often (47% vs 35%).
+3. **Not a float32 floor:** 100× looser tolerance leaves rejection at ~58%.
+   Cause within Kvaerno5 is unidentified; none is claimed.
+
+**GPU is slower here:** fixed-step n=200 rollout 1.10 s GPU vs 0.12 s CPU (9×);
+Kvaerno5 batch 187 s vs 33 s. Small, sequential solves are launch-bound.
+
+### Decision
+Fixed-step stays default on both backends, for the right reason now; `gate.py`
+comment corrected. ROADMAP's "minutes on GPU" is unsupported for rollouts:
+Phase 2's backend is chosen by measured per-update cost, not assumed. **3-patient check preceded the amendment — selection risk
+on the diagnostic only; registered criteria were untouched.**

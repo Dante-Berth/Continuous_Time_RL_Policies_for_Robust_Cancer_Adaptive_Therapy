@@ -186,3 +186,37 @@ parameters (ratio 1.00); ODE-RNN stays at width 64, hidden 16.** Declared before
 any training run, so this is a specification fix, not a selection event: no
 result has been seen. The ODE arm is now the *smaller-width* network, and a win
 for it cannot be attributed to capacity.
+
+## [2026-09-23] — GPU re-measurement of the §12 stiffness finding (L88), paired against CPU in one process
+
+**Hypothesis:** L88's finding (fixed-step accurate on fast-transient Hahnfeldt
+patients; adaptive `Kvaerno5`+PID fails on them) is a property of the ODE and
+the controller, not of CPU-XLA SIMD, so it transfers to GPU. **Rival mechanism,
+tested here:** L88 ran `rtol=1e-6` in **float32** (eps ≈ 1.2e-7); roundoff
+may be what makes the controller thrash, not the patients.
+**Success criteria (finding transfers) — ALL on GPU:** (i) fixed-step
+dt0=0.05 vs dt0=0.005 on the flagged patients, max relative burden error
+≤ 1e-3; (ii) `Kvaerno5`+PID at L88's tolerances (1e-6/1e-8, max_steps 200k)
+fails (exception or non-finite) on the flagged batch alone; (iii) CPU↔GPU
+fixed-step burden parity ≤ 1e-4 max relative.
+**Kill / reversal:** (ii) passes on GPU with results within 1e-3 of fine
+fixed-step ⇒ the finding is backend-specific; log it, fixed-step stays default
+only if also faster. (iii) fails ⇒ backends are not interchangeable: Phase 2
+runs entirely on one backend, and CPU JSONs are never mixed into a GPU comparison.
+**Diagnostic (not a gate):** adaptive at loose tolerance (1e-4/1e-6), both
+backends. Succeeds where 1e-6 fails ⇒ L88's failure is a float32 precision
+floor, and gate.py's comment must be corrected in a new entry (not by editing L88).
+**Cohort:** Hahnfeldt, 200 LHS, seed 0, Phase 1's CFG (dt0=0.05, 53 saves);
+flagged = Phase 1's fast-transient rule. Timing (fixed-step n=200, median of 5,
+post-compile) reported per backend, not gated. No seeds: deterministic solve.
+**Planned artifacts:** `research/gpu_stiffness.py`, `research/outputs/gpu_stiffness.json`.
+
+**AMENDMENT [2026-09-23, AFTER seeing the registered results — selection event,
+declared]:** registered criteria (i)–(iii) all passed, unchanged. A post-run
+3-patient check showed adaptive *explicit* Tsit5+PID solving at L88's tolerances
+in ~500 steps, and Kvaerno5 also failing on an *unflagged* patient — contradicting
+L88's mechanism (fast transient ⇒ adaptive thrash). Added **diagnostic arms, not
+gates**: per-patient success (throw=False) of Kvaerno5 and Tsit5 adaptive at both
+tolerances over ALL kept patients, split flagged vs bulk, CPU only (backend parity
+already passed). Declared post hoc; it may revise L88's *mechanism*, never
+Phase 2's criteria.
