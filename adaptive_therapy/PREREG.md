@@ -234,3 +234,36 @@ criteria, shift multipliers, grid, seeds, width, LR, n, and the estimator
 (median over progressors). **Added secondary:** pooled censoring rate per arm.
 **Run 2 is final.** Its verdict stands whatever it shows; a run 3 is justified
 only by a crash or a non-finite rollout, and would void run 2, never re-grade it.
+
+## [2026-09-23] — Phase 2b STOP-OR-GO: Phase 2 re-registered on a corrected trainer, with a closed-loop validity gate
+
+**Why a new registration.** Phase 2 FAILED as registered ([L275](RESEARCH_LOG.md#L275)) but compared a
+feedback MLP with an open-loop ODE-RNN ([L312](RESEARCH_LOG.md#L312)). Diagnosis ([L353](RESEARCH_LOG.md#L353)): the default-init
+ODE-RNN saturates to a deterministic schedule within ~10 visits *before
+training*; the entropy bonus had zero expected gradient; the ODE critic read a
+stale state; PPO re-sampled actions and left advantages attached. All fixed for
+BOTH arms (trainer: stored-action recurrent PPO, exact entropy, post-observation
+critic; ODE latent-field output init ×0.1). Phase 2's FAIL stands — this is a
+new test, never a re-grade. Written BEFORE the fixed-trainer diagnostic finished.
+**Hypothesis:** unchanged from Phase 2 [2026-09-22].
+**Criteria — ALL must hold:** (0) **validity:** every cell of both arms has
+`observation_dependence` ≥ **0.10** on its Tier-1 test rollouts — if any cell
+fails, the run is a TRAINING FAILURE with no verdict, and the next step is a
+fresh registration with another algorithm (SAC-discrete / recurrent TD3); (1)
+median TTP(ODE) − median TTP(MLP) > 0 with median exposure within ±10%; (2)
+**one-sided** paired Wilcoxon, ODE later than MLP, p < 0.025 — Phase 2's
+two-sided p could be "significant" in MLP's favour; (3) both weights, 3 seeds;
+(4) both arms' median TTP > untreated.
+**Kill:** (1) fails ⇒ STOP, negative result. (2) fails with (1) passing ⇒ null;
+no cohort enlargement.
+**Cohort / search space:** identical to Phase 2 after its amendments (LV,
+Tier-1 ×1.5/×1.5/×0.6 with y0 from shifted K, 200/200, σ=0.05, weekly, 52 visits;
+{MLP, ODE-RNN} × w {0.05, 0.20} × seeds {0,1,2}; 3076 params each; LR 3e-4,
+300 updates, entropy_coef 0.01) — fixed, not tuned.
+**Secondary:** pooled censoring, burden-integral, progressor-only-median caveat.
+**Declared risk:** exposure matching failed in both Phase 2 runs because each arm
+picks its own dose; (1) may fail for reasons unrelated to architecture. Left
+unchanged — relaxing it after Phase 2 would tailor the criterion to the data.
+**Artifacts:** `research/phase2_gate.py`, `research/outputs/phase2b_gate.json`,
+trained policies in `research/outputs/phase2b_policies/`.
+**Honest prior:** a null on Tier 1 remains the expected outcome.

@@ -156,3 +156,91 @@ def test_ppo_compiles_a_fixed_number_of_times_regardless_of_update_count():
     finally:
         mon.unregister_event_duration_listener(count)
     assert compiles[6] == compiles[2]
+
+
+@pytest.mark.parametrize("arch", [MLPPolicy, ODERNNPolicy])
+def test_replaying_the_observed_sequence_reproduces_the_rollout_log_probs(arch):
+    from adaptive_therapy.rl.rollout import replay
+
+    c = sample_cohort("lotka_volterra", 1, seed=0)
+    ep = EpisodeConfig(n_visits=6, model_id="lotka_volterra")
+    pol = arch(jax.random.PRNGKey(0))
+    traj = rollout(
+        pol,
+        jnp.asarray(c.thetas[0]),
+        jnp.asarray(c.y0s[0]),
+        jax.random.PRNGKey(1),
+        ep,
+        RewardConfig(),
+    )
+    logits, values = replay(pol, traj["obs"], ep)
+    logp = jax.nn.log_softmax(logits)[jnp.arange(ep.n_visits), traj["action"]]
+    assert jnp.allclose(logp, traj["logp"], atol=1e-5)
+    assert jnp.allclose(values, traj["value"], atol=1e-5)
+
+
+class _FixedSchedule(eqx.Module):
+    """A policy that ignores its observation: an open-loop schedule."""
+
+    def initial_state(self):
+        return jnp.zeros((1,))
+
+    def __call__(self, obs, state, dt, key=None):
+        return jnp.array([0.0, 2.0, 0.0]) + 0.0 * obs, state + 1.0
+
+    def value(self, obs, state):
+        return jnp.asarray(0.0)
+
+
+def test_an_open_loop_schedule_has_zero_observation_dependence_and_a_policy_does_not():
+    from adaptive_therapy.rl.rollout import observation_dependence
+
+    ep = EpisodeConfig(n_visits=5, model_id="lotka_volterra")
+    obs = jax.random.normal(jax.random.PRNGKey(0), (16, 5))
+    k = jax.random.PRNGKey(1)
+    assert observation_dependence(_FixedSchedule(), obs, ep, k) == 0.0
+    assert observation_dependence(MLPPolicy(jax.random.PRNGKey(2)), obs, ep, k) > 0.0
+
+
+@pytest.mark.parametrize("arch", [MLPPolicy, ODERNNPolicy])
+def test_every_arms_critic_sees_the_current_observation(arch):
+    # 2026-09-23: the ODE-RNN critic read the pre-observation hidden state, so
+    # its value at visit k ignored visit k's measurement; the MLP's did not.
+    from adaptive_therapy.rl.rollout import replay
+
+    ep = EpisodeConfig(n_visits=4, model_id="lotka_volterra")
+    pol = arch(jax.random.PRNGKey(0))
+    obs = jnp.array([0.0, 0.1, -0.2, 0.3])
+    _, v_a = replay(pol, obs, ep)
+    _, v_b = replay(pol, obs.at[-1].set(2.0), ep)
+    assert not jnp.isclose(v_a[-1], v_b[-1])
+
+
+def test_the_entropy_bonus_is_the_exact_policy_entropy_and_pushes_toward_uniform():
+    from adaptive_therapy.rl.ppo import _entropy
+
+    assert jnp.isclose(_entropy(jnp.zeros(3)), jnp.log(3.0))
+    peaked = jnp.array([4.0, 0.0, 0.0])
+    grad = jax.grad(_entropy)(peaked)
+    assert grad[0] < 0 and grad[1] > 0  # ascent flattens the dominant action
+
+
+@pytest.mark.parametrize("arch", [MLPPolicy, ODERNNPolicy])
+def test_an_untrained_policy_is_still_exploring_at_the_end_of_an_episode(arch):
+    # 2026-09-23: the default-init ODE-RNN's latent flow drove h to a saturated
+    # fixed point, so it was deterministic (entropy 0.00) by visit 51 before
+    # any training -- an open-loop schedule PPO never escaped.
+    from adaptive_therapy.rl.rollout import replay
+
+    c = sample_cohort("lotka_volterra", 8, seed=0)
+    ep = EpisodeConfig(model_id="lotka_volterra")  # the full 52 visits
+    keys = jax.random.split(jax.random.PRNGKey(1), 8)
+    for s in range(3):
+        pol = arch(jax.random.PRNGKey(s))
+        traj = jax.vmap(lambda t, y, k: rollout(pol, t, y, k, ep, RewardConfig()))(
+            jnp.asarray(c.thetas), jnp.asarray(c.y0s), keys
+        )
+        logits = jax.vmap(lambda o: replay(pol, o, ep)[0])(traj["obs"])
+        p = jax.nn.softmax(logits[:, -1], axis=-1)
+        entropy = -(p * jnp.log(p)).sum(-1).mean()
+        assert entropy > 0.9, f"seed {s}: entropy {entropy:.3f} at the last visit"

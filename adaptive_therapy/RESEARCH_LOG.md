@@ -349,3 +349,41 @@ learn a feedback policy on LV*; the architecture question is **untested, not
 answered**. This matches the registration's own intent ("an arm that does not
 beat untreated is not a policy … a training bug"). Any fix is a NEW
 registration, diagnosing the collapse first. Save trained policies from now on.
+
+## [2026-09-23] — Why the ODE-RNN went open-loop: default init saturates it to a fixed schedule within ~10 visits before training, and the entropy bonus had zero gradient; both fixed
+**Verdict:** OPEN — diagnosis + trainer fix, not a comparison; enables Phase 2b · **Gate:** n-a (diagnostic, not pre-registered; no TTP computed by design; 2 cells × 2 arms) · **Artifacts:** `research/phase2_diagnose.py`, `research/outputs/phase2_diagnose_{old,fixed}_trainer.json`
+
+### Context
+[L312](RESEARCH_LOG.md#L312): the ODE-RNN arm was open-loop in 4/6 Phase 2 cells.
+Candidates from code reading: stale ODE critic, zero-gradient entropy proxy,
+re-sampled actions in the loss, un-detached advantages.
+
+### What was tried
+New `replay()` and `observation_dependence()` (0 = open-loop), tested. Both arms
+retrained on cells (w0.05,s0) and (w0.20,s1) at 0/10/30/100/300 updates;
+entropy (max 1.10) and dependence on Tier-1 test rollouts. Then init variants.
+
+### Results
+**Old trainer:** MLP entropy 1.05 → 0.93, dependence 0.02 → **0.23–0.25**.
+ODE-RNN entropy **0.24–0.26 at update 0** → 0.07–0.24, dependence **≤0.004 → 0.000–0.003**.
+
+**The ODE-RNN is collapsed before training.** Untrained, its entropy is 1.07 at
+visit 0 and **0.00 by visit 51**: each 7-day latent flow (norm 4.2 from h=0;
+10.3 over 14 d) drives h to a saturated fixed point, and a ±1 observation moves
+action probabilities by only 0.02–0.04. The MLP holds 1.08 at every visit.
+Scaling the latent field's output layer ×0.1 keeps it at 1.06–1.08 (×0.01
+same; ×0.1 kept because gap-length dependence survives at init). No TTP seen.
+
+**Fixes, both arms:** stored-action recurrent PPO (loss replays stored obs;
+advantages/returns detached); exact entropy; critic reads the post-observation
+state; ODE field output init ×0.1 (params still 3076). Each has a test that
+fails on the old code.
+
+**Fixed trainer:** MLP unchanged in kind (dependence 0.24–0.25). ODE-RNN starts
+at entropy 1.10 and ends **closed-loop: 0.229 and 0.107** — the second dipped to
+0.006 at update 100 before recovering, so the 0.10 threshold is not safe.
+
+### Decision
+Phase 2b registered in PREREG *before* the fixed-trainer numbers existed, with
+closed-loop ≥0.10 per cell as criterion (0): an open-loop cell voids the run as a
+training failure. Run it unchanged. Phase 2's FAIL is not re-graded.

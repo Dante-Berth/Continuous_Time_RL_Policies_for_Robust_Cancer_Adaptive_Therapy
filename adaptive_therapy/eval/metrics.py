@@ -197,12 +197,16 @@ def burden_integral(burden: np.ndarray, ts: np.ndarray) -> np.ndarray:
     return np.trapezoid(burden, x=np.asarray(ts, dtype=float), axis=1)
 
 
-def paired_wilcoxon(a: np.ndarray, b: np.ndarray) -> dict:
+def paired_wilcoxon(a: np.ndarray, b: np.ndarray, alternative: str = "two-sided") -> dict:
     """Paired Wilcoxon signed-rank across MATCHED virtual patients.
 
     PROJECT.md 10: not a t-test. Patients are matched by construction (same
     theta, different policy), the differences are not normal, and the absence
     of this test is an instant reviewer flag.
+
+    `alternative="greater"` tests a > b. 2026-09-23: Phase 2 used two-sided p
+    alone, which is "significant" whichever arm wins -- a gate asking whether
+    ODE beats MLP must test that direction (PREREG Phase 2b).
     """
     a = np.asarray(a, dtype=float)
     b = np.asarray(b, dtype=float)
@@ -220,7 +224,7 @@ def paired_wilcoxon(a: np.ndarray, b: np.ndarray) -> dict:
             "median_difference": 0.0,
         }
 
-    res = stats.wilcoxon(a, b, zero_method="wilcox", alternative="two-sided")
+    res = stats.wilcoxon(a, b, zero_method="wilcox", alternative=alternative)
     return {
         "statistic": float(res.statistic),
         "p_value": float(res.pvalue),

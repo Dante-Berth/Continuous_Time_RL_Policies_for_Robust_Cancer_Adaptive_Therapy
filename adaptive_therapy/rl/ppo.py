@@ -19,7 +19,7 @@ import jax.numpy as jnp
 import optax
 
 from adaptive_therapy.envs.reward import RewardConfig
-from adaptive_therapy.rl.rollout import EpisodeConfig, rollout
+from adaptive_therapy.rl.rollout import EpisodeConfig, replay, rollout
 
 
 @dataclass(frozen=True)
@@ -57,6 +57,17 @@ def _gae(rewards, values, cfg: PPOConfig):
     return advs
 
 
+def _entropy(logits):
+    """Exact entropy of a categorical policy, from its logits.
+
+    2026-09-23: replaced a "-logp of the sampled action" proxy. Its expected
+    gradient under on-policy sampling is exactly zero (E[grad log pi] = 0), so
+    the old bonus never opposed collapse -- and Phase 2's ODE-RNN arm collapsed
+    onto open-loop schedules (RESEARCH_LOG L312).
+    """
+    return -(jax.nn.softmax(logits) * jax.nn.log_softmax(logits)).sum(-1)
+
+
 def _batch_rollout(policy, thetas, y0s, key, ep, rw, greedy=False):
     keys = jax.random.split(key, thetas.shape[0])
     return jax.vmap(lambda th, y, k: rollout(policy, th, y, k, ep, rw, greedy=greedy))(
@@ -73,7 +84,16 @@ def train(
     ep: EpisodeConfig | None = None,
     rw: RewardConfig | None = None,
 ):
-    """Train `policy` on a cohort. Returns (trained_policy, history)."""
+    """Train `policy` on a cohort. Returns (trained_policy, history).
+
+    Standard recurrent PPO, rewritten 2026-09-23 after Phase 2 (L312). The
+    previous loop (a) re-simulated inside the loss and RE-SAMPLED actions with
+    the new parameters, so the ratio could compare two different actions; (b)
+    left advantages and returns attached to the graph, so the policy loss also
+    moved the critic; (c) used a zero-expected-gradient entropy proxy. Now:
+    actions, observations, advantages and returns are fixed per update from
+    one collection rollout, and the loss replays the stored observations.
+    """
     cfg = cfg or PPOConfig()
     ep = ep or EpisodeConfig()
     rw = rw or RewardConfig()
@@ -85,57 +105,57 @@ def train(
     opt_state = opt.init(eqx.filter(policy, eqx.is_array))
     n = thetas.shape[0]
 
-    def loss_fn(pol, batch):
-        traj = _batch_rollout(pol, batch["theta"], batch["y0"], batch["key"], ep, rw)
-        r = traj["reward"] * cfg.reward_scale
+    # Jitted ONCE per train() call. 2026-09-23: called eagerly, the collection
+    # rollout recompiled on every update (rollout() builds a fresh scan body
+    # each call): ~270 JIT memory mappings per update crossed the kernel's
+    # vm.max_map_count=65530 near update 240 -- the LLVM crash of L128/L207.
+    @eqx.filter_jit
+    def collect(pol, theta, y0, k):
+        traj = _batch_rollout(pol, theta, y0, k, ep, rw)
         v = traj["value"]
-
-        adv = jax.vmap(lambda rr, vv: _gae(rr, vv, cfg))(r, v)
+        adv = jax.vmap(lambda rr, vv: _gae(rr, vv, cfg))(traj["reward"] * cfg.reward_scale, v)
         ret = adv + v
-        adv = (adv - adv.mean()) / (adv.std() + 1e-8)
+        batch = {
+            "obs": traj["obs"],
+            "action": traj["action"],
+            "old_logp": traj["logp"],
+            "adv": (adv - adv.mean()) / (adv.std() + 1e-8),
+            "ret": ret,
+        }
+        return jax.lax.stop_gradient(batch), traj
 
-        ratio = jnp.exp(traj["logp"] - batch["old_logp"])
+    def loss_fn(pol, batch):
+        logits, v = jax.vmap(lambda o: replay(pol, o, ep))(batch["obs"])
+        logp_all = jax.nn.log_softmax(logits)
+        logp = jnp.take_along_axis(logp_all, batch["action"][..., None], axis=-1)[..., 0]
+        ratio = jnp.exp(logp - batch["old_logp"])
+        adv = batch["adv"]
         pg = -jnp.minimum(ratio * adv, jnp.clip(ratio, 1 - cfg.clip, 1 + cfg.clip) * adv).mean()
-        vloss = ((v - ret) ** 2).mean()
-        # Entropy from the realised log-probs: a cheap proxy that needs no
-        # second forward pass, and enough to stop premature collapse onto a
-        # single dose -- which is the failure mode here, since constant max
-        # dosing is a strong TTP attractor.
-        ent = -traj["logp"].mean()
-        return pg + cfg.value_coef * vloss - cfg.entropy_coef * ent
+        vloss = ((v - batch["ret"]) ** 2).mean()
+        ent = _entropy(logits).mean()
+        return pg + cfg.value_coef * vloss - cfg.entropy_coef * ent, ent
 
     @eqx.filter_jit
     def update(pol, opt_state, batch):
-        loss, grads = eqx.filter_value_and_grad(loss_fn)(pol, batch)
+        (loss, ent), grads = eqx.filter_value_and_grad(loss_fn, has_aux=True)(pol, batch)
         updates, opt_state = opt.update(grads, opt_state, eqx.filter(pol, eqx.is_array))
-        return eqx.apply_updates(pol, updates), opt_state, loss
-
-    # Jitted ONCE per train() call. 2026-09-23: called eagerly, this rollout
-    # recompiled on every update (rollout() builds a fresh scan body each call,
-    # so the cache never hits): +1 compile and ~270 JIT memory mappings per
-    # update, which crossed the kernel's vm.max_map_count=65530 around update
-    # 240 -- the "LLVM ERROR: Unable to allocate section memory" of L128.
-    @eqx.filter_jit
-    def collect(pol, theta, y0, k):
-        return _batch_rollout(pol, theta, y0, k, ep, rw)
+        return eqx.apply_updates(pol, updates), opt_state, loss, ent
 
     history = []
     for it in range(cfg.n_updates):
         key, k_sel, k_roll = jax.random.split(key, 3)
         idx = jax.random.choice(k_sel, n, (min(cfg.batch_patients, n),), replace=False)
-        batch = {"theta": thetas[idx], "y0": y0s[idx], "key": k_roll}
-
-        old = collect(policy, batch["theta"], batch["y0"], k_roll)
-        batch["old_logp"] = jax.lax.stop_gradient(old["logp"])
+        batch, old = collect(policy, thetas[idx], y0s[idx], k_roll)
 
         for _ in range(cfg.n_epochs):
-            policy, opt_state, loss = update(policy, opt_state, batch)
+            policy, opt_state, loss, ent = update(policy, opt_state, batch)
 
         if it % 25 == 0 or it == cfg.n_updates - 1:
             history.append(
                 {
                     "update": it,
                     "loss": float(loss),
+                    "entropy": float(ent),
                     "mean_reward": float(old["reward"].sum(axis=1).mean()),
                     "mean_dose": float(old["dose"].mean()),
                 }
@@ -153,4 +173,5 @@ def evaluate(policy, thetas, y0s, key, ep=None, rw=None, greedy: bool = True):
         "burden": jnp.asarray(traj["burden"]),
         "dose": jnp.asarray(traj["dose"]),
         "reward": jnp.asarray(traj["reward"]),
+        "obs": jnp.asarray(traj["obs"]),
     }

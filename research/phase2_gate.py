@@ -1,6 +1,8 @@
 """Phase 2 STOP-OR-GO gate: continuous-time vs discrete on LV, Tier-1 shift.
 
-PRE-REGISTERED in adaptive_therapy/PREREG.md [2026-09-22] + AMENDMENT.
+PRE-REGISTERED in adaptive_therapy/PREREG.md [2026-09-22] + AMENDMENTs (Phase 2),
+re-registered as Phase 2b [2026-09-23]: corrected trainer, closed-loop validity
+gate (0), one-sided Wilcoxon. Outputs are prefixed by PHASE so runs never mix.
 
   GATE (all must hold):
     1. median TTP(ODE) - median TTP(MLP) > 0 at MATCHED exposure (within 10%)
@@ -60,6 +62,7 @@ import sys
 import time
 from pathlib import Path
 
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -77,9 +80,11 @@ from adaptive_therapy.eval.metrics import (
 from adaptive_therapy.policies.mlp import MLPPolicy
 from adaptive_therapy.policies.ode_rnn import ODERNNPolicy
 from adaptive_therapy.rl.ppo import PPOConfig, evaluate, train
-from adaptive_therapy.rl.rollout import EpisodeConfig
+from adaptive_therapy.rl.rollout import EpisodeConfig, observation_dependence
 
 OUT = Path(__file__).resolve().parent / "outputs"
+PHASE = "phase2b"  # output prefix; Phase 2's run-2 artifacts stay as phase2_*
+CLOSED_LOOP_MIN = 0.10  # PREREG Phase 2b criterion (0), fixed before the run
 FAM = "lotka_volterra"
 N_TRAIN = 200
 N_TEST = 200
@@ -149,7 +154,11 @@ def run_one(arch_name, weight, seed):
 
     ttp = ttp_running_nadir(burden, TS)
     med, q1, q3 = ttp.median_iqr()
+    pol_dir = OUT / f"{PHASE}_policies"
+    pol_dir.mkdir(parents=True, exist_ok=True)
+    eqx.tree_serialise_leaves(pol_dir / f"{arch_name}_w{weight}_s{seed}.eqx", policy)
     return {
+        "observation_dependence": observation_dependence(policy, ev["obs"], EP, k_eval),
         "arch": arch_name,
         "backend": jax.default_backend(),
         "exposure_weight": weight,
@@ -178,7 +187,7 @@ def _run_worker() -> int:
     alone never fixed it -- but it bounds any per-process growth, and is kept.
     """
     arch, weight, seed = sys.argv[2], float(sys.argv[3]), int(sys.argv[4])
-    shard = OUT / "phase2_shards" / f"{arch}_w{weight}_s{seed}.json"
+    shard = OUT / f"{PHASE}_shards" / f"{arch}_w{weight}_s{seed}.json"
     shard.parent.mkdir(parents=True, exist_ok=True)
     shard.write_text(json.dumps(run_one(arch, weight, seed)))
     return 0
@@ -186,7 +195,7 @@ def _run_worker() -> int:
 
 def _spawn(arch, weight, seed) -> dict:
     """Run one cell in a subprocess and read back its shard."""
-    shard = OUT / "phase2_shards" / f"{arch}_w{weight}_s{seed}.json"
+    shard = OUT / f"{PHASE}_shards" / f"{arch}_w{weight}_s{seed}.json"
     if shard.exists():  # resume: a completed cell is never recomputed
         r = json.loads(shard.read_text())
         # ...unless it came from the other backend: CPU and GPU float32 histories
@@ -233,7 +242,8 @@ def main() -> int:
                 print(
                     f"  w={w:<5.2f} {arch:8s} seed {s}: TTP {r['ttp_median']:6.1f} d "
                     f"exposure {r['exposure_median']:6.1f} "
-                    f"dose {r['mean_dose']:.2f} ({r['train_seconds']:.0f}s)"
+                    f"dose {r['mean_dose']:.2f} closed-loop {r['observation_dependence']:.3f} "
+                    f"({r['train_seconds']:.0f}s)"
                 )
 
     # --- the gate ----------------------------------------------------------
@@ -252,7 +262,7 @@ def main() -> int:
         # Paired across patients, pooling seeds (same theta per seed index).
         a = np.concatenate([np.array(o["ttp_per_patient"]) for o in ode])
         b = np.concatenate([np.array(m["ttp_per_patient"]) for m in mlp])
-        w_test = paired_wilcoxon(a, b)
+        w_test = paired_wilcoxon(a, b, alternative="greater")  # ODE later than MLP
 
         beats_untreated = (
             np.median([o["ttp_median"] for o in ode]) > unt_med
@@ -271,23 +281,37 @@ def main() -> int:
             "censoring_mlp": float(np.mean(np.concatenate([m["ttp_censored"] for m in mlp]))),
             "censoring_ode": float(np.mean(np.concatenate([o["ttp_censored"] for o in ode]))),
             "criterion_1_ode_beats_mlp": bool(d_ttp > 0),
-            "criterion_2_significant": bool(w_test["p_value"] < 0.05),
+            "criterion_2_significant": bool(w_test["p_value"] < 0.025),
+            "pairs_ode_later": int((a > b).sum()),
+            "pairs_ode_earlier": int((a < b).sum()),
         }
 
     # Criterion 1 is "ODE > MLP AT MATCHED EXPOSURE". Run 1's version of this
     # line omitted the match, so a TTP win bought with 3x the drug could have
     # printed PASS (2026-09-23; run 1 failed on TTP anyway).
-    passed = all(
+    closed_loop = {
+        f"{r['arch']}_w{r['exposure_weight']}_s{r['seed']}": r["observation_dependence"]
+        for r in runs
+    }
+    valid = all(v >= CLOSED_LOOP_MIN for v in closed_loop.values())
+    passed = valid and all(
         v["criterion_1_ode_beats_mlp"]
         and v["exposure_matched_within_10pct"]
         and v["criterion_2_significant"]
         and v["both_beat_untreated"]
         for v in verdicts.values()
     )
-    verdict = "PASS — proceed to Phase 3" if passed else "FAIL — STOP, write the negative result"
+    if not valid:
+        verdict = "INVALID — an arm is open-loop: training failure, no comparison"
+    elif passed:
+        verdict = "PASS — proceed to Phase 3"
+    else:
+        verdict = "FAIL — STOP, write the negative result"
 
     result = {
-        "prereg": "adaptive_therapy/PREREG.md [2026-09-22] + AMENDMENT",
+        "prereg": "adaptive_therapy/PREREG.md Phase 2b [2026-09-23]",
+        "closed_loop_min": CLOSED_LOOP_MIN,
+        "observation_dependence": closed_loop,
         "backend": jax.default_backend(),
         "verdict": verdict,
         "untreated_control_ttp": unt_med,
@@ -295,7 +319,7 @@ def main() -> int:
         "per_weight": verdicts,
         "runs": runs,
     }
-    (OUT / "phase2_gate.json").write_text(json.dumps(result, indent=2))
+    (OUT / f"{PHASE}_gate.json").write_text(json.dumps(result, indent=2))
 
     print("-" * 74)
     for w, v in verdicts.items():
@@ -303,11 +327,16 @@ def main() -> int:
             f"  w={w}: dTTP {v['delta_ttp_median']:+7.1f} d  "
             f"exposure {v['exposure_ode']:.0f} vs {v['exposure_mlp']:.0f} "
             f"(matched={v['exposure_matched_within_10pct']})  "
-            f"p={v['wilcoxon']['p_value']:.4f}  "
+            f"p(ODE later)={v['wilcoxon']['p_value']:.4f}  "
+            f"pairs later/earlier {v['pairs_ode_later']}/{v['pairs_ode_earlier']}  "
             f"censored ode {v['censoring_ode']:.0%} mlp {v['censoring_mlp']:.0%}"
         )
     print(f"  VERDICT: {verdict}")
-    print(f"  -> {OUT / 'phase2_gate.json'}")
+    print(
+        f"  closed-loop (min {CLOSED_LOOP_MIN}): "
+        + ", ".join(f"{k} {v:.2f}" for k, v in closed_loop.items())
+    )
+    print(f"  -> {OUT / f'{PHASE}_gate.json'}")
     print("=" * 74)
     return 0
 

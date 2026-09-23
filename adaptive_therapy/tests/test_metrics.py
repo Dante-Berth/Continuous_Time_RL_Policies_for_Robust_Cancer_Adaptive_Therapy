@@ -197,3 +197,12 @@ def test_summarise_reports_every_required_endpoint():
     ):
         assert key in out, f"missing required endpoint: {key}"
     assert out["ttp_rule"] == "running_nadir"
+
+
+def test_a_one_sided_wilcoxon_rejects_only_in_the_stated_direction():
+    rng = np.random.default_rng(0)
+    b = rng.normal(100.0, 10.0, 60)
+    worse = b - 5.0 - rng.normal(0.0, 1.0, 60)
+    assert paired_wilcoxon(worse, b)["p_value"] < 0.05  # two-sided: "significant"
+    assert paired_wilcoxon(worse, b, alternative="greater")["p_value"] > 0.5
+    assert paired_wilcoxon(b, worse, alternative="greater")["p_value"] < 0.025

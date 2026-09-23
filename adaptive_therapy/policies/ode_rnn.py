@@ -43,10 +43,16 @@ class ODERNNPolicy(eqx.Module):
         # inside a training loop the same failure would appear as a mysterious
         # NaN thousands of updates in.
         self.max_steps = 64
-        self.vf = [
-            eqx.nn.Linear(hidden, width, key=k1),
-            eqx.nn.Linear(width, hidden, key=k2),
-        ]
+        # The latent field's output layer starts at 0.1x default scale.
+        # 2026-09-23 (RESEARCH_LOG L312 + diagnosis): at default init, each
+        # 7-day flow pushed h toward a saturated fixed point, so an UNTRAINED
+        # policy's entropy fell from 1.07 at visit 0 to 0.00 by visit 51 -- an
+        # open-loop, deterministic schedule before any learning, which PPO then
+        # never escaped. At 0.1x it stays at 1.06-1.08 over all 52 visits, like
+        # the MLP. Parameter count is unchanged (3076).
+        out = eqx.nn.Linear(width, hidden, key=k2)
+        out = eqx.tree_at(lambda m: (m.weight, m.bias), out, (out.weight * 0.1, out.bias * 0.1))
+        self.vf = [eqx.nn.Linear(hidden, width, key=k1), out]
         self.cell = eqx.nn.GRUCell(1, hidden, key=k3)
         self.head = eqx.nn.Linear(hidden, N_ACTIONS, key=k4)
         self.critic = eqx.nn.Linear(hidden, 1, key=k5)
