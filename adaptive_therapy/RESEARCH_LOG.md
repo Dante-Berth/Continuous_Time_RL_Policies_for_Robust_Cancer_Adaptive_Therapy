@@ -308,3 +308,44 @@ Per-seed TTP (d) at exposure — **w=0.05** MLP 49/70/49 @ 256/278/178; ODE
 curriculum cannot rescue an architecture that loses the clean case. Planned
 artifact `phase2_gate.png` not produced. Program direction (CLOSED.md item,
 ROADMAP strikes, Tier-4 as a *new* registration) is left to the owner.
+
+## [2026-09-23] — Phase 2 reinterpreted: the ODE-RNN arm learned an open-loop schedule in 4/6 cells, so the gate compared feedback vs none, not discrete vs continuous
+**Verdict:** OPEN — narrows [L275](RESEARCH_LOG.md#L275)'s CLOSED claim; gate stays FAILED as registered, NOT re-graded · **Gate:** n-a (post-hoc read of run 2's artifact; no new run) · **Artifacts:** `research/outputs/phase2_gate.json` (`exposure_per_patient`)
+
+### Context
+Owner asked why a continuous-time policy would lose on robustness. The
+exposure 178.5 recurred in 5 of 12 cells across both arms and several seeds —
+a sign of a policy whose dosing does not depend on the patient.
+
+### What was tried
+Per cell, the spread of per-patient cumulative exposure over the 200 Tier-1
+test patients. A closed-loop policy doses each patient by their own burden, so
+exposure varies; an observation-independent policy gives every patient one number.
+
+### Results
+| arm | exposure across 200 patients | identical |
+|---|---|---|
+| MLP, 6/6 cells | spans ~0–357 in every cell | 9–22% |
+| ODE-RNN w0.05 s0 / s2 | 178.5 / 353.5 | **100% / 100%** |
+| ODE-RNN w0.20 s0 / s1 | 176.8 / 178.5 | **100% / 100%** |
+| ODE-RNN w0.20 s2 / w0.05 s1 | 280–284 / 292–313 | 91% / 32% (narrow) |
+
+**4 of 6 ODE-RNN cells ignore the observation entirely** — one dosing schedule
+for every patient — and the other 2 nearly do. Every MLP cell is closed-loop.
+Phase 2 therefore measured *feedback vs a fixed schedule*; that the feedback
+arm is more robust to a Tier-1 shift is expected and says nothing about
+continuous time. Evidence is exposure identity only — policies were not saved,
+so the dose sequences themselves cannot be inspected.
+
+Cause **not established.** Candidates, each testable: PPO at the fixed LR/300
+updates never gets gradient through obs → hidden → action; the ODE hidden state
+tracks the regular 7-d clock rather than burden; entropy bonus too weak to stop
+early collapse (ppo.py names constant dosing as the failure it guards against).
+
+### Decision
+L275 stands as the registered outcome: **FAIL, no re-grade.** Its CLOSED claim
+is narrowed to what was shown: *this ODE-RNN under this PPO budget does not
+learn a feedback policy on LV*; the architecture question is **untested, not
+answered**. This matches the registration's own intent ("an arm that does not
+beat untreated is not a policy … a training bug"). Any fix is a NEW
+registration, diagnosing the collapse first. Save trained policies from now on.

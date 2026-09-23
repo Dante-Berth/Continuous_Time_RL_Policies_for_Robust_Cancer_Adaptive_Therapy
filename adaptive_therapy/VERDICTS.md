@@ -29,7 +29,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## CLOSED — do not re-litigate
 
-- **Phase 2 FAILED: no continuous-time edge on LV under Tier-1 at matched exposure** — exposure never matched (+20% / −19%); ODE-RNN progresses earlier in 227 and 234 paired patients vs 48 and 11 later (p=3.7e-18, 1.0e-36); its +150 d median at w=0.05 is a progressor-only artifact; lower burden-integral than MLP at both weights. Do not re-run with wider nets, more steps, tuned LR, a curriculum or a third architecture → [L275](RESEARCH_LOG.md#L275)
+- **Phase 2 FAILED as registered — but it tested feedback vs a fixed schedule, not discrete vs continuous** — the ODE-RNN arm gave all 200 patients one identical exposure in 4/6 cells (open-loop); every MLP cell was closed-loop and won the paired test (227 and 234 patients earlier progression for ODE, p=3.7e-18, 1.0e-36). Closed: *this ODE-RNN under this PPO budget does not learn a feedback policy on LV*. The architecture question is UNTESTED; a fix is a new registration that diagnoses the collapse first, never a re-grade → [L275](RESEARCH_LOG.md#L275), [L312](RESEARCH_LOG.md#L312)
 
 ## Standing constraints (inherited from the spec, not re-derivable here)
 
