@@ -1,6 +1,7 @@
 # ROADMAP — continuous-time RL for adaptive therapy
 
-**Created:** 2026-09-22
+**Created:** 2026-09-22 · **Revised:** 2026-09-23 — Phase 2 failed; the publication
+track below is what follows from it.
 **Scope:** an honest test of whether a *continuous-time* policy schedules
 treatment more robustly under biological distribution shift than a *discrete*
 one, inside mechanistic tumour ODEs, observing only total burden. Not a clinical
@@ -36,9 +37,38 @@ not rescue it. That is Phase 2, and it is a stop-or-go gate, not a milestone.
 
 ---
 
+## What Phase 2 changed
+
+Phase 2's stop-or-go gate **failed as registered on a valid run** ([L424](adaptive_therapy/RESEARCH_LOG.md#L424)):
+under a Tier-1 parameter shift the ODE-RNN progresses earlier than a memoryless
+MLP, and the paired direction favoured the MLP in all four Phase-2 runs under two
+trainers (PPO [L275](adaptive_therapy/RESEARCH_LOG.md#L275), [L312](adaptive_therapy/RESEARCH_LOG.md#L312); PQN [L424](adaptive_therapy/RESEARCH_LOG.md#L424)). The kill clause fires: the
+multi-mechanism curriculum is not built. Program-level record: [CLOSED.md #1](CLOSED.md).
+
+What survives is a narrower, better-posed paper. Reaching one valid comparison
+also exposed four ways this kind of evaluation misleads — open-loop collapse,
+the progressor-only median, TTP bought with dose, and a mis-built shifted cohort
+(traps 4–6 below). Each was caught here with evidence and becomes a section of
+the write-up.
+
+**The paper this track produces.** Target: an ICLR 2027 workshop (deadlines
+~Jan–Feb 2027 per [PROJECT.md §14](PROJECT.md), unverified). NeurIPS 2026
+workshop deadlines (~29 Aug) have passed.
+
+> *Under distribution shift, does an adaptive-therapy policy need memory, or
+> continuous time?* Pre-registered answer so far: not under a parameter shift
+> (Tier 1). Irregular observation (Tier 4) — where continuous time has a
+> mechanical reason to help — decides whether the answer is "never here" or
+> "only there". **Both outcomes are the paper.**
+
+Still [PROJECT.md §16](PROJECT.md)'s Q2 + Q4 spine; what changed is that the
+Tier-1 result is a negative, and the baseline that won is the simplest one.
+
+---
+
 ## Phases
 
-### Phase 0 — identifiability + separability gate (½–1 d)
+### Phase 0 — identifiability + separability gate (½–1 d) — *passed:* [L48](adaptive_therapy/RESEARCH_LOG.md#L48)
 
 Structural/practical identifiability of each family against the **scalar burden
 observable**, plus a trajectory-collision diagnostic.
@@ -57,13 +87,16 @@ needs that guarantee.
 reframed *before* any encoder is written. → identifiability report + separability
 plot.
 
-### Phase 1 — simulator (1–1.5 d)
+### Phase 1 — simulator (1–1.5 d) — *done:* [L88](adaptive_therapy/RESEARCH_LOG.md#L88); GPU re-check [L166](adaptive_therapy/RESEARCH_LOG.md#L166)
 
 Three families in `diffrax` + minimal PK + reward. LHS sampling over per-family
 ranges, untreated sanity gate, rejection log. `vmap`/`jit` batched rollout with
 stiffness bucketing. → per-family untreated-trajectory plots.
 
-### Phase 2 — falsifiable core (1–2 d) ← **STOP-OR-GO GATE**
+### Phase 2 — falsifiable core (1–2 d) ← **STOP-OR-GO GATE** — *FAILED:* [L424](adaptive_therapy/RESEARCH_LOG.md#L424)
+
+Runs: void cohort [L242](adaptive_therapy/RESEARCH_LOG.md#L242); PPO, ODE arm open-loop [L275](adaptive_therapy/RESEARCH_LOG.md#L275)/[L312](adaptive_therapy/RESEARCH_LOG.md#L312); PPO fixed,
+invalid [L391](adaptive_therapy/RESEARCH_LOG.md#L391); PQN, first valid run, fail [L424](adaptive_therapy/RESEARCH_LOG.md#L424).
 
 One family. Discrete MLP vs. Neural-ODE. One clean Tier-1 shift. Full §10
 metrics + paired Wilcoxon, multi-seed.
@@ -71,46 +104,125 @@ metrics + paired Wilcoxon, multi-seed.
 **If continuous-time shows no edge on the simple clean case, write the negative
 result and stop.** → one honest comparison figure.
 
-### Phase 3 — multi-ODE + architecture 2×2 (1–2 d)
+### ~~Phase 3 — multi-ODE + architecture 2×2 (1–2 d)~~ — killed by Phase 2's kill criterion ([L424](adaptive_therapy/RESEARCH_LOG.md#L424))
 
-All three families; architecture × curriculum as a strict 2×2; MoE K=1 vs K=3.
-→ 2×2 table + cluster purity.
+### ~~Phase 4 — robustness tiers (1 d)~~ — re-scoped into W3–W5 below
 
-### Phase 4 — robustness tiers (1 d)
+Tiers 0/1/4 continue as W3–W4, Tier 2 as W5; Tier 3 is deferred.
 
-Tiers 0–4 including correlated multi-parameter drift and within-episode drift.
-→ the main robustness figure.
+### ~~Phase 5 — biology question (0.5–1 d)~~ — moved to Stage 2 (runway, not merit)
 
-### Phase 5 — biology question (0.5–1 d)
+### ~~Phase 6 — write-up (ongoing)~~ — replaced by W6
 
-Q1 frequency sweep across all three families. → frequency-vs-TTP-per-mechanism.
+---
 
-### Phase 6 — write-up (ongoing)
+## Publication track — W-phases (2026-09-23)
 
-Treatment-holiday schedules, trajectories, dose timelines, latent-space plots.
+Every W-phase that produces a comparison is registered in
+[PREREG.md](adaptive_therapy/PREREG.md) before its run. All use **PQN** — the only
+trainer that produced valid closed-loop arms ([L424](adaptive_therapy/RESEARCH_LOG.md#L424)) — plus the closed-loop
+validity gate (≥ 0.10 per cell), the capped TTP median, and the one-sided paired
+Wilcoxon.
+
+### W1 — Diagnose the Tier-1 loss (≈ 1 h; a diagnostic, not a verdict)
+
+On the 12 saved Phase-2c policies, with no retraining:
+- **Tier 0** (in-range test patients). ODE-RNN ≈ MLP in-distribution but worse
+  under shift ⇒ its learned internal model *hurts* robustness. Worse in both ⇒ a
+  training/capacity gap. This decides the paper's wording, never a criterion.
+- **Dose vs burden** for the MLP: is it a threshold rule, the structure of
+  clinical adaptive therapy?
+- Read **arXiv 2605.02552** and **Gallagher 2024** to 1°. They are the two
+  occupied lanes, and the framing contrasts with the first ("recurrence helps
+  under partial observability"), which the literature rule forbids until read.
+
+### W2 — Exposure frontier instead of a ±10% match (≈ ½ d build)
+
+The ±10% median-exposure match held in 1 of 8 Phase-2 comparisons: each arm picks
+its own dose, so matching was luck. Replace it with a declared sweep of exposure
+weights `w`, and compare arms on their **TTP-vs-exposure frontiers** over the
+exposure range both reach. The exact rule is fixed in W3's prereg before any
+sweep runs. This is also [CLOSED.md #1](CLOSED.md)'s reserved re-open condition.
+
+### W3 — Memory vs continuous time, Tiers 0 and 1 (≈ 1 d; registered)
+
+Add the spec's arm (b), **LSTM**, Q-path parameter-matched (~3090) with the same
+LayerNorm readout. Grid: {MLP, LSTM, ODE-RNN} × `w`-sweep × 3 seeds, each trained
+policy evaluated on Tier 0 and Tier 1. MLP vs LSTM isolates **memory**; **LSTM vs
+ODE-RNN isolates continuous time** — the comparison Phase 2 could not make.
+An arm that fails the closed-loop gate is reported as a trainability result,
+never dropped. Compute ≈ 1 h on CPU (PQN: ~20 s per MLP cell, ~130 s per ODE cell).
+
+### W4 — Irregular observation: the decisive test (≈ 1–2 d; registered)
+
+Build: per-visit gaps in `EpisodeConfig`/`rollout` (the policy signature already
+takes `dt`; the TTP rule already works in days). What a missed visit means for
+dosing — e.g. the last chosen dose continues until the next observed visit — is
+fixed **in the prereg**, before any run.
+
+Design: train on regular weekly visits; test with 20% and 50% of visits dropped
+(the spec's Tier 4). Arms: MLP, LSTM, **LSTM + Δt input** — the standard strong
+discrete baseline for irregular series; without it a win is against a strawman —
+and ODE-RNN.
+- ODE-RNN above the best discrete arm on the frontier ⇒ a narrow positive:
+  continuous time helps under irregular observation, not under parameter shift.
+- Not above ⇒ the negative holds on both axes; written as such.
+
+### W5 — Mechanism shift, Tier 2 (optional; only with runway after W4)
+
+Precondition, checked before registering: treated Hahnfeldt must show TTP dynamic
+range — Phase 1 found untreated Hahnfeldt TTP resolution-limited (7.0 d, zero
+IQR, [L88](adaptive_therapy/RESEARCH_LOG.md#L88)). If it does not, Tier 2 is cut and the limitation stated. It is the
+first thing §16's minimum paper can lose, not the last.
+
+### W6 — Write-up (≈ 1 week)
+
+4–9 pp. Figures: closed-loop validity across trainers (the open-loop pitfall);
+TTP-vs-exposure frontiers for Tiers 0/1/4; the MLP's dose-vs-burden rule. A
+table of **every** registered run, void and invalid ones included. A pitfalls
+section (traps 4–6), framed as found on this simulator, not as general law.
+Limitations: simulation only; LV (+ Hahnfeldt if W5); 3 seeds; PQN settings
+taken from the paper's Craftax table, not tuned here.
+
+**Sequencing:** W1 → W2 → W3 → W4 → (W5) → W6, about two weeks of work — well
+inside the ICLR 2027 window.
+
+---
+
+## Stage 2 — main-conference follow-up (deferred on runway, not merit)
+
+[PROJECT.md §17](PROJECT.md): the spine should be a finding about the world, not a
+tool comparison. The **observation schedule** is the natural one: W4 builds the
+machinery, and Q1 asks whether "less frequent monitoring lengthens TTP"
+(Gallagher 2024, a single LV model) holds across mechanisms. Preconditions:
+Gallagher read to 1°; the Hahnfeldt/Kuznetsov resolution limits of [L88](adaptive_therapy/RESEARCH_LOG.md#L88)
+resolved. Real-data replay (Bruchovsky PSA cohort) belongs here too.
 
 ---
 
 ## Deferred — described, not deleted
 
 Kept here so a future session sees these were considered and why they are not
-being built yet. Per [PROJECT.md §16](PROJECT.md), the minimum viable workshop
-paper is Q2 + Q4 with Tiers 1/2/4.
+being built yet.
 
 - **Tier-3 within-episode drift** — hardest and most clinically real, and where
-  the continuous-time advantage *should* show most. Deferred because Phases 2–4
-  must establish there is an advantage at all first.
-  **Re-open when:** Phase 4 passes with an effect large enough to survive a
-  harder tier.
-- **Q3 mechanism-inference (MoE cluster purity)** — deferred because
-  [PROJECT.md §5](PROJECT.md) shows θ is weakly identifiable, so the falsifiable
-  version is cluster purity, not parameter recovery.
-  **Re-open when:** Phase 0's separability plot shows the families *are*
-  separable under burden-only.
-- **Q1 biology sweep** — the "so what for biology" figure and the better
-  main-conference spine. Deferred on runway, not on merit.
-- **Real-data replay (Bruchovsky PSA cohort)** — the single biggest credibility
-  jump from toy to grounded. Deferred to the full paper.
+  the continuous-time advantage *should* show most.
+  **Re-open when:** W4 shows a continuous-time edge somewhere. There is no case
+  for testing the hardest tier for an edge absent on the easier ones.
+- ~~**Q3 mechanism-inference (MoE cluster purity)**~~ — depended on the
+  multi-mechanism curriculum, killed with Phase 3 ([L424](adaptive_therapy/RESEARCH_LOG.md#L424)). Re-opens only with
+  Phase 3.
+- **Q1 biology sweep** and **real-data replay** — moved to Stage 2.
+- **Liquid (LTC) / Neural CDE arms** — "purer" continuous-time policies. A plain
+  Neural ODE cannot take new observations: it needs jumps (ODE-RNN), a driving
+  path (Neural CDE) or input-dependent dynamics (LTC).
+  **Re-open when:** W4 is positive, making the question *which* continuous-time
+  model. Building them before that is the architectural pile-up §15 warns
+  against.
+- **Recurrent-TD3 baseline** (§13, "beating only weak baselines") — the baseline
+  that won is the weakest; for a negative result the reviewer's question is
+  instead "was the ODE arm trained well?", answered by two trainers plus the
+  validity gate. **Re-open when:** W4 is positive.
 
 ---
 
@@ -120,11 +232,15 @@ Registered in [adaptive_therapy/PREREG.md](adaptive_therapy/PREREG.md) before th
 run, with the **declared search space**. No widening, no re-parametrization.
 
 - **Phase 0: families not separable under burden-only** ⇒ reframe Q3 before
-  writing an encoder. Do not proceed to a mixture model that provably cannot
-  separate its components.
+  writing an encoder. *Did not fire:* [L48](adaptive_therapy/RESEARCH_LOG.md#L48).
 - **Phase 2: no continuous-time edge on the clean single-family case** ⇒ stop.
   Write the negative result. The multi-ODE curriculum does not rescue an
-  architecture that loses on the easy case.
+  architecture that loses on the easy case. *Fired:* [L424](adaptive_therapy/RESEARCH_LOG.md#L424).
+- **W3/W4: an arm fails the closed-loop gate** ⇒ that arm gets a trainability
+  result and no architecture verdict.
+- **W4: ODE-RNN not above the best discrete arm (LSTM + Δt included) on the
+  exposure frontier** ⇒ the negative holds on both axes. No LTC/Neural-CDE
+  rescue inside this paper.
 - **Any result that wins TTP by raising cumulative exposure** ⇒ not a robustness
   result. Report both or report neither ([PROJECT.md §10](PROJECT.md)).
 - **Any single-seed or mean-reported comparison** ⇒ not a result yet
@@ -140,7 +256,9 @@ run, with the **declared search space**. No widening, no re-parametrization.
    and "runs in 30 s" silently becomes false. Fixed-step for the bulk of vmap'd
    rollouts; bucket by stiffness; `Kvaerno5` only for the stiff bucket. This is
    an architecture decision, not an optimisation to do later
-   ([PROJECT.md §12](PROJECT.md)).
+   ([PROJECT.md §12](PROJECT.md)). *For this simulator the decision (fixed-step)
+   holds but the mechanism was wrong: Kvaerno5 fails on every patient, adaptive
+   Tsit5 on none* ([L88](adaptive_therapy/RESEARCH_LOG.md#L88), [L166](adaptive_therapy/RESEARCH_LOG.md#L166)).
 
 2. **The architecture-vs-curriculum confound.** Giving the ODE policy the rich
    multi-mechanism curriculum while the MLP gets the poor one measures the
@@ -153,6 +271,20 @@ run, with the **declared search space**. No widening, no re-parametrization.
    patients — they are the interesting ones — but "crosses threshold once =
    progression" is wrong for them. Define the non-monotone TTP rule up front,
    before any patient is generated ([PROJECT.md §6.3](PROJECT.md)).
+
+4. **A policy can be an open-loop schedule and still report a respectable TTP.**
+   The ODE-RNN gave every patient one identical dosing history in 4/6 PPO cells,
+   unnoticed by every standard endpoint ([L312](adaptive_therapy/RESEARCH_LOG.md#L312), [L391](adaptive_therapy/RESEARCH_LOG.md#L391)). Every comparison
+   needs the closed-loop validity gate.
+
+5. **The median over progressors rewards letting more patients progress.** It
+   inverted the paired result in three runs ([L275](adaptive_therapy/RESEARCH_LOG.md#L275), [L312](adaptive_therapy/RESEARCH_LOG.md#L312), [L391](adaptive_therapy/RESEARCH_LOG.md#L391)). Use
+   min(TTP, horizon) over all patients; administrative censoring makes it exact.
+
+6. **Shifting a parameter the initial state is built from.** Scaling K after
+   y0 = n₀·K put half the Tier-1 cohort above capacity; with d_D > 1 LV blew up,
+   and NaN scored as "never progressed" ([L242](adaptive_therapy/RESEARCH_LOG.md#L242)). Rebuild y0 from the shifted
+   θ, and refuse non-finite trajectories.
 
 ---
 
@@ -174,6 +306,8 @@ Phase 2 is designed to find that out in two days rather than six weeks, and
 [PROJECT.md §15](PROJECT.md) is explicit that a clean negative is a publishable
 workshop result. Run it to settle the mechanism, and accept a null.
 
+*The Tier-1 half of this prior held ([L424](adaptive_therapy/RESEARCH_LOG.md#L424)). The Tier-4 half is W4.*
+
 ---
 
 ## GPU migration (available 2026-09-23)
@@ -194,8 +328,7 @@ assuming it transfers.
    unnecessary and would throttle host-side work; make it conditional on the
    backend rather than deleting it, since the CPU path must stay reproducible.
 
-3. ~~**Cohort and grid sizes become the binding constraint, not wall-clock.**
-   The Phase 2 grid is 12 runs ≈ 2.2 h on CPU. On GPU this is minutes.~~
+3. ~~**GPU makes grid size, not wall-clock, the binding constraint.**~~
    Measured false in [L166](adaptive_therapy/RESEARCH_LOG.md#L166): GPU is 9×
    slower for rollouts and 17–40× slower per PPO update. GPU pays off only if a
    later phase batches far wider than 32 patients per update, and that has to
