@@ -267,3 +267,43 @@ unchanged — relaxing it after Phase 2 would tailor the criterion to the data.
 **Artifacts:** `research/phase2_gate.py`, `research/outputs/phase2b_gate.json`,
 trained policies in `research/outputs/phase2b_policies/`.
 **Honest prior:** a null on Tier 1 remains the expected outcome.
+
+## [2026-09-23] — Phase 2c STOP-OR-GO: Phase 2 re-registered on PQN for both arms, with a censoring-correct TTP median
+
+**Why.** Phase 2b was INVALID ([L391](RESEARCH_LOG.md#L391)): under corrected
+PPO, 3/6 ODE-RNN cells still ended open-loop; MLP 6/6 closed-loop. Per 2b's own
+kill clause the next step is another algorithm for BOTH arms. PQN
+(arxiv-2407.04811, reviewed 1°) needs no replay buffer, so the recurrent arm needs
+no stored hidden states, and its ε floor cannot collapse like a learned entropy.
+Registered BEFORE any PQN run on the gate cohorts (only a 12-update smoke test
+on 64 in-range patients, which computes no TTP). Phases 2 and 2b are not re-graded.
+**Hypothesis:** unchanged from Phase 2 [2026-09-22].
+**Trainer (fixed, not tuned):** `rl/pqn.py` defaults = Table 4 (p.36): LR 3e-4
+linear decay, RAdam, grad-clip 0.5, γ 0.99, λ 0.5, ε 1.0 → 0.005 over the first
+10% of updates, 4 epochs × 4 minibatches of WHOLE episodes; 300 updates × 32
+patients (the PPO budget); reward scale 0.01. **Arms:** Q-networks with
+LayerNorm on the readout — MLP width 441 (3090 Q-path params) vs ODE-RNN (3091);
+critic heads unused. Greedy (argmax) evaluation.
+**Criteria — ALL must hold:** (0) **validity:** every cell has greedy
+`observation_dependence` ≥ **0.10** (fraction of patient-visits whose greedy dose
+changes when the observation history is swapped); any cell below ⇒ TRAINING
+FAILURE, no verdict. (1) **capped** median TTP (min(TTP, horizon), all
+patients) ODE ≥ MLP — a guard that the medians do not contradict (2), not the
+evidence of superiority; median exposure within ±10%. (2) **one-sided** paired
+Wilcoxon, ODE later than MLP, p < 0.025 — this carries the direction. (3) both
+weights, 3 seeds. (4) both arms' capped median > untreated capped median.
+**Kill:** (0) holds and (2) fails ⇒ STOP, negative result, written as "no
+continuous-time edge with either trainer". (1)'s exposure match fails with (2)
+passing ⇒ report as exposure-confounded, not a pass.
+**Cohort / grid:** identical to Phase 2b (LV, Tier-1 ×1.5/×1.5/×0.6 with y0 from
+shifted K, 200/200, σ 0.05, weekly × 52; {MLP, ODE-RNN} × w {0.05, 0.20} ×
+seeds {0,1,2}).
+**Declared asymmetries / risks:** PQN's stability theorem is a wide-critic
+result (p.5–6): it plausibly covers the 441-wide MLP layer better than the
+16-wide ODE state. ε-greedy is weak exploration (p.9). Table 4 was tuned on
+Craftax, not here. Exposure matching failed in 3 of 4 Phase-2 comparisons
+because each arm picks its own dose.
+**Artifacts:** `research/phase2_gate.py phase2c`, `research/outputs/phase2c_gate.json`,
+`research/outputs/phase2c_policies/`.
+**Honest prior:** a null on Tier 1 remains the expected outcome; a VALID run is
+itself informative, since no previous run managed one.
