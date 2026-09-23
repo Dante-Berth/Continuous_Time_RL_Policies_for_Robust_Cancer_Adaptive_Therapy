@@ -387,3 +387,36 @@ at entropy 1.10 and ends **closed-loop: 0.229 and 0.107** — the second dipped 
 Phase 2b registered in PREREG *before* the fixed-trainer numbers existed, with
 closed-loop ≥0.10 per cell as criterion (0): an open-loop cell voids the run as a
 training failure. Run it unchanged. Phase 2's FAIL is not re-graded.
+
+## [2026-09-23] — Phase 2b INVALID as registered: 3 of 6 ODE-RNN cells still open-loop under the fixed trainer; no architecture verdict
+**Verdict:** OPEN — training failure per criterion (0), NOT a comparison; ODE-RNN is fragile under PPO, MLP is not · **Gate:** n-a by registration (closed-loop MLP 6/6 at 0.24–0.31, ODE-RNN 3/6 at 0.11–0.23; open 0.011 / 0.004 / 0.038) · 3 seeds × 2 w × 200 pts · **Artifacts:** `research/outputs/phase2b_gate.json`, `research/outputs/phase2b_policies/` (12 saved)
+
+### Context
+PREREG Phase 2b [2026-09-23], registered before its run on the fixed trainer
+([L353](RESEARCH_LOG.md#L353)). Criterion (0): every cell closed-loop ≥ 0.10,
+else the run is a training failure with no verdict.
+
+### What was tried
+Declared grid unchanged; CPU; 21 s per MLP cell, 100 s per ODE-RNN cell.
+Diagnostic cells reproduced exactly (0.229, 0.107): runs are deterministic.
+
+### Results
+**Criterion (0) fails** — ODE-RNN w0.05 s1 **0.011**, w0.05 s2 **0.004**, w0.20 s2
+**0.038**. The fixes removed the collapse *at init* but not *during* training:
+half the ODE seeds still converge to a patient-independent schedule. All six
+MLP cells are closed-loop. **Registered outcome: INVALID. Nothing is graded.**
+
+Descriptive only — recorded because it repeats across three runs, not as a
+result: per matched patient ODE-RNN still progresses earlier in 228 vs later in
+100 (w0.05) and 237 vs 76 (w0.20); one-sided p(ODE later) ≈ 1.0. The median over
+progressors again points the other way (+189 d, +105 d) because ODE leaves fewer
+patients censored (38% vs 67%; 47% vs 70%). ODE burden-integral again lower
+(0.89–1.29e6 vs 1.31–1.54e6). Exposure matched at w0.05 (278 vs 266) for the
+first time — moot in a void run.
+
+### Decision
+Per the registration: the next step is a **fresh registration with another
+algorithm** (SAC-discrete or recurrent TD3), both arms, not a PPO re-tune — owner
+to decide before anything is built. Standing lessons for it: keep the
+closed-loop gate; make the primary TTP estimator censoring-aware, since the
+progressor-only median has now inverted the paired result in three runs.
