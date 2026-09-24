@@ -14,6 +14,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## OPEN
 
+- **W3 INVALID — no memory or continuous-time verdict**: one open-loop cell each in LSTM (0.098) and ODE-RNN (0.071, constant max dose at w=0), frontier overlap 16–19% < 20%. Descriptively the memoryless MLP holds the 357-d horizon in all 30 cell-tier results and the LSTM is least reliable (5/15 cells collapse to low dosing); the capped median saturates at the horizon, so the next registration needs a longer horizon or restricted-mean TTP → [L496](RESEARCH_LOG.md#L496)
 - **W1: the ODE-RNN also loses in-distribution (Tier 0: 10/164, 13/263 untied pairs) — L424 is a training/capacity gap, not a robustness gap**; report Tier 0 beside every Tier-1 result. The MLP learned a burden-threshold switch (dose 0 below ~0.8× baseline, full above; ≥0.96 of doses explained by the current obs) → [L461](RESEARCH_LOG.md#L461)
 - **Simulator sound and the three families are mechanistically distinguishable** — untreated log10 dynamic ranges 0.3 / 2.2 / 2.7, distinct turning-point counts → [L13](RESEARCH_LOG.md#L13)
 - **Phase 0 gate PASSED: the three families are separable from burden alone** — median balanced accuracy 0.996 [0.993–1.000], 3 seeds, 0% collisions; Q3 needs no reframe → [L48](RESEARCH_LOG.md#L48)

@@ -492,3 +492,33 @@ less robust** — L424 is a trainability/capacity gap, and a robustness claim ma
 not be written from it. W3 must therefore report Tier 0 beside every Tier-1
 result. The lit half of W1 (arXiv 2605.02552, Gallagher 2024 to 1°) is pending
 the PDFs. Next: W2 + W3 registration.
+
+## [2026-09-24] — W3 INVALID as registered: the LSTM and ODE-RNN arms each have one open-loop cell and the frontiers overlap < 20%; the MLP holds the horizon in all 30 cell-tier results
+**Verdict:** OPEN — no H_mem / H_ct verdict (criteria 0 and 0b fail); trainability result for LSTM and ODE-RNN · **Gate:** Tier-1 frontier gap LSTM−MLP −182 d [−233, −136], overlap 16%; ODE−LSTM +22 d [−41, +158], overlap 19% (Tier 0: −113 [−143, −55] / +77 [+29, +99], 17% / 21%) · closed-loop fails: ode_rnn w0.0 s0 0.071, lstm w0.4 s1 0.098 · MLP capped median 357 d, exposure 165–294 · 3 seeds × 5 w × 200 pts × 2 tiers · **Artifacts:** `research/w3_frontier.py`, `research/outputs/w3_frontier.{json,png,log}`, `w3_shards/`, `w3_policies/`
+
+### Context
+PREREG W3 (35200d4), registered before the LSTM arm existed (474cdd4:
+3045 Q-path params vs 3090). PQN, Phase-2c trainer unchanged. The ODE-RNN and
+MLP cells at w 0.05/0.20 reproduce Phase 2c's per-seed Tier-1 medians exactly.
+
+### Results
+**(0) validity FAILS for two arms, by one cell each:** ODE-RNN w0.0 s0 = 0.071
+(it doses 355/357 — constant maximum, the w=0 anchor risk declared in the
+prereg); LSTM w0.4 s1 = 0.098. **(0b) overlap FAILS**: 16–19% on Tier 1.
+So: no verdict on H_mem or H_ct, as registered. Gaps above are descriptive.
+**The MLP is at the ceiling in every cell:** capped median 357 d (the horizon)
+on both tiers, censoring 60–87%, obs-explained ≥ 0.94. Its frontier is flat,
+so above ~50% censoring the capped median cannot rank anything — a limit of
+the W2 rule on this horizon, not declared in the prereg.
+**The LSTM is the least reliable arm:** 5/15 cells collapse to low dosing
+(exposure 18–63) with Tier-1 TTP 77–84 d; the same seed-0 policy appears at
+w 0.0 and 0.10. Frontier non-monotone (Tier 0: 105, 112, 357, 175, 357 d).
+**ODE-RNN sits between:** 11/15 cells at the horizon on Tier 0, 8/15 on Tier 1.
+
+### Decision
+No re-grade: the gate is not relaxed to 0.098, and the overlap rule stands.
+Descriptively, a memoryless burden threshold beats both recurrent arms under
+PQN at every w; adding memory (LSTM) hurt most. Before W4 the owner must
+decide (a NEW registration, never a re-run of this one): a longer horizon or
+restricted-mean TTP so the MLP is not at the ceiling, and whether w=0 stays
+in the sweep. W4 still proceeds as a separate hypothesis.
