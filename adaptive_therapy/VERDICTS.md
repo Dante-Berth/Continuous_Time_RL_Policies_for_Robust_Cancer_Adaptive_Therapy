@@ -14,6 +14,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## OPEN
 
+- **W1: the ODE-RNN also loses in-distribution (Tier 0: 10/164, 13/263 untied pairs) — L424 is a training/capacity gap, not a robustness gap**; report Tier 0 beside every Tier-1 result. The MLP learned a burden-threshold switch (dose 0 below ~0.8× baseline, full above; ≥0.96 of doses explained by the current obs) → [L461](RESEARCH_LOG.md#L461)
 - **Simulator sound and the three families are mechanistically distinguishable** — untreated log10 dynamic ranges 0.3 / 2.2 / 2.7, distinct turning-point counts → [L13](RESEARCH_LOG.md#L13)
 - **Phase 0 gate PASSED: the three families are separable from burden alone** — median balanced accuracy 0.996 [0.993–1.000], 3 seeds, 0% collisions; Q3 needs no reframe → [L48](RESEARCH_LOG.md#L48)
 - **…but the margin is SCALE, not mechanism** — a growth-magnitude-only control scores 0.824, itself above the 0.80 gate; report it beside any separability claim → [L48](RESEARCH_LOG.md#L48)

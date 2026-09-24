@@ -457,3 +457,38 @@ Phase-2 runs (L275, L312, L391, here), under two algorithms.
 trainer". Phase 3 does not proceed on this basis. Promotion to CLOSED.md,
 ROADMAP strikes, and whether Tier 4 (irregular sampling) is registered as a
 NEW hypothesis — the owner's call.
+
+## [2026-09-24] — W1: the ODE-RNN loses on in-range patients too, so Tier 1 measured a training gap, not a robustness gap; the MLP learned a burden-threshold rule
+**Verdict:** OPEN — diagnostic, not registered, no gate · **Gate:** n/a (no hypothesis); paired ODE later/earlier Tier 0: 10/164 (w0.05), 13/263 (w0.20) vs Tier 1: 19/264, 22/337 · capped median TTP Tier 0 ODE 357/357/357 and 70/357/357 vs MLP 357 in all six · exposure unchanged from L424 · 3 seeds × 200 pts · **Artifacts:** `research/w1_diagnose.py`, `research/outputs/w1_diagnose.json`, regenerated `research/outputs/phase2c_{gate.json,policies/}`
+
+### Context
+ROADMAP W1, on the 12 Phase-2c policies ([L424](RESEARCH_LOG.md#L424)), no retraining.
+The artifacts were absent on this machine, so the registered grid was re-run
+from HEAD on CPU: every per-patient Tier-1 TTP matches L424 bit-for-bit, and the
+gate output (verdict, pairs, closed-loop values) is identical.
+
+### What was tried
+Tier 0 = the same test patients without the ×1.5/×1.5/×0.6 shift, same eval key.
+Dose rule: fraction of visits whose dose equals the majority dose of its
+current-observation bin (20 quantile bins); the MLP's exact greedy rule read
+off an obs grid.
+
+### Results
+**Tier 0 does not rescue the ODE-RNN.** The MLP wins the paired direction
+in-distribution as clearly as under shift (10/164, 13/263 untied pairs; two-sided
+p 8.7e-26, 2.5e-42). The shift only moves both arms toward earlier progression
+(censoring falls ~10–20 pts for both). The worst ODE cell (w0.20 s0) is already
+bad at Tier 0 (capped 70 d, 32% censored).
+**MLP = a burden-threshold switch.** 6/6 seeds: dose 0 when burden < ~0.80×
+baseline (log-ratio −0.17 to −0.30), full dose above; ≥ 0.96 of its visits
+explained by the current observation. Above ~1.8× baseline some seeds switch to
+0/0.5 — a region its training cohort rarely visits.
+**The ODE-RNN doses from memory** (0.62–0.93 obs-explained); the cell with the
+most memory use (0.62–0.64) is the worst one.
+
+### Decision
+The paper's wording: under this trainer the ODE-RNN is **worse at control, not
+less robust** — L424 is a trainability/capacity gap, and a robustness claim may
+not be written from it. W3 must therefore report Tier 0 beside every Tier-1
+result. The lit half of W1 (arXiv 2605.02552, Gallagher 2024 to 1°) is pending
+the PDFs. Next: W2 + W3 registration.

@@ -124,7 +124,7 @@ trainer that produced valid closed-loop arms ([L424](adaptive_therapy/RESEARCH_L
 validity gate (≥ 0.10 per cell), the capped TTP median, and the one-sided paired
 Wilcoxon.
 
-### W1 — Diagnose the Tier-1 loss (≈ 1 h; a diagnostic, not a verdict)
+### W1 — Diagnose the Tier-1 loss (≈ 1 h; a diagnostic, not a verdict) — *measurements done:* [L461](adaptive_therapy/RESEARCH_LOG.md#L461); literature pending PDFs
 
 On the 12 saved Phase-2c policies, with no retraining:
 - **Tier 0** (in-range test patients). ODE-RNN ≈ MLP in-distribution but worse
