@@ -592,3 +592,39 @@ costs 70–80 d of the trained objective and continuous time a further ~16 d.
 W4 (irregular visits) proceeds as the separate registered test. Promotion of
 "continuous time gives no edge on Tiers 0/1" (L424 vs MLP + here vs LSTM) to
 LAWS.md is the owner's call: two closures, same mechanism, different baselines.
+
+## [2026-09-25] — W3c re-analysis: training variance dominates; "continuous time hurts further" does not survive resampling seeds, "memory hurts" does
+**Verdict:** CLOSED — W3c's H_ct failure stands as "no edge", not "worse" · **Gate:** Tier-1 Δ U (days), patient-only CI → seed+patient CI: LSTM−MLP −82.9 [−87.7, −78.0] → [−106.8, −58.7]; ODE−LSTM −15.7 [−20.4, −10.8] → [−43.0, +21.8] (Tier 0 [−45.7, +24.2]) · per-seed ODE−LSTM −2, −47, +94, −40, −35 · one ODE cell retrained under 2e-7 rounding: mean U 132.2 → 255.5 d · 5 seeds × 4 w × 200 pts, W3c's valid cells · **not pre-registered** · **Artifacts:** `research/w3c_seed_variance.py`, `research/outputs/w3c_seed_variance.{json,log}`
+
+### Context
+Found while building W4 (commit 10ccf13). The ODE-RNN
+flow's gap became a traced value, which changes Q-values and gradients by 2e-7
+relative (float rounding; verified old vs new code on one batch). Retraining
+W3c's `ode_rnn w0.2 s7` under that rounding gave a different policy. W3c's CIs
+([L565](RESEARCH_LOG.md#L565)) resample patients with each trained policy held
+fixed, so training variance never enters them.
+
+### What was tried
+(a) W3c's Δ on its own valid cells, with a second CI that resamples seed
+indices (jointly across w and both arms) as well as patients.
+(b) `ode_rnn` and `lstm` w0.2 s7 retrained under the current code at drop 0.
+
+### Results
+**Patient-only CIs reproduce L565 exactly**, as a check. Adding seeds:
+**memory-hurts survives** (LSTM−MLP stays below 0 on both tiers, every seed
+−47 to −126). **ODE−LSTM does not**: its CI spans 0 on both tiers, and one seed
+of five favours the ODE-RNN by +94 d. **Training is chaotic in the recurrent
+arms**: per-cell Tier-1 mean U ranges 67–264 (LSTM) and 49–273 (ODE-RNN) across
+seeds at fixed w, against 177–295 for the MLP. The 2e-7 retrain moved one ODE
+cell by +123 d (182/200 patients differ); the LSTM, whose path is unchanged,
+retrained bit-identically.
+
+### Decision
+W3c's registered verdicts stand (H_mem and H_ct both FAIL: no CI above 0). Its
+wording "continuous time hurts further (~16 d)" is withdrawn. With seeds
+resampled, the ODE-RNN is **not distinguishable from the LSTM** on Tiers 0/1:
+no edge, and no established deficit. Every later architecture CI resamples
+seeds and patients; W4's prereg adopts this and 10 seeds. Stale downstream: the
+2026-09-24 report deck states MLP > LSTM > ODE-RNN. The LAWS promotion of "no
+continuous-time edge on Tiers 0/1" is unaffected in substance (still no edge),
+and remains the owner's call.
