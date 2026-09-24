@@ -550,3 +550,14 @@ open-loop in ~1 in 14 cells, which is itself the trainability result the
 kill clause prescribes. The next registration must decide validity per CELL
 (exclude and report) or per ARM, before it runs — the owner's call. W4 is
 unaffected as a hypothesis but inherits the same risk.
+
+## [2026-09-24] — Erratum to L461: the MLP's obs-explained dose fraction is ≥ 0.94, not ≥ 0.96
+**Verdict:** OPEN — correction only; no conclusion changes · **Gate:** n/a · **Artifacts:** `research/outputs/w1_diagnose.json`
+
+L461 states the MLP's dose is "≥ 0.96" explained by the current observation.
+Read back from the artifact, the 12 MLP cell-tier values span 0.939–0.993;
+Tier 0 alone spans 0.957–0.993. The minimum is w0.05 s2 on Tier 1. The claim
+that the MLP is a burden-threshold switch stands. VERDICTS and the arXiv
+2605.02552 review now say ≥ 0.94; L461 is left as written (append-only).
+Found while generating `report/2026-09-24/` from the artifacts, which is the
+reason the report reads numbers rather than restating them.

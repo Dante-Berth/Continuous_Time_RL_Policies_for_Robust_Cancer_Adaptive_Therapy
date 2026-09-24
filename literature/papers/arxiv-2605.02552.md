@@ -65,7 +65,7 @@ patient and no inter-patient variability, by design (abstract, p.1; p.4).
   question is robustness across a cohort under a θ shift.
 - **Hidden variable ≠ ours.** They hide a toxicity state that drives the
   reward and the terminal penalty. Our POMDP hides the S/R split, and W1 shows a
-  memoryless threshold on burden already captures ≥ 0.96 of our MLP's doses
+  memoryless threshold on burden already captures ≥ 0.94 of our MLP's doses
   ([L461](../../adaptive_therapy/RESEARCH_LOG.md#L461)).
 - Means ± std, no paired test, no exposure reported beside outcome.
 - Recurrent arms get an off-policy replay design (32-step subsequences); the
