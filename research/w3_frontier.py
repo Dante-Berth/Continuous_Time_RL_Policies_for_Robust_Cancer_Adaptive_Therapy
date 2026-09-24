@@ -16,8 +16,13 @@ patient bootstrap resamples, the same indices for every cell.
 Grid: {MLP, LSTM, ODE-RNN} x w {0, .05, .10, .20, .40} x seeds {0,1,2} = 45
 cells, PQN (Phase-2c trainer, unchanged), each cell in a fresh process.
 
-Run: JAX_PLATFORMS=cpu uv run python research/w3_frontier.py
-     -> research/outputs/w3_frontier.json, w3_frontier.png, w3_shards/
+W3b [2026-09-24] re-registers W3 after it was INVALID (RESEARCH_LOG L496):
+fresh seeds {3,4,5}, w = 0 dropped, and the frontier's y-axis is restricted-
+mean TTP (mean of min(TTP, horizon)) because W3's capped median sat at the
+horizon for every MLP cell. Everything else is W3's rule, unchanged.
+
+Run: JAX_PLATFORMS=cpu uv run python research/w3_frontier.py [w3 | w3b]
+     -> research/outputs/<reg>_frontier.{json,png}, <reg>_shards/
 """
 
 from __future__ import annotations
@@ -52,12 +57,21 @@ ARCHS = {
     "lstm": lambda k: LSTMPolicy(k, layer_norm=True),
     "ode_rnn": lambda k: ODERNNPolicy(k, layer_norm=True),
 }
-WEIGHTS = (0.0, 0.05, 0.10, 0.20, 0.40)
+# One entry per registration, so each stays reproducible from HEAD.
+REGISTRATIONS = {
+    "w3": {"weights": (0.0, 0.05, 0.10, 0.20, 0.40), "seeds": (0, 1, 2), "y": np.median},
+    # RMST: a mean is a declared deviation from PROJECT.md 10 (PREREG W3b).
+    "w3b": {"weights": (0.05, 0.10, 0.20, 0.40), "seeds": (3, 4, 5), "y": np.mean},
+}
+REG = next((a for a in sys.argv[1:] if a in REGISTRATIONS), "w3")
+WEIGHTS = REGISTRATIONS[REG]["weights"]
+SEEDS = REGISTRATIONS[REG]["seeds"]
+Y_STAT = REGISTRATIONS[REG]["y"]
 TIERS = {"tier0": tier0_cohort, "tier1": g.tier1_cohort}
 N_BOOT = 2000
 MIN_OVERLAP = 0.20
 N_PARALLEL = 6  # 4 threads each on a 32-core box
-SHARDS = g.OUT / "w3_shards"
+SHARDS = g.OUT / f"{REG}_shards"
 
 
 def run_cell(arch: str, w: float, seed: int) -> dict:
@@ -87,7 +101,7 @@ def run_cell(arch: str, w: float, seed: int) -> dict:
             "closed_loop": observation_dependence(policy, ev["obs"], g.EP, k_eval, greedy=True),
             "dose_explained_by_obs": obs_explained(obs, dose),
         }
-    pol_dir = g.OUT / "w3_policies"
+    pol_dir = g.OUT / f"{REG}_policies"
     pol_dir.mkdir(parents=True, exist_ok=True)
     eqx.tree_serialise_leaves(pol_dir / f"{arch}_w{w}_s{seed}.eqx", policy)
     return out
@@ -97,7 +111,7 @@ def spawn(arch: str, w: float, seed: int) -> dict:
     shard = SHARDS / f"{arch}_w{w}_s{seed}.json"
     if not shard.exists():  # resume: a finished cell is never recomputed
         subprocess.run(
-            [sys.executable, __file__, "--worker", arch, str(w), str(seed)],
+            [sys.executable, __file__, "--worker", REG, arch, str(w), str(seed)],
             check=True,
             cwd=Path(__file__).resolve().parent.parent,
         )
@@ -111,7 +125,7 @@ def frontier(cells: list[dict], tier: str, idx: np.ndarray) -> tuple[np.ndarray,
     for w in WEIGHTS:
         per_seed = [c[tier] for c in cells if c["w"] == w]
         x = np.median([np.median(np.asarray(s["exposure"])[idx]) for s in per_seed])
-        y = np.median([np.median(np.asarray(s["ttp_capped"])[idx]) for s in per_seed])
+        y = np.median([Y_STAT(np.asarray(s["ttp_capped"])[idx]) for s in per_seed])
         pts.append((x, y))
     pts.sort()
     return np.array([p[0] for p in pts]), np.array([p[1] for p in pts])
@@ -159,14 +173,14 @@ def plot(by_arm: dict, path: Path) -> None:
             for c in cells:  # per-seed points, so a median never hides a seed
                 ax.scatter(
                     np.median(c[tier]["exposure"]),
-                    np.median(c[tier]["ttp_capped"]),
+                    Y_STAT(c[tier]["ttp_capped"]),
                     s=10,
                     alpha=0.35,
                     color=line.get_color(),
                 )
         ax.set_title(tier.replace("tier", "Tier "))
         ax.set_xlabel("median cumulative exposure")
-    axes[0].set_ylabel("capped median TTP (days)")
+    axes[0].set_ylabel(f"capped {Y_STAT.__name__} TTP (days)")
     axes[0].legend()
     fig.tight_layout()
     fig.savefig(path, dpi=150)
@@ -174,7 +188,7 @@ def plot(by_arm: dict, path: Path) -> None:
 
 def main() -> int:
     SHARDS.mkdir(parents=True, exist_ok=True)
-    jobs = [(a, w, s) for a in ARCHS for w in WEIGHTS for s in g.SEEDS]
+    jobs = [(a, w, s) for a in ARCHS for w in WEIGHTS for s in SEEDS]
     with ThreadPoolExecutor(N_PARALLEL) as ex:
         cells = list(ex.map(lambda j: spawn(*j), jobs))
     by_arm = {a: [c for c in cells if c["arch"] == a] for a in ARCHS}
@@ -184,7 +198,10 @@ def main() -> int:
         a: all(c["tier1"]["closed_loop"] >= g.CLOSED_LOOP_MIN for c in cs)
         for a, cs in by_arm.items()
     }
-    result = {"prereg": "adaptive_therapy/PREREG.md W3 [2026-09-24]", "valid_arm": valid_arm}
+    result = {
+        "prereg": f"adaptive_therapy/PREREG.md {REG.upper()} [2026-09-24]",
+        "valid_arm": valid_arm,
+    }
     for name, (a, b) in {"H_mem": ("lstm", "mlp"), "H_ct": ("ode_rnn", "lstm")}.items():
         r = {t: compare(by_arm, a, b, t) for t in TIERS}
         t1, t0 = r["tier1"], r["tier0"]
@@ -218,6 +235,8 @@ def main() -> int:
             **{
                 t: {
                     "ttp_median_capped": float(np.median(c[t]["ttp_capped"])),
+                    "ttp_iqr_capped": np.percentile(c[t]["ttp_capped"], [25, 75]).tolist(),
+                    "ttp_rmst": float(np.mean(c[t]["ttp_capped"])),
                     "censoring": float(np.mean(c[t]["censored"])),
                     "exposure_median": float(np.median(c[t]["exposure"])),
                     "closed_loop": c[t]["closed_loop"],
@@ -233,14 +252,14 @@ def main() -> int:
     for a, f in result["frontiers"].items():
         for t, (x, y) in f.items():
             print(f"  {a:8s} {t}: " + " ".join(f"({xi:.0f},{yi:.0f})" for xi, yi in zip(x, y)))
-    (g.OUT / "w3_frontier.json").write_text(json.dumps(result, indent=2))
-    plot(by_arm, g.OUT / "w3_frontier.png")
+    (g.OUT / f"{REG}_frontier.json").write_text(json.dumps(result, indent=2))
+    plot(by_arm, g.OUT / f"{REG}_frontier.png")
     return 0
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--worker":
-        arch, w, seed = sys.argv[2], float(sys.argv[3]), int(sys.argv[4])
+        arch, w, seed = sys.argv[3], float(sys.argv[4]), int(sys.argv[5])
         (SHARDS / f"{arch}_w{w}_s{seed}.json").write_text(json.dumps(run_cell(arch, w, seed)))
         raise SystemExit(0)
     raise SystemExit(main())
