@@ -90,6 +90,10 @@ def train(
     cfg = cfg or PPOConfig()
     ep = ep or EpisodeConfig()
     rw = rw or RewardConfig()
+    if ep.drop_rate:
+        # Its GAE and ratio treat every visit as a decision; only PQN has the
+        # missed-visit semantics (rl/pqn.py). Refused rather than silently wrong.
+        raise NotImplementedError("PPO does not support missed visits; train with PQN")
 
     opt = optax.chain(
         optax.clip_by_global_norm(cfg.max_grad_norm),
@@ -167,4 +171,5 @@ def evaluate(policy, thetas, y0s, key, ep=None, rw=None, greedy: bool = True):
         "dose": jnp.asarray(traj["dose"]),
         "reward": jnp.asarray(traj["reward"]),
         "obs": jnp.asarray(traj["obs"]),
+        "seen": jnp.asarray(traj["seen"]),
     }

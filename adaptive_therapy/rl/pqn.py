@@ -18,6 +18,12 @@ Two departures from the paper, both forced by recurrence:
   * Q(s_t) for the targets is recomputed by `replay` over the stored
     observations, i.e. exactly the values the acting network produced.
 
+A third, for missed visits (PREREG W4): only an observed visit is a decision.
+The loss is taken over decisions alone, and a target bootstraps at the next
+DECISION, running the weekly rewards of any missed visits in between
+un-bootstrapped -- Q(lambda) on the semi-MDP whose steps are the gaps. With
+every visit observed it is exactly the regular algorithm.
+
 Hyperparameter defaults are the paper's recurrent (Craftax RNN) settings,
 Table 4 p.36, adopted rather than tuned.
 """
@@ -52,7 +58,7 @@ class PQNConfig:
     reward_scale: float = 0.01  # as PPO: rewards are ~1/day over 52 visits
 
 
-def q_lambda_targets(rewards, q, cfg: PQNConfig):
+def q_lambda_targets(rewards, q, cfg: PQNConfig, seen=None):
     """Peng's Q(lambda) targets for one fixed-length episode (p.7).
 
     `rewards` (T,), `q` (T, A) the Q-values at each visit. The episode ends at
@@ -61,16 +67,21 @@ def q_lambda_targets(rewards, q, cfg: PQNConfig):
         R_t = r_t + gamma * [lam * R_{t+1} + (1 - lam) * max_a Q(s_{t+1}, a)].
 
     lam=0 is one-step Q-learning; lam=1 the discounted Monte-Carlo return.
+    `seen` (T,) marks the visits that were decisions (default: all). A missed
+    visit t+1 has no decision to bootstrap from, so there R_t = r_t + gamma *
+    R_{t+1}: the return runs through it, and its Q-values are never read.
     """
     next_max = jnp.max(q[1:], axis=-1)
+    next_seen = jnp.ones_like(next_max, dtype=bool) if seen is None else seen[1:]
 
     def step(r_next, x):
-        r, m = x
-        r_t = r + cfg.gamma * (cfg.lam * r_next + (1.0 - cfg.lam) * m)
+        r, m, s = x
+        cont = jnp.where(s, cfg.lam * r_next + (1.0 - cfg.lam) * m, r_next)
+        r_t = r + cfg.gamma * cont
         return r_t, r_t
 
     last = rewards[-1]
-    _, earlier = jax.lax.scan(step, last, (rewards[:-1], next_max), reverse=True)
+    _, earlier = jax.lax.scan(step, last, (rewards[:-1], next_max, next_seen), reverse=True)
     return jnp.concatenate([earlier, last[None]])
 
 
@@ -115,17 +126,23 @@ def train(
     @eqx.filter_jit
     def collect(pol, theta, y0, k, eps):
         traj = batch_rollout(pol, theta, y0, k, ep, rw, eps=eps)
-        q = jax.vmap(lambda o: replay(pol, o, ep)[0])(traj["obs"])
-        targets = jax.vmap(lambda r, qq: q_lambda_targets(r, qq, cfg))(
-            traj["reward"] * cfg.reward_scale, q
+        q = jax.vmap(lambda o, s: replay(pol, o, ep, s)[0])(traj["obs"], traj["seen"])
+        targets = jax.vmap(lambda r, qq, s: q_lambda_targets(r, qq, cfg, s))(
+            traj["reward"] * cfg.reward_scale, q, traj["seen"]
         )
-        batch = {"obs": traj["obs"], "action": traj["action"], "target": targets}
+        batch = {
+            "obs": traj["obs"],
+            "seen": traj["seen"],
+            "action": traj["action"],
+            "target": targets,
+        }
         return jax.lax.stop_gradient(batch), traj
 
     def loss_fn(pol, mb):
-        q = jax.vmap(lambda o: replay(pol, o, ep)[0])(mb["obs"])
+        q = jax.vmap(lambda o, s: replay(pol, o, ep, s)[0])(mb["obs"], mb["seen"])
         q_a = jnp.take_along_axis(q, mb["action"][..., None], axis=-1)[..., 0]
-        return 0.5 * jnp.mean((q_a - mb["target"]) ** 2)
+        # Decisions only: a missed visit's action was held, not chosen.
+        return 0.5 * jnp.mean((q_a - mb["target"]) ** 2, where=mb["seen"])
 
     @eqx.filter_jit
     def learn(pol, opt_state, batch, k):

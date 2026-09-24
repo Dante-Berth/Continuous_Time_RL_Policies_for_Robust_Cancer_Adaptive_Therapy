@@ -34,6 +34,7 @@ class ODERNNPolicy(eqx.Module):
     critic: eqx.nn.Linear
     norm: eqx.nn.LayerNorm | None
     hidden: int = eqx.field(static=True)
+    step_days: float = eqx.field(static=True)
     max_steps: int = eqx.field(static=True)
 
     def __init__(self, key, width: int = 64, hidden: int = 16, layer_norm: bool = False):
@@ -43,7 +44,15 @@ class ODERNNPolicy(eqx.Module):
         # adaptive controller on this simulator thrashes and can fail outright;
         # inside a training loop the same failure would appear as a mysterious
         # NaN thousands of updates in.
-        self.max_steps = 64
+        # The step is fixed in DAYS, not per gap. 2026-09-25 (PREREG W4): dt0 =
+        # dt/8 made a 14-day gap 8 steps of 1.75 d, a different map from two
+        # 7-day flows, so the hidden state depended on how a gap was split --
+        # the property "continuous time" must not have, and the one Tier 4
+        # tests. At 7/8 d, gaps of whole weeks compose exactly and a 7-day flow
+        # is the same 8 steps as before (W3c policies act as trained). 512
+        # steps is 448 d, longer than any gap in a 364-d episode.
+        self.step_days = 7.0 / 8.0
+        self.max_steps = 512
         # The latent field's output layer starts at 0.1x default scale.
         # 2026-09-23 (RESEARCH_LOG L312 + diagnosis): at default init, each
         # 7-day flow pushed h toward a saturated fixed point, so an UNTRAINED
@@ -77,7 +86,7 @@ class ODERNNPolicy(eqx.Module):
             diffrax.Tsit5(),
             t0=0.0,
             t1=dt,
-            dt0=dt / 8.0,
+            dt0=self.step_days,
             y0=h,
             stepsize_controller=diffrax.ConstantStepSize(),
             max_steps=self.max_steps,

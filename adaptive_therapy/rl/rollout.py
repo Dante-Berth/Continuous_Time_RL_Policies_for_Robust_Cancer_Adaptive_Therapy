@@ -8,6 +8,13 @@ with exponential PK, not continuous control.
 The loop is IDENTICAL for every architecture. Everything that differs between
 arms lives inside the policy object, which is what makes the Phase 2/3 ablation
 an architecture comparison rather than a comparison of two systems.
+
+Missed visits (Tier 4, PREREG W4): the simulator still steps weekly, but a
+missed visit gives the policy no observation and no decision. Its state is
+carried unchanged, the gap it will see at the next visit grows by one interval,
+and the last chosen dose is given again ("hold") -- a missed visit loses
+information, not drug. TTP and exposure are still scored on the weekly
+ground-truth grid, so every drop rate is measured on the same clock.
 """
 
 from __future__ import annotations
@@ -30,6 +37,40 @@ class EpisodeConfig:
     visit_interval: float = 7.0  # days
     obs_noise: float = 0.05
     model_id: ModelId = "lotka_volterra"
+    drop_rate: float = 0.0  # P(a visit after the first is missed); Tier 4
+
+
+# The visit mask is drawn from fold_in(key, _MASK_STREAM), never from the key
+# chain that draws observation noise and exploration: at drop_rate 0 every
+# earlier rollout (W3c included) is reproduced exactly, and at any rate the
+# noise a patient sees is the same whichever visits are missed.
+_MASK_STREAM = 4
+
+
+def visit_mask(key, n_visits: int, drop_rate: float) -> jnp.ndarray:
+    """(n_visits,) bool, True where the visit happens. Visit 0 always does.
+
+    One uniform draw per visit, observed iff u >= drop_rate: for a fixed key the
+    visits missed at 20% are a subset of those missed at 50%, so the drop-rate
+    conditions are nested and paired, not independent resamples.
+    """
+    u = jax.random.uniform(key, (n_visits,))
+    return (u >= drop_rate).at[0].set(True)
+
+
+def _visit(policy, h, since, obs, seen, interval: float):
+    """One monitoring slot -> (logits, h', since'). The ONE home of missed-visit logic.
+
+    `since` is the time since the last observed visit, the `dt` the policy
+    integrates (it starts at one interval, so a regular episode passes dt =
+    interval at every visit, as before W4). The policy runs at every slot --
+    under vmap both branches of a cond would run anyway -- and at a missed one
+    its state update is discarded; its logits there must be ignored.
+    """
+    logits, h_obs = policy(obs, h, since)
+    h2 = jnp.where(seen, h_obs, h)
+    since2 = jnp.where(seen, interval, since + interval)
+    return logits, h2, since2
 
 
 def rollout(
@@ -47,23 +88,24 @@ def rollout(
 
     Actions: sampled from softmax(logits) (PPO), argmax if `greedy`, or
     epsilon-greedy over the outputs read as Q-values when `eps` is given (PQN).
+    At a missed visit (`seen` False in the output) the action is the held one.
     """
     pk = pk or PKConfig()
     cfg = SolverConfig(t0=0.0, t1=ep.visit_interval, dt0=0.05, n_save=2)
 
     baseline = observe(y0, ep.model_id)
 
-    def step(carry, _):
-        state, y, conc, h, nadir, k = carry
+    def step(carry, seen):
+        state, y, conc, h, nadir, k, since, held = carry
         k, k_obs, k_act = jax.random.split(k, 3)
 
         true_b = observe(y, ep.model_id)
         noisy = true_b * jnp.exp(jax.random.normal(k_obs) * ep.obs_noise)
         obs = normalise_obs(noisy, baseline)
 
-        logits, h2 = policy(obs, h, ep.visit_interval)
+        logits, h2, since2 = _visit(policy, h, since, obs, seen, ep.visit_interval)
         if eps is None:
-            action = jnp.where(
+            chosen = jnp.where(
                 greedy,
                 jnp.argmax(logits),
                 jax.random.categorical(k_act, logits),
@@ -72,7 +114,8 @@ def rollout(
             k_coin, k_rand = jax.random.split(k_act)
             explore = jax.random.uniform(k_coin) < eps
             random_a = jax.random.randint(k_rand, (), 0, logits.shape[-1])
-            action = jnp.where(explore & ~greedy, random_a, jnp.argmax(logits))
+            chosen = jnp.where(explore & ~greedy, random_a, jnp.argmax(logits))
+        action = jnp.where(seen, chosen, held)
         logp = jax.nn.log_softmax(logits)[action]
         dose = DOSE_LEVELS[action]
 
@@ -91,6 +134,7 @@ def rollout(
             "logp": logp,
             "action": action,
             "obs": obs,
+            "seen": seen,
             # AFTER this visit's observation is absorbed (h2), so every arm's
             # critic sees the current measurement. 2026-09-23: it read the
             # pre-observation state h, which left the ODE-RNN's critic one
@@ -98,10 +142,20 @@ def rollout(
             # asymmetry the Phase 2 comparison did not declare (L312).
             "value": policy.value(obs, h2),
         }
-        return (state, y2, conc3, h2, nadir2, k), out
+        return (state, y2, conc3, h2, nadir2, k, since2, action), out
 
-    init = (None, y0, jnp.array(0.0), policy.initial_state(), observe(y0, ep.model_id), key)
-    _, traj = jax.lax.scan(step, init, None, length=ep.n_visits)
+    seen = visit_mask(jax.random.fold_in(key, _MASK_STREAM), ep.n_visits, ep.drop_rate)
+    init = (
+        None,
+        y0,
+        jnp.array(0.0),
+        policy.initial_state(),
+        observe(y0, ep.model_id),
+        key,
+        jnp.array(ep.visit_interval),
+        jnp.array(0),  # visit 0 is always observed, so this is never given
+    )
+    _, traj = jax.lax.scan(step, init, seen)
     return traj
 
 
@@ -113,21 +167,27 @@ def batch_rollout(policy, thetas, y0s, key, ep, rw, greedy=False, eps=None):
     )
 
 
-def replay(policy, obs: jnp.ndarray, ep: EpisodeConfig):
+def replay(policy, obs: jnp.ndarray, ep: EpisodeConfig, seen: jnp.ndarray | None = None):
     """Re-run the policy over a STORED observation sequence, no simulator.
 
-    `obs` (T,) is what one patient's rollout observed. Returns `(logits (T, A),
-    values (T,))`, the value read AFTER visit k's observation is absorbed -- so
-    every arm's critic sees the current measurement. This is how recurrent PPO
-    evaluates stored actions under new parameters, and how a trained policy is
-    probed for whether it listens to its input at all.
+    `obs` (T,) is what one patient's rollout observed, `seen` (T,) which of its
+    visits happened (default: all). Returns `(logits (T, A), values (T,))`, the
+    value read AFTER visit k's observation is absorbed -- so every arm's critic
+    sees the current measurement. This is how recurrent PPO evaluates stored
+    actions under new parameters, and how a trained policy is probed for
+    whether it listens to its input at all. Logits at missed visits are
+    meaningless (no decision was made there).
     """
+    seen = jnp.ones(obs.shape[0], dtype=bool) if seen is None else seen
 
-    def step(h, o):
-        logits, h2 = policy(o, h, ep.visit_interval)
-        return h2, (logits, policy.value(o, h2))
+    def step(carry, x):
+        h, since = carry
+        o, s = x
+        logits, h2, since2 = _visit(policy, h, since, o, s, ep.visit_interval)
+        return (h2, since2), (logits, policy.value(o, h2))
 
-    _, (logits, values) = jax.lax.scan(step, policy.initial_state(), obs)
+    init = (policy.initial_state(), jnp.array(ep.visit_interval))
+    _, (logits, values) = jax.lax.scan(step, init, (obs, seen))
     return logits, values
 
 
