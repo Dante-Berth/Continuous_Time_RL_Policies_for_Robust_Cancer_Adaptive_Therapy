@@ -110,7 +110,7 @@ def fig_validity(runs: dict, path: Path) -> None:
     )
     ax.set_xticks([x for x, _ in xt], [r for _, r in xt])
     ax.set_ylabel("closed-loop score (Tier 1)")
-    ax.legend(frameon=False, fontsize=9, loc="upper right")
+    ax.legend(frameon=False, fontsize=9, loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=3)
     ax.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
     fig.savefig(path, dpi=170)
@@ -133,11 +133,14 @@ def build_figures(fig_dir: Path, arts: dict) -> dict[str, Path]:
     put("mlp_rule", DECK / "mlp_rule.png", 5)
     put("w3_frontier", OUT / "w3_frontier.png", 6)
     put("w3b_frontier", OUT / "w3b_frontier.png", 7)
+    put("w3c_utility", OUT / "w3c_utility.png", 9)
     runs = {
         name: d["observation_dependence" if name == "Phase 2c" else "closed_loop_tier1"]
         for name, d in (("Phase 2c", arts["p2c"]), ("W3", arts["w3"]), ("W3b", arts["w3b"]))
         if d
     }
+    if arts.get("w3c_closed"):
+        runs["W3c"] = arts["w3c_closed"]
     if runs:
         fig_validity(runs, fig_dir / "08_validity.png")
         figs["validity"] = fig_dir / "08_validity.png"
@@ -174,6 +177,8 @@ def numbers(arts: dict) -> dict:
                 "valid_arm": d["valid_arm"],
             }
     n["regimes"] = arts["regimes"]
+    n["w3c"] = arts["w3c"]
+    n["w3c_closed"] = arts.get("w3c_closed") or {}
     return n
 
 
@@ -595,6 +600,7 @@ def build_deck(path: Path, figs: dict, n: dict, stamp: str) -> None:
             ser.format.fill.solid()
             ser.format.fill.fore_color.rgb = col
         ch.value_axis.maximum_scale = 360
+        ch.value_axis.minimum_scale = 0
         ch.value_axis.major_gridlines.format.line.color.rgb = RGBColor(0xDD, 0xDD, 0xDD)
         ch.value_axis.tick_labels.font.size = Pt(11)
         ch.category_axis.tick_labels.font.size = Pt(12)
@@ -650,6 +656,16 @@ def build_deck(path: Path, figs: dict, n: dict, stamp: str) -> None:
         ("W3", "+ LSTM arm,\nfrontiers", "INVALID", GREY),
         ("W3b", "fresh seeds,\nRMST", w3b_state, GREY),
     ]
+    if n.get("w3c"):
+        ok = n["w3c"]["H_mem"]["valid"] and n["w3c"]["H_ct"]["valid"]
+        tl.append(
+            (
+                "W3c",
+                "per-cell validity,\ntrained objective",
+                "FAIL" if ok else "INVALID",
+                CORAL if ok else GREY,
+            )
+        )
     d.shape(
         s, MSO_SHAPE.RECTANGLE, M + 0.3, 3.62, W - 2 * M - 0.6, 0.04, RGBColor(0xC9, 0xD3, 0xD8)
     )
@@ -790,7 +806,10 @@ def build_deck(path: Path, figs: dict, n: dict, stamp: str) -> None:
     )
     if "validity" in figs:
         image(s, figs["validity"], M, 1.9, 8.4, 4.6)
-    fails = {k: v for r in ("w3", "w3b") if n.get(r) for k, v in n[r]["fails"].items()}
+    fails = {
+        f"{r.upper()} {k}": v for r in ("w3", "w3b") if n.get(r) for k, v in n[r]["fails"].items()
+    }
+    fails |= {f"W3C {k}": v for k, v in n["w3c_closed"].items() if v < 0.10}
     card(s, 9.3, 1.9, 3.45, 4.6)
     T(
         s,
@@ -803,8 +822,8 @@ def build_deck(path: Path, figs: dict, n: dict, stamp: str) -> None:
         + [
             [
                 (
-                    "The MLP never fails; one recurrent cell in ~14 does — enough to invalidate every "
-                    "registration with an LSTM arm so far.",
+                    f"The MLP never fails; {len(fails)} recurrent cells have. W3c's per-cell rule "
+                    "excludes such cells instead of voiding the arm.",
                     {"color": CORAL},
                 )
             ]
@@ -963,6 +982,108 @@ def build_deck(path: Path, figs: dict, n: dict, stamp: str) -> None:
             size=14,
         )
 
+    # W3c -- the first valid three-arm result
+    s = d.new(
+        notes="PREREG W3c: per-cell validity, 5 fresh seeds, primary = paired U = min(TTP, 357) - "
+        "w * exposure, the survival and exposure terms each cell was trained to maximise, averaged "
+        "over w. Rules are descriptive reference points on the same patients."
+    )
+    d.title(
+        s,
+        "W3c: memory hurts, continuous time hurts further",
+        "First valid three-arm run · trained objective U = TTP − w · exposure, paired per patient",
+    )
+    c = n.get("w3c")
+    if not c:
+        d.missing(s, "w3c_utility.json")
+    else:
+        tab = c["table"]
+        ws = ("0.05", "0.1", "0.2", "0.4")
+        names = ["mlp", "thr0.8", "MTD", "lstm", "ode_rnn", "AT50", "none"]
+        labels = {"mlp": "MLP", "lstm": "LSTM", "ode_rnn": "ODE-RNN"}
+        cols = {
+            "mlp": INK,
+            "thr0.8": REGIME_COLORS["thr0.8"],
+            "MTD": CORAL,
+            "lstm": REGIME_COLORS["LSTM"],
+            "ode_rnn": TEAL,
+            "AT50": REGIME_COLORS["AT50"],
+            "none": REGIME_COLORS["none"],
+        }
+        cd = CategoryChartData()
+        cd.categories = ["Tier 0 (no shift)", "Tier 1 (shifted)"]
+        for nm in names:
+            cd.add_series(
+                labels.get(nm, nm),
+                [
+                    round(float(np.mean([tab[f"{nm}|{w}|{t}"]["U"] for w in ws])), 1)
+                    for t in ("tier0", "tier1")
+                ],
+            )
+        ch = s.shapes.add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(M), Inches(1.9), Inches(7.6), Inches(5.0), cd
+        ).chart
+        ch.has_legend = True
+        ch.legend.position = XL_LEGEND_POSITION.TOP
+        ch.legend.include_in_layout = False
+        ch.legend.font.size = Pt(11)
+        for ser, nm in zip(ch.series, names, strict=True):
+            ser.format.fill.solid()
+            ser.format.fill.fore_color.rgb = cols[nm]
+        ch.value_axis.has_title = True
+        ch.value_axis.axis_title.text_frame.text = "mean U over w (days)"
+        ch.value_axis.axis_title.text_frame.paragraphs[0].runs[0].font.size = Pt(11)
+        ch.value_axis.tick_labels.font.size = Pt(11)
+        ch.value_axis.major_gridlines.format.line.color.rgb = RGBColor(0xDD, 0xDD, 0xDD)
+        ch.category_axis.tick_labels.font.size = Pt(12)
+        card(s, 8.6, 1.9, 4.15, 5.0)
+        rows = []
+        for h, lab in (("H_mem", "Memory: LSTM − MLP"), ("H_ct", "Continuous time: ODE − LSTM")):
+            t1, t0 = c[h]["tier1"], c[h]["tier0"]
+            rows += [
+                [(lab, {"bold": True, "size": 16})],
+                [
+                    (
+                        f"{t1['delta']:+.1f} d",
+                        {"bold": True, "size": 26, "font": HEAD, "color": CORAL},
+                    ),
+                    (f"  [{t1['ci95'][0]:+.0f}, {t1['ci95'][1]:+.0f}] Tier 1", {"size": 13}),
+                ],
+                f"Tier 0: {t0['delta']:+.1f} d · {verdict_word(c[h]).replace('fail', 'FAILS')}",
+            ]
+        rows += [
+            [
+                ("Excluded cells: ", {"bold": True}),
+                (f"{len(c['excluded'])}/60, none from the MLP", {}),
+            ],
+            [
+                (
+                    "The MLP only ties the one-line 0.8 × baseline rule.",
+                    {"color": CORAL, "bold": True},
+                )
+            ],
+        ]
+        T(s, 8.85, 2.1, 3.7, 4.7, rows, size=13, space_after=6)
+
+    if "w3c_utility" in figs:
+        s = d.new(
+            notes="Per exposure weight. At w = 0.40 both recurrent arms score below never treating on "
+            "Tier 1; the ODE-RNN beats the LSTM at w 0.10 and 0.40 but loses badly at 0.20."
+        )
+        d.title(s, "W3c per exposure weight", "Dashed = fixed rules, solid = trained policies")
+        image(s, figs["w3c_utility"], M, 1.8, W - 2 * M, 4.6)
+        T(
+            s,
+            M,
+            6.55,
+            W - 2 * M,
+            0.6,
+            "The gap is present without the shift (Tier 0), so it is a "
+            "controller-quality gap, not a robustness gap — the same shape W1 found for Phase 2c.",
+            size=14,
+            color=GREY,
+        )
+
     # 17 pitfalls
     s = d.new(notes="ROADMAP traps 4-6 plus the W3 ceiling; each now has an automatic check.")
     d.title(s, "Four ways this evaluation lied — each now a gate")
@@ -1016,7 +1137,10 @@ def build_deck(path: Path, figs: dict, n: dict, stamp: str) -> None:
         s, "Next", "Target: ICLR 2027 workshop — a clean negative is still the paper", dark=True
     )
     nxt = [
-        ("Rule", "decide per-cell vs per-arm validity before any new registration"),
+        (
+            "Law",
+            "promote 'no continuous-time edge on Tiers 0/1' — two valid closures (vs MLP, vs LSTM)",
+        ),
         (
             "W4",
             "irregular visits (20% / 50% dropped) — where continuous time has a mechanical reason to help; "
@@ -1051,12 +1175,12 @@ def build_markdown(path: Path, figs: dict, n: dict, stamp: str, commit: str) -> 
         "",
         "## 1. Summary",
         "",
-        "**No continuous-time edge has been found, and no registered run has yet produced a valid "
-        "memory-vs-continuous-time verdict.** On the one valid comparison (Phase 2c, L424) the ODE-RNN "
-        "progresses earlier than a memoryless MLP, and W1 (L461) shows it loses in-distribution too — a "
-        "training gap, not a robustness gap. Both LSTM registrations (W3 L496, W3b L526) are invalid: the "
-        "recurrent arms go open-loop in about 1 in 14 PQN cells, the MLP never. Descriptively the MLP leads "
-        "everywhere, and what it learned is a burden-threshold switch — the rule Gallagher 2024's RL found.",
+        "**Pre-registered answer so far: neither memory nor continuous time helps on this problem.** "
+        "Phase 2c (L424) found the ODE-RNN progressing earlier than a memoryless MLP; W1 (L461) showed that "
+        "gap exists without the shift. W3c (L565), the first valid three-arm run, orders the arms MLP > LSTM "
+        "> ODE-RNN on the objective they were trained for, on both tiers, and the MLP only ties the one-line "
+        "rule 'treat above 0.8 × baseline' that Gallagher 2024's RL also found. Along the way, four "
+        "evaluation pitfalls were caught, each now a gate. Irregular observation (W4) is the remaining test.",
         "",
     ]
     if "untreated" in rel:
@@ -1147,6 +1271,29 @@ def build_markdown(path: Path, figs: dict, n: dict, stamp: str, commit: str) -> 
             + (", ".join(f"`{k}` {v:.3f}" for k, v in r["fails"].items()) or "none"),
             "",
         ]
+    if c := n.get("w3c"):
+        L += ["## 7b. W3c — the first valid three-arm result (L565)", ""]
+        if "w3c_utility" in rel:
+            L += [f"![W3c utility]({rel['w3c_utility']})", ""]
+        L += ["| comparison | Tier 0 Δ U | Tier 1 Δ U | status |", "|---|---|---|---|"]
+        for h, lab2 in (("H_mem", "LSTM − MLP"), ("H_ct", "ODE − LSTM")):
+            t0, t1 = c[h]["tier0"], c[h]["tier1"]
+            L.append(
+                f"| {lab2} | {t0['delta']:+.1f} [{t0['ci95'][0]:+.1f}, {t0['ci95'][1]:+.1f}] | "
+                f"{t1['delta']:+.1f} [{t1['ci95'][0]:+.1f}, {t1['ci95'][1]:+.1f}] | {verdict_word(c[h])} |"
+            )
+        ws = ("0.05", "0.1", "0.2", "0.4")
+        L += [
+            "",
+            "Mean U over w (days), Tier 1: "
+            + " · ".join(
+                f"{k} {np.mean([c['table'][f'{k}|{w}|tier1']['U'] for w in ws]):.1f}"
+                for k in ("mlp", "thr0.8", "MTD", "lstm", "ode_rnn", "AT50", "none")
+            ),
+            "",
+            "Excluded cells: " + ", ".join(f"`{e}`" for e in c["excluded"]),
+            "",
+        ]
     if "validity" in rel:
         L += [
             "## 8. Validity across registrations",
@@ -1167,12 +1314,49 @@ def build_markdown(path: Path, figs: dict, n: dict, stamp: str, commit: str) -> 
         "",
         "## 10. Next",
         "",
-        "1. Decide per-cell vs per-arm validity before any new registration.",
+        "1. Decide whether to promote the Tier 0/1 continuous-time negative to LAWS.md.",
         "2. W4 — irregular observation, with an LSTM + Δt baseline.",
         "3. W5 only if Hahnfeldt's day-7 resolution limit is fixed; W6 write-up.",
         "",
     ]
     path.write_text("\n".join(L))
+
+
+def export_pdf(pptx: Path) -> Path | None:
+    """Convert the deck with LibreOffice, native or Flatpak. None if neither exists.
+
+    2026-09-24: on this machine LibreOffice is a Flatpak (org.libreoffice.LibreOffice),
+    not on PATH; a Flatpak app needs --filesystem to write outside its sandbox.
+    """
+    folder = pptx.parent
+    cmds = [
+        [exe, "--headless", "--convert-to", "pdf", "--outdir", str(folder), str(pptx)]
+        for exe in ("soffice", "libreoffice")
+        if shutil.which(exe)
+    ]
+    if shutil.which("flatpak"):
+        cmds.append(
+            [
+                "flatpak",
+                "run",
+                f"--filesystem={folder}",
+                "org.libreoffice.LibreOffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                "--outdir",
+                str(folder),
+                str(pptx),
+            ]
+        )
+    for cmd in cmds:
+        try:
+            subprocess.run(cmd, check=True, capture_output=True, timeout=300)
+        except (subprocess.SubprocessError, OSError):
+            continue
+        if pptx.with_suffix(".pdf").exists():
+            return pptx.with_suffix(".pdf")
+    return None
 
 
 def main() -> int:
@@ -1185,8 +1369,14 @@ def main() -> int:
         "w1": load("w1_diagnose.json"),
         "w3": load("w3_frontier.json"),
         "w3b": load("w3b_frontier.json"),
+        "w3c": load("w3c_utility.json"),
         "regimes": load("deck/summary.json"),
     }
+    # W3c's analysis keeps only exclusions; its per-cell scores live in the shards.
+    shards = sorted((OUT / "w3c_shards").glob("*.json"))
+    arts["w3c_closed"] = {
+        p.stem: json.loads(p.read_text())["tier1"]["closed_loop"] for p in shards
+    } or None
     commit = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"], cwd=REPO, capture_output=True, text=True
     ).stdout.strip()
@@ -1194,8 +1384,12 @@ def main() -> int:
     n = numbers(arts)
     build_deck(folder / "adaptive_therapy_report.pptx", figs, n, stamp)
     build_markdown(folder / "REPORT.md", figs, n, stamp, commit)
+    pdf = export_pdf(folder / "adaptive_therapy_report.pptx")
     missing = [k for k, v in arts.items() if v is None]
-    print(f"-> {folder}  ({len(figs)} figures; missing artifacts: {missing or 'none'})")
+    print(
+        f"-> {folder}  ({len(figs)} figures; missing artifacts: {missing or 'none'}; "
+        f"pdf: {'yes' if pdf else 'LibreOffice not found'})"
+    )
     return 0
 
 
