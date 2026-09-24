@@ -9,6 +9,7 @@ import pytest
 
 from adaptive_therapy.envs.reward import RewardConfig
 from adaptive_therapy.envs.sampling import sample_cohort
+from adaptive_therapy.policies.lstm import LSTMPolicy
 from adaptive_therapy.policies.mlp import MLPPolicy
 from adaptive_therapy.policies.ode_rnn import ODERNNPolicy
 from adaptive_therapy.rl.pqn import PQNConfig, episode_minibatches, q_lambda_targets, train
@@ -74,9 +75,23 @@ def test_the_two_q_networks_are_parameter_matched_excluding_the_unused_critic():
     mlp = q_params(MLPPolicy(k, width=441, layer_norm=True))
     ode = q_params(ODERNNPolicy(k, layer_norm=True))
     assert abs(mlp - ode) / ode < 0.01
+    # PREREG W3 [2026-09-24]: the LSTM arm within 5% of the other two.
+    lstm = q_params(LSTMPolicy(k, layer_norm=True))
+    assert abs(lstm - mlp) / mlp < 0.05
 
 
-@pytest.mark.parametrize("arch", ["mlp", "ode_rnn"])
+def test_the_lstm_remembers_and_ignores_the_gap_length():
+    """Memory without continuous time: history changes its output, dt never does."""
+    p = LSTMPolicy(jax.random.PRNGKey(1), layer_norm=True)
+    h0 = p.initial_state()
+    _, h_a = p(jnp.array(0.5), h0, 7.0)
+    q_a, _ = p(jnp.array(0.0), h_a, 7.0)
+    q_b, _ = p(jnp.array(0.0), h0, 7.0)
+    assert not jnp.allclose(q_a, q_b)
+    assert jnp.array_equal(p(jnp.array(0.0), h_a, 7.0)[0], p(jnp.array(0.0), h_a, 30.0)[0])
+
+
+@pytest.mark.parametrize("arch", ["mlp", "ode_rnn", "lstm"])
 def test_pqn_compiles_a_fixed_number_of_times_regardless_of_update_count(arch):
     import jax.monitoring as mon
 
@@ -88,6 +103,7 @@ def test_pqn_compiles_a_fixed_number_of_times_regardless_of_update_count(arch):
     make = {
         "mlp": lambda: MLPPolicy(jax.random.PRNGKey(0), width=441, layer_norm=True),
         "ode_rnn": lambda: ODERNNPolicy(jax.random.PRNGKey(0), layer_norm=True),
+        "lstm": lambda: LSTMPolicy(jax.random.PRNGKey(0), layer_norm=True),
     }[arch]
     c = sample_cohort("lotka_volterra", 8, seed=0)
     ep = EpisodeConfig(n_visits=4, model_id="lotka_volterra")
