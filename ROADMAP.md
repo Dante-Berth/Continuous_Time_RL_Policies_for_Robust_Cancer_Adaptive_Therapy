@@ -124,7 +124,7 @@ trainer that produced valid closed-loop arms ([L424](adaptive_therapy/RESEARCH_L
 validity gate (≥ 0.10 per cell), the capped TTP median, and the one-sided paired
 Wilcoxon.
 
-### W1 — Diagnose the Tier-1 loss (≈ 1 h; a diagnostic, not a verdict) — *measurements done:* [L461](adaptive_therapy/RESEARCH_LOG.md#L461); literature pending PDFs
+### W1 — Diagnose the Tier-1 loss (≈ 1 h; a diagnostic, not a verdict) — *done:* [L461](adaptive_therapy/RESEARCH_LOG.md#L461); both papers reviewed 1°
 
 On the 12 saved Phase-2c policies, with no retraining:
 - **Tier 0** (in-range test patients). ODE-RNN ≈ MLP in-distribution but worse
@@ -167,6 +167,15 @@ and ODE-RNN.
 - ODE-RNN above the best discrete arm on the frontier ⇒ a narrow positive:
   continuous time helps under irregular observation, not under parameter shift.
 - Not above ⇒ the negative holds on both axes; written as such.
+
+*From the 1° reading (2026-09-24):* Gallagher 2024 trained policies at one
+decision interval and found that evaluating at a longer interval lowers TTP
+through "premature progression" (Fig. 3C, p.1934), and that missed visits cost
+a single-patient policy ≥ 20% TTP (p.1937). Expect every arm to lose TTP under
+dropped visits; the W4 question is which arm loses least, on the frontier.
+arXiv 2605.02552's recurrent win hides a reward-coupled state from one fixed
+patient; it is no prior that memory helps here, where W1 found a memoryless
+burden threshold near-sufficient ([L461](adaptive_therapy/RESEARCH_LOG.md#L461)).
 
 ### W5 — Mechanism shift, Tier 2 (optional; only with runway after W4)
 

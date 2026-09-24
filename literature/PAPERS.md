@@ -11,7 +11,7 @@ index; the judgment lives in `papers/<id>.md`.
 > uv run python research/lit_table.py --check   # exit 1 if stale
 > ```
 
-**Provenance status: 1/16 read from the PDF (`1°`); 15 are `2°` (94%).**
+**Provenance status: 3/17 read from the PDF (`1°`); 14 are `2°` (82%).**
 
 A `2°` row is seeded from PROJECT.md §12-REF — the citation resolves, but
 the paper has not been read. **A `2°` cell may not be cited in a design**
@@ -32,11 +32,12 @@ to our design", and it is the only section most readers need.
 | `threshold` | [url-zhang-2017-mcrpc-at](papers/url-zhang-2017-mcrpc-at.md) | 2° | The AT algorithm itself -- the burden-threshold rule Gallagher's learned policy collapsed to. The interpretable structure Q1-alt asks whether a policy can preserve. |
 | `threshold` | [doi-10.1371-journal.pone.0120007](papers/doi-10.1371-journal.pone.0120007.md) | 2° | Where the Hahnfeldt numbers come from. Pull from the source tables; do not hardcode from memory. |
 | `threshold` | [doi-10.1155-2017-1642976](papers/doi-10.1155-2017-1642976.md) | 2° | Secondary source for the non-dimensional Kuznetsov values. |
-| `control` | [arxiv-2605.02552](papers/arxiv-2605.02552.md) | 2° | The LSTM-vs-MLP axis is THEIRS. We must beat a competent recurrent baseline, not an MLP, or the comparison is unearned. |
+| `control` | [arxiv-2605.02552](papers/arxiv-2605.02552.md) | 1° | Occupies memory-helps-under-POMDP, but on a single fixed patient with a hidden toxicity state, means over 10 seeds, and no distribution shift. Our W1 memoryless MLP beat the recurrent arm; its result does not predict ours. It sets the minimum baseline: an LSTM arm must exist (W3). |
 | `control` | [arxiv-2608.18387](papers/arxiv-2608.18387.md) | 2° | The identifiability landmine. Forces Q3 to be robustness UNDER non-identifiability, and forces a second endpoint alongside TTP. |
 | `control` | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | 2° | Assumes full subpopulation observation (their stated limitation). We are burden-only, which is the harder and more realistic setting. |
 | `control` | [url-iclr-2024-metaphysica](papers/url-iclr-2024-metaphysica.md) | 2° | A strong baseline we should be willing to lose a tier to. PROJECT.md 13 names beating only weak baselines as a reviewer reflex. |
-| `mechanism` | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | 2° | The direct baseline and the source of Q1. Same environment, same A3C setup -- we test whether its frequency finding is mechanism-independent. |
+| `mechanism` | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | 2° | Superseded by doi-10.1158-0008-5472.CAN-23-2040. Kept, never deleted, per REVIEW_PROTOCOL §0.2. |
+| `mechanism` | [doi-10.1158-0008-5472.CAN-23-2040](papers/doi-10.1158-0008-5472.CAN-23-2040.md) | 1° | Our setting, pre-occupied: LV, burden-only, TTP = +20%. Its threshold rule is the one our MLP learned (W1, ~0.80x baseline). Fig. 3C predicts W4's direction for any policy trained weekly and evaluated with dropped visits. |
 | `mechanism` | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | 2° | The third family. Produces dynamics LV and Hahnfeldt cannot, and the Hopf bifurcations that break a naive TTP rule (PROJECT.md 6.3). |
 | `mechanism` | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | 2° | The Tier-2 mechanism shift. Bottleneck is vasculature, not competition, so an LV-tuned threshold has no reason to transfer. |
 | `mechanism` | [url-neurips-2019-latent-odes](papers/url-neurips-2019-latent-odes.md) | 2° | The encoder for the MoE latent model AND the Q4 irregular-sampling baseline the pure-liquid policy must beat. Do not reinvent it. |
@@ -50,9 +51,8 @@ what promotes a row to `1°` and makes it citable in a design argument.
 
 | Tier | Paper | Why it matters |
 |---|---|---|
-| 1 | [arxiv-2605.02552](papers/arxiv-2605.02552.md) | Recurrent TD3 (LSTM) beats feed-forward on AhnChemoEnv/DTR-Bench under partial observability |
 | 1 | [arxiv-2608.18387](papers/arxiv-2608.18387.md) | r_R is weakly identifiable under adaptive therapy; parameters fit under one schedule do not transport to another; TTP and metastasis risk pull against each other |
-| 1 | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | A3C DRL on an LV prostate model; reducing monitoring/decision frequency increases time-to-progression |
+| 1 | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | REJECTED: mis-seeded stub. Wrong DOI and title for Gallagher 2024; the PDF's own DOI is 10.1158/0008-5472.CAN-23-2040 (p.1929) |
 | 2 | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | TD3 vs DQN under parametric tumour heterogeneity, full observation, 100-patient generalization |
 | 2 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Effector-tumour predation dynamics with immunostimulation, sneaking-through, and a dormant state; BCL1 lymphoma parameters |
 | 2 | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | Tumour growth under a dynamic vascular carrying capacity; inhibition released through the tumour surface gives the V^(2/3) term |
@@ -70,9 +70,10 @@ what promotes a row to `1°` and makes it citable in a design argument.
 
 | ID | Venue | Obj | Family | Obs | Endpoint | Ident | Prov | Status |
 |---|---|---|---|---|---|---|---|---|
-| [arxiv-2605.02552](papers/arxiv-2605.02552.md) | arXiv:2605.02552 | policy | other | burden-only | survival-proxy | no | 2° | queued |
+| [arxiv-2605.02552](papers/arxiv-2605.02552.md) | arXiv:2605.02552v1, 4 May 2026 | policy | other | full-state | survival-proxy | no | 1° | reviewed |
 | [arxiv-2608.18387](papers/arxiv-2608.18387.md) | arXiv:2608.18387 | theory | lotka-volterra | burden-only | metastasis | yes | 2° | queued |
-| [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 2° | queued |
+| [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 2° | rejected |
+| [doi-10.1158-0008-5472.CAN-23-2040](papers/doi-10.1158-0008-5472.CAN-23-2040.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 1° | reviewed |
 | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | arXiv:2609.12264 | policy | other | full-state | survival-proxy | no | 2° | queued |
 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Bulletin of Mathematical Biology 1994;56(2):295-321 | model | kuznetsov | full-state | none | no | 2° | queued |
 | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | Cancer Research 1999;59(19):4770-4775 | model | hahnfeldt | full-state | none | no | 2° | queued |
@@ -89,8 +90,8 @@ what promotes a row to `1°` and makes it citable in a design argument.
 
 ## What the pile looks like
 
-- **Model families:** `hahnfeldt` 2, `kuznetsov` 2, `lotka-volterra` 4, `none` 4, `other` 4
-- **Observability:** `burden-only` 6, `full-state` 6, `n/a` 4
+- **Model families:** `hahnfeldt` 2, `kuznetsov` 2, `lotka-volterra` 5, `none` 4, `other` 4
+- **Observability:** `burden-only` 6, `full-state` 7, `n/a` 4
 - **Bearing on identifiability (PROJECT.md §5):** 1
 
-*Generated 2026-09-23 by `research/lit_table.py`.*
+*Generated 2026-09-24 by `research/lit_table.py`.*
