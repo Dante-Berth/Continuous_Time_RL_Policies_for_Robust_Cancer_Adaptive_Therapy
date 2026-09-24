@@ -388,3 +388,49 @@ if both arms keep most patients progression-free, gaps will be small in days.
 seeds bound it, they do not remove it.
 **Artifacts:** `research/w3_frontier.py w3b`, `research/outputs/w3b_*`.
 **Honest prior:** H_mem and H_ct both fail; the W3 descriptives favour the MLP.
+
+## [2026-09-24] — W3c: memory vs continuous time with per-cell validity and the trained objective as the primary statistic
+
+**Why.** W3 and W3b were both INVALID ([L496](RESEARCH_LOG.md#L496),
+[L526](RESEARCH_LOG.md#L526)) for two structural reasons, not one-off bad luck:
+(a) a single open-loop cell voided a whole arm — recurrent arms fail the gate in
+4/54 cells, so a per-arm rule invalidates almost every registration; (b) the
+frontier overlap failed in 5 of 8 hypothesis × tier comparisons, because the
+arms choose different doses and a frontier can only compare them where both
+reach. **W3 and W3b data have been seen**: fresh seeds, and neither is re-graded.
+**Hypotheses (unchanged):** H_mem — LSTM above MLP; H_ct — ODE-RNN above LSTM;
+on Tier 1.
+**Change 1 — per-cell validity.** A cell with greedy closed-loop < 0.10 (Tier 1)
+is EXCLUDED and listed. An arm's point at a weight needs ≥ 3 of its 5 seeds
+valid; an arm with < 3 valid seeds at any weight, or > 20% of its cells
+excluded overall, is INVALID (a trainability result). Exclusion is decided once
+on the full data, before any bootstrap.
+**Change 2 — primary statistic = the trained objective.** Per patient,
+U = min(TTP, 357) − w · cumulative exposure: the survival and exposure terms of
+`envs/reward.py` (1 per day; w per unit dose-day), which every cell was trained
+to maximise at its own w. Its burden-excess term is omitted: TTP already carries
+it. Δ(A, B) = mean over the 4 weights of the mean paired difference U_A − U_B,
+over patient × seed pairs where both cells are valid. It needs no exposure
+overlap. **CI:** 2000 bootstrap resamples of the 200 patients (the same indices
+for every cell). **H passes** iff the Tier-1 CI lies wholly above 0.
+"Robust" wording only if the Tier-1 CI lies above the Tier-0 Δ point estimate.
+**Change 3 — seeds {6, 7, 8, 9, 10}** (5, fresh), so one excluded cell leaves
+a point.
+**Change 4 — rule baselines, descriptive only:** none, MTD, AT50 and the 0.8 ×
+baseline threshold (`policies/rules.py`), on the same cohorts and eval keys,
+reported with U at each w. No test: they are reference points, not arms.
+**Unchanged:** arms (MLP 3090, LSTM-26 3045, ODE-RNN 3091 Q-path), PQN
+Phase-2c settings, Tier 0 + Tier 1 cohorts, 200 test patients, w ∈ {0.05, 0.10,
+0.20, 0.40}. Grid 3 × 4 × 5 = 60 cells, ≈ 25 min on CPU.
+**Secondary (descriptive):** W3b's RMST frontier and gaps where overlap ≥ 20%;
+paired one-sided Wilcoxon on U per w; censoring; exclusions per arm.
+**Kill.** H_ct fails ⇒ "no continuous-time edge over a matched recurrent arm on
+Tiers 0/1", logged; W4 proceeds. An invalid arm ⇒ trainability result, no verdict
+for the hypotheses that use it. No re-grade, no extra seeds after seeing results.
+**Declared risks.** U adds days and w-weighted dose-days: it is the trained
+objective, not a clinical utility, and its scale depends on w — hence the
+mean over w is reported beside each w. Per-cell exclusion can flatter an arm
+that fails often; the exclusion count is reported with every Δ.
+**Artifacts:** `research/w3_frontier.py w3c`, `research/outputs/w3c_*`.
+**Honest prior:** H_mem fails (W3b descriptive LSTM − MLP −45 d); H_ct is open
+(W3b descriptive −5 d [−15, +12]).
