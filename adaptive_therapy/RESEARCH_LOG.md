@@ -522,3 +522,31 @@ PQN at every w; adding memory (LSTM) hurt most. Before W4 the owner must
 decide (a NEW registration, never a re-run of this one): a longer horizon or
 restricted-mean TTP so the MLP is not at the ceiling, and whether w=0 stays
 in the sweep. W4 still proceeds as a separate hypothesis.
+
+## [2026-09-24] — W3b INVALID again: one open-loop cell in each recurrent arm on fresh seeds; the recurrent arms fail PQN's validity gate in 4 of 54 cells, the MLP in 0 of 33
+**Verdict:** OPEN — no H_mem / H_ct verdict (criterion 0 fails; H_ct overlap 1%) · **Gate:** Tier-1 RMST frontier gap LSTM−MLP −45 d [−59, −40], overlap 52%; ODE−LSTM −5 d [−15, +12], overlap 1% (Tier 0: −28 [−41, −19] / −8 [−12, +5]) · closed-loop fails: lstm w0.4 s4 0.010, ode_rnn w0.2 s3 0.011 · MLP Tier-1 RMST 291–318 d, exposure 184–287 · 3 fresh seeds × 4 w × 200 pts × 2 tiers · **Artifacts:** `research/w3_frontier.py w3b`, `research/outputs/w3b_frontier.{json,png,log}`, `w3b_shards/`, `w3b_policies/`
+
+### Context
+PREREG W3b (b76543e): W3 on seeds {3,4,5}, restricted-mean TTP (RMST) as the
+frontier's y-axis, w = 0 dropped. Registered before any W3b cell ran.
+
+### Results
+**(0) validity FAILS again, one cell per recurrent arm**, at weights where W3
+passed (LSTM w0.40 s4 0.010; ODE-RNN w0.20 s3 0.011). Across W3 + W3b the
+recurrent arms fail the gate in 4 of 54 cells (LSTM 2/27, ODE-RNN 2/27; W3's
+w=0 cells included); the MLP in 0 of 27, and 0 of 6 in Phase 2c.
+**(0b)** H_mem overlap passes (34%, 52%); H_ct fails (1%): the ODE-RNN's
+exposures cluster at 163–180 in 8/12 cells, the LSTM's at 172–357.
+**RMST removes the ceiling as intended:** MLP Tier-1 RMST 291–318 d, never
+below that in any cell; LSTM 138–283; ODE-RNN 93–265. Descriptive gap
+LSTM−MLP −45 d on Tier 1, CI wholly below 0 — the MLP direction on the one
+comparison whose overlap is valid, but the LSTM arm is invalid, so no verdict.
+Tier-1 gaps are larger than Tier-0 for H_mem (−45 vs −28).
+
+### Decision
+No re-grade. Two registrations of the same design both lost validity to a
+single recurrent cell: under PQN at this budget, recurrent Q-networks go
+open-loop in ~1 in 14 cells, which is itself the trainability result the
+kill clause prescribes. The next registration must decide validity per CELL
+(exclude and report) or per ARM, before it runs — the owner's call. W4 is
+unaffected as a hypothesis but inherits the same risk.
