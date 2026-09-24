@@ -307,3 +307,50 @@ because each arm picks its own dose.
 `research/outputs/phase2c_policies/`.
 **Honest prior:** a null on Tier 1 remains the expected outcome; a VALID run is
 itself informative, since no previous run managed one.
+
+## [2026-09-24] — W3: memory vs continuous time on Tiers 0 and 1, compared on TTP-vs-exposure frontiers (W2's rule)
+
+**Why.** Phase 2c compared a memoryless MLP with an ODE-RNN, so it could not say
+whether the loss came from memory or from continuous time
+([L424](RESEARCH_LOG.md#L424)). W1 then found the ODE-RNN worse in-distribution
+too, making L424 a training/capacity gap, not a robustness gap
+([L461](RESEARCH_LOG.md#L461)). Exposure was matched ±10% in only 1 of 8 Phase-2
+comparisons, since each arm picks its own dose. Registered BEFORE the LSTM arm
+is built and before any run of this grid.
+**Hypotheses.** H_mem: an LSTM's frontier lies above the MLP's. H_ct: the
+ODE-RNN's frontier lies above the LSTM's — the continuous-time question.
+**Arms (PQN, Phase-2c trainer, fixed, not tuned):** MLP (width 441, 3090),
+ODE-RNN (3091), **LSTM** — `eqx.nn.LSTMCell(1, 26)` + the same LayerNorm Q
+readout, ~3045 Q-path params; the exact count, within ±5% of 3090, is asserted
+by a test before any run. Same observation, `dt` signature and greedy eval.
+**Grid:** 3 arms × w ∈ {0.0, 0.05, 0.10, 0.20, 0.40} × seeds {0, 1, 2} = 45
+cells. Every cell is evaluated on **Tier 0** (in-range, the Tier-1 patients
+before the shift) and **Tier 1** (×1.5 r_S, ×1.5 r_R, ×0.6 K, y0 from the
+shifted K), 200 test patients each, LV, σ 0.05, weekly × 52.
+**Frontier rule (W2, fixed here).** Per arm and tier, at each w: take the median
+over seeds of the cell's median cumulative exposure (x) and capped median TTP
+(y). The arm's frontier is the piecewise-linear curve through its 5 points,
+sorted by x. **Gap(A, B)** = mean of y_A − y_B over the exposure overlap of
+the two curves (100-point grid), in days. **CI:** 2000 bootstrap resamples of the
+200 test patients (the same indices for every cell, preserving pairing),
+recomputing every cell median and the gap; 95% percentile interval.
+**Criteria.** (0) **validity:** each cell's greedy `observation_dependence`
+≥ 0.10; an arm failing in any cell gets a trainability result and no frontier
+verdict. (0b) The overlap must span ≥ 20% of both arms' exposure ranges, else
+"frontiers do not overlap" is the result, not a gap. **H_ct passes** iff
+Gap(ODE, LSTM) on Tier 1 > 0 with CI excluding 0. **H_mem**: the same for
+Gap(LSTM, MLP). **Robustness wording** (vs. "better controller") is allowed only
+if the Tier-1 gap CI lies above the Tier-0 gap point estimate.
+**Kill.** H_ct fails ⇒ "no continuous-time edge over a matched recurrent arm on
+Tiers 0/1", logged; W4 proceeds, since it is a separate hypothesis. No arm
+widened, no retuning, no grid extension after seeing results.
+**Secondary (descriptive):** pooled paired one-sided Wilcoxon per w as in 2c;
+censoring; per-seed points on the frontier plot; obs-explained dose fraction (W1).
+**Declared risks:** the w=0.0 cells may dose constantly (frontier anchor, not a
+policy of interest); PQN's wide-network stability argument favours the MLP
+(arxiv-2407.04811 p.5–6); a gap averaged over the overlap can hide a crossing,
+so the curves are always plotted.
+**Artifacts:** `adaptive_therapy/policies/lstm.py` + test,
+`research/w3_frontier.py`, `research/outputs/w3_*.json`, `w3_frontier.png`.
+**Honest prior:** H_mem null (W1: a memoryless threshold explains ≥ 0.96 of the
+MLP's doses); H_ct fails, given L424 and L461.
