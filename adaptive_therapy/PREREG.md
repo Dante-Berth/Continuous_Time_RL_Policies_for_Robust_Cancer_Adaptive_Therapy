@@ -434,3 +434,63 @@ that fails often; the exclusion count is reported with every Δ.
 **Artifacts:** `research/w3_frontier.py w3c`, `research/outputs/w3c_*`.
 **Honest prior:** H_mem fails (W3b descriptive LSTM − MLP −45 d); H_ct is open
 (W3b descriptive −5 d [−15, +12]).
+
+## [2026-09-25] — W4: irregular observation — does continuous time help when visits are missed?
+
+**Why.** Tier 4 is the one axis where continuous time has a mechanical reason to
+help, left open by [CLOSED #1](../CLOSED.md) and W3c ([L565](RESEARCH_LOG.md#L565)).
+No W4 data exist; W3c's policies have been seen on regular visits only.
+**Missed visit (fixed here).** Each visit after the first is missed i.i.d. with
+probability p. A missed visit gives no observation and no decision: the policy
+state is carried, the next dt is the true gap, and the **last chosen dose is
+given again** (hold: information is lost, not drug). Masks are nested across p
+and identical for every arm and rule at a seed. TTP, exposure and burden
+integral are scored on the weekly ground-truth grid. PQN takes its loss over
+decisions only and bootstraps at the next decision (semi-MDP Q(λ)).
+**Deviation from ROADMAP W4 ("train regular").** Trained on regular visits,
+LSTM+Δt sees Δt = 7 throughout, so its Δt weight is a bias: the strawman the
+ROADMAP warns against. The primary trains every arm at p_train = 0.35; the
+ROADMAP design is secondary H_zs, on W3c's saved policies, at no training cost.
+**Arms:** MLP-441, LSTM-26, LSTM-26+Δt (gap/7 d as a 2nd input; Q-path 3149,
++1.9%), ODE-RNN (3091; flow now in fixed 7/8-d steps so a 14-d gap is exactly
+two 7-d flows, and a 7-d flow is unchanged). PQN Phase-2c settings. Grid 4 ×
+w {0.05, 0.10, 0.20, 0.40} × **10 fresh seeds {11..20}** = 160 cells.
+**Test:** the 200 Tier-0 test patients at p ∈ {0, 0.2, 0.5}, W3c's eval key.
+**Validity (W3c rule):** a cell with greedy closed-loop < 0.10 at p = 0 is
+EXCLUDED; an arm with < 60% valid seeds at any w or > 20% excluded is INVALID.
+**H_ct4 (primary).** U = min(TTP, 357) − w·exposure. Δ(ODE, X) = mean over w
+and p ∈ {0.2, 0.5} of the mean paired U_ODE − U_X. **CI: 2000 bootstrap
+resamples of seeds AND patients** (W3c's patient-only CI is conditional on the
+trained policies, [L596](RESEARCH_LOG.md#L596)). Passes iff the
+95% CI lies above 0 for **every** X ∈ {MLP, LSTM, LSTM+Δt} (intersection–union).
+**H_grace (secondary).** Same rule on the degradation U(p) − U(0), i.e. Q4's
+"degrades more gracefully". Passing it without H_ct4 is worded "degrades less
+but stays below", never "helps".
+**H_zs (secondary).** W3c's 60 regular-trained policies (seeds 6–10) on the same
+test, X ∈ {MLP, LSTM}, the H_ct4 rule. p = 0 must reproduce W3c's Tier 0
+exactly (the script refuses otherwise).
+**Descriptive:** Δ at p = 0 beside every Δ; patient-only CIs; per-seed Δ;
+LSTM+Δt − LSTM; per-(w, p) one-sided paired Wilcoxon on U; per (arm, w, p)
+capped median TTP + IQR, censoring, median exposure and burden integral; rules
+none / MTD / AT50 / thr0.8 at each p.
+**Kill.** H_ct4 fails ⇒ no continuous-time edge under missed visits either;
+with CLOSED #1 and W3c, the negative holds on both axes. There is no LTC or
+Neural-CDE rescue in this paper, and no extra seeds, rates or grid after seeing
+results. An invalid arm ⇒ trainability result.
+**Declared risks.** (1) Drops are i.i.d., so the next gap is unknown when
+dosing, and Δt only describes the past, which a near-memoryless threshold
+([L461](RESEARCH_LOG.md#L461)) may not need. (2) p_train sits between the
+test rates, so p ≤ 0.5 is near-in-distribution; unseen gaps are H_zs's job.
+(3) Relative to W3c, the ODE-RNN's training differs by float rounding (2e-7
+relative in Q and gradients, from a traced gap). 300 updates amplify that into
+a different policy. The MLP retrains bit-identically, and saved policies
+evaluate identically. (4) At p = 0.35 there are ~65% as many decisions for the
+same env-step budget.
+**Compute:** ≈ 75 min on CPU, 6 cells in parallel (measured on the unregistered
+seed 99, timing only: ODE-RNN 478 s per cell at p = 0.35 vs 204 s at p = 0, because
+a vmapped batch pays its longest gap; MLP 40 s, LSTM+Δt 33 s).
+**Artifacts:** `research/w4_irregular.py` →
+`research/outputs/w4_irregular.{json,png}`, `w4_shards/`, `w4_policies/`.
+**Honest prior:** H_ct4 fails. At regular visits the ODE-RNN sits ~100 d below
+the MLP, and hold dosing costs every arm alike. H_zs is the likelier place for
+an edge, and is still more likely to fail.

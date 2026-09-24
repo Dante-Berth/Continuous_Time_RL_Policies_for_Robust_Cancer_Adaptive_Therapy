@@ -155,6 +155,13 @@ never dropped. Compute ≈ 1 h on CPU (PQN: ~20 s per MLP cell, ~130 s per ODE c
 
 ### W4 — Irregular observation: the decisive test (≈ 1–2 d; registered)
 
+*Registered 2026-09-25 in [PREREG.md](adaptive_therapy/PREREG.md) W4, which
+supersedes this sketch in two places.* (1) Every arm **trains** with 35% of
+visits missed: under regular training LSTM + Δt sees Δt = 7 throughout, which
+makes it the strawman warned against below. Train-regular survives as the
+secondary zero-shot test on W3c's policies. (2) CIs resample seeds and patients
+([L596](adaptive_therapy/RESEARCH_LOG.md#L596)), with 10 seeds.
+
 Build: per-visit gaps in `EpisodeConfig`/`rollout` (the policy signature already
 takes `dt`; the TTP rule already works in days). What a missed visit means for
 dosing — e.g. the last chosen dose continues until the next observed visit — is
