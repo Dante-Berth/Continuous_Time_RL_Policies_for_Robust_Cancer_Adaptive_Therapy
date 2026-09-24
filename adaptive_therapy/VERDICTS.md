@@ -34,6 +34,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## CLOSED — do not re-litigate
 
+- **W3c VALID: no memory edge and no continuous-time edge on LV Tiers 0/1 — MLP > LSTM > ODE-RNN** on the trained objective U = TTP − w·exposure: LSTM−MLP −82.9 d [−87.7, −78.0], ODE−LSTM −15.7 d [−20.4, −10.8] (Tier 1; Tier 0 within 10 d, so not a robustness effect). The MLP only ties the one-line 0.8 × baseline rule (246.8 vs 245.9) → [L565](RESEARCH_LOG.md#L565)
 - **No continuous-time edge on LV Tier-1 with either trainer — Phase 2c FAILED on PQN, the first VALID run** — both arms closed-loop (MLP 0.37–0.54, ODE 0.15–0.31); ODE-RNN progresses earlier in 264/283 and 337/359 untied pairs (p(ODE later)=1.0); capped TTP ties at the horizon (w0.05) or ODE −133 d (w0.20). Caveat: MLP doses ~40% more, so "worse at equal drug" is not established by the registered test; the two ODE cells at MLP-like exposure are the worse ones → [L424](RESEARCH_LOG.md#L424)
 - **Phase 2 FAILED as registered — but it tested feedback vs a fixed schedule, not discrete vs continuous** — the ODE-RNN arm gave all 200 patients one identical exposure in 4/6 cells (open-loop); every MLP cell was closed-loop and won the paired test (227 and 234 patients earlier progression for ODE, p=3.7e-18, 1.0e-36). Closed: *this ODE-RNN under this PPO budget does not learn a feedback policy on LV*. The architecture question is UNTESTED; a fix is a new registration that diagnoses the collapse first, never a re-grade → [L275](RESEARCH_LOG.md#L275), [L312](RESEARCH_LOG.md#L312)
 

@@ -144,7 +144,7 @@ weights `w`, and compare arms on their **TTP-vs-exposure frontiers** over the
 exposure range both reach. The exact rule is fixed in W3's prereg before any
 sweep runs. This is also [CLOSED.md #1](CLOSED.md)'s reserved re-open condition.
 
-### W3 — Memory vs continuous time, Tiers 0 and 1 (≈ 1 d; registered) — *INVALID as registered:* [L496](adaptive_therapy/RESEARCH_LOG.md#L496); W3b *INVALID:* [L526](adaptive_therapy/RESEARCH_LOG.md#L526)
+### W3 — Memory vs continuous time, Tiers 0 and 1 (≈ 1 d; registered) — *INVALID as registered:* [L496](adaptive_therapy/RESEARCH_LOG.md#L496); W3b *INVALID:* [L526](adaptive_therapy/RESEARCH_LOG.md#L526); W3c *VALID, both hypotheses FAIL:* [L565](adaptive_therapy/RESEARCH_LOG.md#L565)
 
 Add the spec's arm (b), **LSTM**, Q-path parameter-matched (~3090) with the same
 LayerNorm readout. Grid: {MLP, LSTM, ODE-RNN} × `w`-sweep × 3 seeds, each trained

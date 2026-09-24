@@ -561,3 +561,34 @@ that the MLP is a burden-threshold switch stands. VERDICTS and the arXiv
 2605.02552 review now say ≥ 0.94; L461 is left as written (append-only).
 Found while generating `report/2026-09-24/` from the artifacts, which is the
 reason the report reads numbers rather than restating them.
+
+## [2026-09-24] — W3c VALID: memory hurts and continuous time hurts further — MLP > LSTM > ODE-RNN on the trained objective, and the MLP only ties a one-line threshold rule
+**Verdict:** CLOSED — H_mem and H_ct both FAIL on a valid run · **Gate:** Δ U (TTP − w·exposure, days) LSTM−MLP Tier 1 −82.9 [−87.7, −78.0], Tier 0 −73.5 [−78.1, −69.0]; ODE−LSTM Tier 1 −15.7 [−20.4, −10.8], Tier 0 −16.7 [−21.3, −12.3] · mean U over w (Tier 1): MLP 246.8, thr0.8 245.9, MTD 223.9, LSTM 164.0, ODE-RNN 154.5, none 97.9 · excluded 3/60 cells (LSTM 2/20, ODE 1/20, MLP 0/20) · 5 fresh seeds × 4 w × 200 pts × 2 tiers · **Artifacts:** `research/w3c_utility.py`, `research/outputs/w3c_utility.{json,png,log}`, `w3c_shards/`, `w3c_policies/`
+
+### Context
+PREREG W3c (2e5a063), approved and committed before any W3c cell ran:
+per-cell validity, seeds {6..10}, primary = paired U = min(TTP, 357) − w ·
+exposure averaged over w ∈ {0.05, 0.10, 0.20, 0.40}; rules descriptive.
+
+### Results
+**(0) VALID — the first valid three-arm run.** Excluded: lstm w0.1 s7,
+lstm w0.2 s8, ode_rnn w0.1 s8; every arm keeps ≥ 4/5 seeds per w.
+**H_mem FAILS:** the LSTM is below the MLP at every w (−55 to −120 d; one-sided
+Wilcoxon p(LSTM greater) = 1 at all four). **H_ct FAILS:** the ODE-RNN is below
+the LSTM overall, but not uniformly: above it at w 0.10 (+17.6, p 0.009) and
+0.40 (+15.2, p 0.001), far below at 0.20 (−89.4) and ≈ at 0.05 (−6.1).
+**Not a robustness effect:** Tier-1 and Tier-0 Δ are within ~10 d of each
+other for both hypotheses; the gaps exist without the shift (as W1 found).
+**Rules:** the 0.8 × baseline threshold ties the MLP (245.9 vs 246.8 Tier 1)
+and beats both recurrent arms and MTD. The trained MLP adds nothing measurable
+over the rule Gallagher 2024's RL learned. AT50 is below MTD at every w.
+**Secondary frontier (RMST vs exposure):** now overlaps (38–90%) and agrees in
+sign: LSTM−MLP −81 d [−99, −56]; ODE−LSTM Tier 1 −9 d [−38, +1], Tier 0 −42.
+
+### Decision
+H_ct kill fires: "no continuous-time edge over a matched recurrent arm on Tiers
+0/1", and no memory edge either — on LV, burden-only, under PQN, recurrence
+costs 70–80 d of the trained objective and continuous time a further ~16 d.
+W4 (irregular visits) proceeds as the separate registered test. Promotion of
+"continuous time gives no edge on Tiers 0/1" (L424 vs MLP + here vs LSTM) to
+LAWS.md is the owner's call: two closures, same mechanism, different baselines.
