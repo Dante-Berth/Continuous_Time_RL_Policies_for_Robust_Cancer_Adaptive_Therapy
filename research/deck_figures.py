@@ -42,6 +42,7 @@ from adaptive_therapy.eval.metrics import cumulative_exposure, ttp_running_nadir
 from adaptive_therapy.policies.lstm import LSTMPolicy  # noqa: E402
 from adaptive_therapy.policies.mlp import MLPPolicy  # noqa: E402
 from adaptive_therapy.policies.ode_rnn import ODERNNPolicy  # noqa: E402
+from adaptive_therapy.policies.rules import RulePolicy  # noqa: E402
 from adaptive_therapy.rl.rollout import EpisodeConfig, batch_rollout  # noqa: E402
 
 OUT = g.OUT / "deck"
@@ -60,31 +61,6 @@ COLORS = {
     "LSTM": "#8E7DBE",
     "ODE-RNN": "#2A9D8F",
 }
-
-
-class Rule(eqx.Module):
-    """A scripted dosing rule behind the policy interface. Acts via argmax."""
-
-    kind: str = eqx.field(static=True)
-
-    def initial_state(self):
-        return jnp.ones((1,))  # AT50: start ON
-
-    def __call__(self, obs, state, dt, key=None):
-        on = state[0]
-        if self.kind == "none":
-            a = 0
-        elif self.kind == "MTD":
-            a = 2
-        elif self.kind == "thr0.8":
-            a = jnp.where(obs > jnp.log(0.8), 2, 0)
-        else:  # AT50 hysteresis on log(burden / baseline)
-            on = jnp.where(obs < jnp.log(0.5), 0.0, jnp.where(obs >= 0.0, 1.0, on))
-            a = jnp.where(on > 0.5, 2, 0)
-        return jax.nn.one_hot(a, 3) * 10.0, jnp.array([on])
-
-    def value(self, obs, state):
-        return jnp.array(0.0)
 
 
 def trained():
@@ -218,7 +194,7 @@ def fig_mlp_rule(path):
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    policies = {k: Rule(k) for k in ("none", "MTD", "AT50", "thr0.8")} | trained()
+    policies = {k: RulePolicy(k) for k in ("none", "MTD", "AT50", "thr0.8")} | trained()
     summary = {}
     for fam in FAMILIES:
         ts, res = run(fam, policies)

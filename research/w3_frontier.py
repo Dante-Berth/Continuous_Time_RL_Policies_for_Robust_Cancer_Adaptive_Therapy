@@ -62,6 +62,8 @@ REGISTRATIONS = {
     "w3": {"weights": (0.0, 0.05, 0.10, 0.20, 0.40), "seeds": (0, 1, 2), "y": np.median},
     # RMST: a mean is a declared deviation from PROJECT.md 10 (PREREG W3b).
     "w3b": {"weights": (0.05, 0.10, 0.20, 0.40), "seeds": (3, 4, 5), "y": np.mean},
+    # W3c trains exactly like W3b on 5 fresh seeds; its analysis is w3c_utility.py.
+    "w3c": {"weights": (0.05, 0.10, 0.20, 0.40), "seeds": (6, 7, 8, 9, 10), "y": np.mean},
 }
 REG = next((a for a in sys.argv[1:] if a in REGISTRATIONS), "w3")
 WEIGHTS = REGISTRATIONS[REG]["weights"]
