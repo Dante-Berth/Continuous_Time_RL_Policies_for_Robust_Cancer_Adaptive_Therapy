@@ -354,3 +354,37 @@ so the curves are always plotted.
 `research/w3_frontier.py`, `research/outputs/w3_*.json`, `w3_frontier.png`.
 **Honest prior:** H_mem null (W1: a memoryless threshold explains ≥ 0.96 of the
 MLP's doses); H_ct fails, given L424 and L461.
+
+## [2026-09-24] — W3b: W3 re-registered on fresh seeds, with restricted-mean TTP as the frontier's y-axis and w = 0 removed
+
+**Why.** W3 was INVALID ([L496](RESEARCH_LOG.md#L496)) and exposed a flaw in its
+own rule: the MLP's capped median sat at the 357-d horizon in all 15 cells, so
+the frontier could not rank it. **W3's data have been seen**, so this is a NEW
+registration on **fresh seeds {3, 4, 5}**; no W3 shard enters a W3b verdict.
+W3 is not re-graded.
+**Hypotheses:** unchanged from W3 (H_mem: LSTM above MLP; H_ct: ODE-RNN above
+LSTM, on Tier 1).
+**Two changes, and only two.**
+(1) **y-axis = restricted mean TTP (RMST)** at the 357-d horizon: the mean over
+all 200 patients of min(TTP, horizon). **Declared deviation from PROJECT.md §10**
+("median + IQR, not mean"): §10's reason is heavy tails, and a variable capped
+at the horizon has none. The capped median, its IQR and censoring are still
+reported for every cell, and the spec is not edited. Per-seed point = RMST of
+the cell; the arm's point per w = median over seeds, as in W3.
+(2) **w ∈ {0.05, 0.10, 0.20, 0.40}**: w = 0 removed. It rewards constant maximum
+dosing and produced W3's invalid ODE-RNN cell (0.071, dose 355/357).
+**Unchanged from W3:** arms (MLP 3090, LSTM-26 3045, ODE-RNN 3091 Q-path),
+PQN Phase-2c settings, Tier 0 + Tier 1 cohorts (per-seed, as in W3), 200
+patients, gap = mean y_A − y_B over the exposure overlap (100 points), 2000
+paired patient-bootstrap resamples, closed-loop gate ≥ 0.10 per cell (Tier 1),
+overlap ≥ 20% of both arms’ exposure ranges, pass iff the Tier-1 CI lies wholly
+above 0, "robust" wording only if the Tier-1 CI lies above the Tier-0 gap.
+**Grid:** 3 arms × 4 w × 3 seeds = 36 cells, ≈ 15 min on CPU.
+**Declared risks.** (a) The overlap rule failed in W3 (16–19%) for reasons
+unrelated to the endpoint: the LSTM's low-dose collapses widen its exposure
+range. It may fail again; left unchanged here. (b) RMST is bounded by 357 d;
+if both arms keep most patients progression-free, gaps will be small in days.
+(c) Choosing the endpoint after seeing W3 is itself a selection event; fresh
+seeds bound it, they do not remove it.
+**Artifacts:** `research/w3_frontier.py w3b`, `research/outputs/w3b_*`.
+**Honest prior:** H_mem and H_ct both fail; the W3 descriptives favour the MLP.
