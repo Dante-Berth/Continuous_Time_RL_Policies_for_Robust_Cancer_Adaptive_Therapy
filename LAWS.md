@@ -24,12 +24,39 @@ Rules of use:
 
 ---
 
-## (no laws yet)
+## L1 — Continuous time buys no edge on LV at regular visits, in or out of range (Tiers 0/1)
 
-This program has produced zero gated results, so it has earned zero
-generalizations. **Seeding this file from the literature or from intuition is
-exactly the dishonesty the two-confirmation rule exists to prevent** — a claim
-from a paper is not evidence about our simulators (see
-[literature/REVIEW_PROTOCOL.md](literature/REVIEW_PROTOCOL.md)).
+**Promoted 2026-09-25** from two independent closures that share one mechanism,
+each against a different baseline:
 
-The first law is not expected before Phase 4.
+- **vs a memoryless MLP:** Phase 2c, PQN, the first valid run
+  ([L424](adaptive_therapy/RESEARCH_LOG.md#L424), [CLOSED #1](CLOSED.md)). The
+  paired direction favoured the MLP in all four Phase-2 runs, under two trainers.
+- **vs a parameter-matched LSTM:** W3c ([L565](adaptive_therapy/RESEARCH_LOG.md#L565)).
+  ODE − LSTM is −15.7 d on the trained objective, with a seed+patient CI of
+  [−43, +22] ([L596](adaptive_therapy/RESEARCH_LOG.md#L596)).
+
+**The law says "no edge", not "worse".** Once seeds are resampled, the ODE-RNN
+is not distinguishable from the LSTM ([L596](adaptive_therapy/RESEARCH_LOG.md#L596)).
+Its deficit against the MLP is a memory/training effect that the LSTM shares,
+not something continuous time adds.
+
+**Mechanism.** On LV under burden-only observation, dosing is near-sufficiently
+a function of the *current* observation: the MLP learned a burden-threshold
+switch that explains ≥ 0.94 of its doses
+([L461](adaptive_therapy/RESEARCH_LOG.md#L461)), and it only ties the one-line
+0.8 × baseline rule ([L565](adaptive_therapy/RESEARCH_LOG.md#L565)). With
+regular visits, a policy has nothing for a continuous-time state to integrate
+that the next observation does not already report.
+
+**Rejects without further work:** any Tier-0/1 re-run on LV proposing a
+different continuous-time cell (LTC, Neural CDE), width, trainer or curriculum.
+Each is a re-parametrization of the mechanism above.
+
+**Does not cover:** irregular visits (Tier 4, registered as W4), a mechanism
+shift (Tier 2), within-episode drift (Tier 3), or other ODE families. Each
+breaks the "the current observation is enough" premise differently, and must
+be tested, not assumed.
+
+**Killed by:** a valid registered run on LV Tiers 0/1 whose seed+patient CI puts
+a continuous-time arm above the best matched discrete arm.
