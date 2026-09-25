@@ -340,9 +340,10 @@ def plot(res: dict, path: Path) -> None:
         ax_row[0].set_ylabel(f"{title}\nmean U (days)", fontsize=9)
     for ax in axes[-1]:
         ax.set_xlabel("visits missed at test")
-    axes[0, -1].legend(frameon=False, fontsize=8, loc="lower left", ncol=2)
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, frameon=False, fontsize=8, loc="lower center", ncol=8)
     fig.suptitle("W4: U = min(TTP, 357) − w · exposure, Tier-0 patients", fontsize=11)
-    fig.tight_layout()
+    fig.tight_layout(rect=(0, 0.05, 1, 1))
     fig.savefig(path, dpi=160)
     plt.close(fig)
 

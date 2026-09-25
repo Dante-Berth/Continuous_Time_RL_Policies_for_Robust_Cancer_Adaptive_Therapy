@@ -628,3 +628,39 @@ seeds and patients; W4's prereg adopts this and 10 seeds. Stale downstream: the
 2026-09-24 report deck states MLP > LSTM > ODE-RNN. The LAWS promotion of "no
 continuous-time edge on Tiers 0/1" is unaffected in substance (still no edge),
 and remains the owner's call.
+
+## [2026-09-25] — W4 INVALID: under missed visits the recurrent arms learn near-fixed schedules, and missed visits erase the MLP's feedback edge over MTD
+**Verdict:** OPEN — no H_ct4 / H_grace / H_zs verdict; all recurrent training arms fail the gate · **Gate:** excluded (closed-loop < 0.10 at p 0): MLP 0/40, LSTM 10/40, ODE-RNN 18/40, LSTM+Δt 21/40 (limit 20%); zero-shot ODE-RNN 5/20 · descriptive, seed+patient CI, mean over w & p ∈ {.2,.5}: ODE−MLP −42.8 [−76.3, −4.0], ODE−LSTM +20.0 [−17.8, +52.2], ODE−LSTM+Δt −16.7 [−50.0, +16.1]; zero-shot ODE−MLP −63.1 [−92.6, −25.9] · mean U over w, p 0 → 0.5: MLP 288 → 216, thr0.8 282 → 193, MTD 260 flat · 10 fresh seeds × 4 w × 200 pts · **Artifacts:** `research/w4_irregular.py`, `research/outputs/w4_irregular.{json,png,log}`, `w4_shards/`, `w4_policies/`
+
+### Context
+PREREG W4 (f371e5a), approved and committed before any W4 cell ran: train at
+35% missed visits (hold), test Tier-0 patients at p ∈ {0, 0.2, 0.5}; seed+patient
+CI ([L596](RESEARCH_LOG.md#L596)); W3c's per-cell gate at p = 0.
+
+### Results
+**(0) INVALID.** LSTM (25%), ODE-RNN (45%) and LSTM+Δt (52%) exceed the 20%
+exclusion limit; only the MLP arm is valid. The zero-shot ODE-RNN is invalid too
+(25%; W4's p-0 Tier-0 gate, where W3c's Tier-1 gate excluded 1/20). Per the kill
+clause this is a trainability result: no architecture verdict.
+**(1) The exclusions are not W3c-style failures.** 12/40 LSTM+Δt and 6/40
+ODE-RNN cells sit below 0.02, i.e. near-fixed schedules, and in every recurrent
+arm the excluded cells score **higher** U than the valid ones (e.g. ODE-RNN
+p 0.5: 254 vs 192; LSTM+Δt 249 vs 235). Trained with unreliable observations,
+recurrent Q-networks often converge on a schedule that ignores them.
+**(2) Missed visits erase feedback's value.** From p 0 to 0.5, the MLP loses
+72 d of U and the 0.8 × baseline rule 90 d. MTD has nothing to miss and holds
+260, above both at p = 0.5 (216, 193). Mechanism under hold: a threshold
+policy that switched off keeps the drug off through the gap while the tumour
+regrows. The MLP still leads at p ≤ 0.2 and never drops below 200 at w ≤ 0.2.
+**(3) Descriptive only, invalid arms:** LSTM+Δt valid cells are nearly flat
+in p (255 → 250), and above the MLP at p = 0.5. LSTM+Δt − LSTM +14.6 [−4.7, +81.7].
+The ODE-RNN is below the MLP (CI below 0) and between the two LSTMs.
+
+### Decision
+No re-grade: the gate is the registered rule, and this run cannot answer H_ct4.
+The gate was built to catch collapse (L312), but at Tier 4 an open-loop
+schedule can be the *better* policy, so the gate conflates the two here. A W4b
+registration must first decide how validity works when observations are
+unreliable. One option: keep the gate, but add the best fixed schedule (MTD) as
+a reference arm every candidate must beat. Owner's call. LAW L1 is unaffected
+(its scope excludes Tier 4).
