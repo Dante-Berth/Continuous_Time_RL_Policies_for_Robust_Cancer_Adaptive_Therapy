@@ -134,6 +134,7 @@ def build_figures(fig_dir: Path, arts: dict) -> dict[str, Path]:
     put("w3_frontier", OUT / "w3_frontier.png", 6)
     put("w3b_frontier", OUT / "w3b_frontier.png", 7)
     put("w3c_utility", OUT / "w3c_utility.png", 9)
+    put("w4_irregular", OUT / "w4_irregular.png", 10)
     runs = {
         name: d["observation_dependence" if name == "Phase 2c" else "closed_loop_tier1"]
         for name, d in (("Phase 2c", arts["p2c"]), ("W3", arts["w3"]), ("W3b", arts["w3b"]))
@@ -179,6 +180,8 @@ def numbers(arts: dict) -> dict:
     n["regimes"] = arts["regimes"]
     n["w3c"] = arts["w3c"]
     n["w3c_closed"] = arts.get("w3c_closed") or {}
+    n["w3c_seeds"] = arts.get("w3c_seeds")
+    n["w4"] = arts.get("w4")
     return n
 
 
@@ -1177,10 +1180,42 @@ def build_markdown(path: Path, figs: dict, n: dict, stamp: str, commit: str) -> 
         "",
         "**Pre-registered answer so far: neither memory nor continuous time helps on this problem.** "
         "Phase 2c (L424) found the ODE-RNN progressing earlier than a memoryless MLP; W1 (L461) showed that "
-        "gap exists without the shift. W3c (L565), the first valid three-arm run, orders the arms MLP > LSTM "
-        "> ODE-RNN on the objective they were trained for, on both tiers, and the MLP only ties the one-line "
-        "rule 'treat above 0.8 × baseline' that Gallagher 2024's RL also found. Along the way, four "
-        "evaluation pitfalls were caught, each now a gate. Irregular observation (W4) is the remaining test.",
+        "gap exists without the shift. W3c (L565), the first valid three-arm run, puts the MLP above both "
+        "recurrent arms on the objective they were trained for; resampling seeds as well as patients (L596), "
+        "memory hurts but ODE-RNN vs LSTM spans 0, so the verdict is *no continuous-time edge*, not *worse* "
+        "(LAW L1). The MLP only ties the one-line rule 'treat above 0.8 × baseline' that Gallagher 2024's RL "
+        "also found. W4 (L632), missed visits, is INVALID: the recurrent arms learn near-fixed schedules, and "
+        "at 50% missed visits full dosing (MTD) beats every learned policy.",
+        "",
+        "### What was run, and what it showed",
+        "",
+        "VOID = the run was broken; INVALID = an arm failed the pre-registered validity gate, so no "
+        "architecture verdict; FAILED = valid, and the hypothesis lost.",
+        "",
+        "| step | what was tried | status | what it showed | log |",
+        "|---|---|---|---|---|",
+        "| Phase 0 | 3 tumour models; can burden alone tell them apart? | PASSED | 0.996 balanced accuracy, "
+        "but the margin is scale; θ not identifiable | L48 |",
+        "| Phase 1 | cohorts, TTP rule, solver | done | fixed-step solver is accurate; only LV has TTP range "
+        "at weekly visits | L88, L166 |",
+        "| Phase 2 run 1 | ODE-RNN vs MLP, PPO, Tier 1 | VOID | test patients started above capacity; "
+        "NaN rollouts scored as censored | L242 |",
+        "| Phase 2 run 2 | same, fixed cohort | FAILED | ODE-RNN gave every patient one schedule (4/6 cells): "
+        "tested feedback vs fixed schedule, not architecture | L275, L312 |",
+        "| Phase 2b | fixed init + recurrent PPO | INVALID | 3/6 ODE-RNN cells still open-loop; MLP 6/6 "
+        "closed-loop | L353, L391 |",
+        "| Phase 2c | switch trainer to PQN | FAILED (valid) | both arms closed-loop; ODE-RNN progresses "
+        "earlier; kill criterion fired | L424 |",
+        "| W1 | diagnose on unshifted patients | diagnostic | the gap exists in-distribution; the MLP is a "
+        "≈0.8 × baseline switch | L461 |",
+        "| W2 | exposure-weight sweep replaces ±10% matching | method | built into W3's prereg; no run of "
+        "its own | — |",
+        "| W3 / W3b | + LSTM arm; frontier, then RMST | INVALID ×2 | one open-loop cell voided a whole arm "
+        "each time | L496, L526 |",
+        "| W3c | per-cell validity, 5 seeds, U = TTP − w·exposure | FAILED (valid) | MLP > LSTM; ODE ≈ LSTM "
+        "once seeds are resampled | L565, L596 |",
+        "| W4 | 35% missed visits, + LSTM+Δt arm | INVALID | recurrent arms go near-open-loop and score "
+        "higher that way; MTD wins at 50% missed | L632 |",
         "",
     ]
     if "untreated" in rel:
@@ -1294,6 +1329,76 @@ def build_markdown(path: Path, figs: dict, n: dict, stamp: str, commit: str) -> 
             "Excluded cells: " + ", ".join(f"`{e}`" for e in c["excluded"]),
             "",
         ]
+    if sv := n.get("w3c_seeds"):
+        b = sv["bootstrap"]
+        L += [
+            "**Re-analysis resampling seeds as well as patients (L596).** The patient-only CIs above hold "
+            "the trained policies fixed:",
+            "",
+            "| comparison | Tier 0 Δ U | Tier 1 Δ U |",
+            "|---|---|---|",
+        ]
+        for k, lab2 in (("lstm-mlp", "LSTM − MLP"), ("ode_rnn-lstm", "ODE − LSTM")):
+            t0, t1 = b[f"{k}|tier0"], b[f"{k}|tier1"]
+            L.append(
+                f"| {lab2} | {t0['delta']:+.1f} [{t0['ci95'][0]:+.1f}, {t0['ci95'][1]:+.1f}] | "
+                f"{t1['delta']:+.1f} [{t1['ci95'][0]:+.1f}, {t1['ci95'][1]:+.1f}] |"
+            )
+        rt = sv["retrain"].get("ode_rnn_w0.2_s7")
+        if rt:
+            L += [
+                "",
+                f"Training is chaotic: retraining `ode_rnn_w0.2_s7` under a 2e-7 float perturbation moved "
+                f"its mean U from {rt['mean_U_w3c']:.0f} to {rt['mean_U_retrained']:.0f} d.",
+            ]
+        L.append("")
+    if w4 := n.get("w4"):
+        L += ["## 7c. W4 — missed visits (L632)", ""]
+        if "w4_irregular" in rel:
+            L += [f"![W4]({rel['w4_irregular']})", ""]
+        tab, ws, cells = w4["train_table"], (0.05, 0.1, 0.2, 0.4), 10 * 4
+        excl = {
+            a: sum(e.rsplit("_w", 1)[0] == a for e in w4["train_excluded"])
+            for a in w4["train_arm_valid"]
+        }
+        L += [
+            "A missed visit gives no observation and no decision; the last dose is held. Every arm trains "
+            "with 35% of visits missed and is tested at 0 / 20 / 50%.",
+            "",
+            "| arm | cells excluded (closed-loop < 0.10) | arm valid |",
+            "|---|---|---|",
+        ]
+        for a, ok in w4["train_arm_valid"].items():
+            L.append(f"| {a} | {excl[a]}/{cells} | {'yes' if ok else 'no'} |")
+        L += [
+            "",
+            "Mean U over w (days), valid cells, by fraction of visits missed at test:",
+            "",
+            "| policy | 0% | 20% | 50% |",
+            "|---|---|---|---|",
+        ]
+        for k in ("mlp", "lstm", "ode_rnn", "lstm_dt", "thr0.8", "MTD", "AT50", "none"):
+            L.append(
+                f"| {k} | "
+                + " | ".join(
+                    f"{np.mean([tab[f'{k}|{w}|{p}']['U'] for w in ws]):.0f}"
+                    for p in (0.0, 0.2, 0.5)
+                )
+                + " |"
+            )
+        L += [
+            "",
+            "Descriptive only (the recurrent arms are INVALID, so no verdict): ODE − X, mean over w and "
+            "20/50% missed, seed+patient CI: "
+            + " · ".join(
+                f"{x} {v['delta']:+.0f} [{v['ci95'][0]:+.0f}, {v['ci95'][1]:+.0f}]"
+                for x, v in w4["H_ct4"]["vs"].items()
+            )
+            + ". Excluded recurrent cells score *higher* than the valid ones: with unreliable visits a "
+            "fixed schedule can be the better policy, so the closed-loop gate cannot separate a training "
+            "failure from a sensible choice. W4b must redefine validity first.",
+            "",
+        ]
     if "validity" in rel:
         L += [
             "## 8. Validity across registrations",
@@ -1308,15 +1413,20 @@ def build_markdown(path: Path, figs: dict, n: dict, stamp: str, commit: str) -> 
         "",
         "- **Gallagher et al. 2024** (Cancer Res, doi 10.1158/0008-5472.CAN-23-2040): RL on burden-only LV "
         "learns a switch at N* = 0.83 n₀ (Fig. 4B, p.1935); less frequent evaluation than training lowers TTP "
-        "(Fig. 3C, p.1934).",
+        "(Fig. 3C, p.1934). **Consistent with ours:** our MLP learned the same switch (≈ 0.80, L461), and "
+        "missed visits lower every learned policy's score (L632). **Different:** their policy beats MTD and "
+        "AT50 and tolerates ~1-month delays; ours only ties the 0.8 rule and loses to MTD at 50% missed. "
+        "Setups differ (held dose vs delay, exposure-penalised U vs TTP, 3 dose levels vs on/off, means "
+        "of one network vs seeds), so this is consistency, not validation.",
         "- **Kiram et al. 2026** (arXiv 2605.02552): recurrent TD3 wins when a toxicity state is hidden, on "
         "one fixed patient, means over 10 seeds (Table I, p.5).",
         "",
         "## 10. Next",
         "",
-        "1. Decide whether to promote the Tier 0/1 continuous-time negative to LAWS.md.",
-        "2. W4 — irregular observation, with an LSTM + Δt baseline.",
-        "3. W5 only if Hahnfeldt's day-7 resolution limit is fixed; W6 write-up.",
+        "1. W4b or not (owner's call): redefine validity under unreliable visits, e.g. MTD as a reference "
+        "arm every candidate must beat — or write W4 up as it stands: at 50% missed visits a fixed schedule "
+        "is competitive.",
+        "2. W5 only if Hahnfeldt's day-7 resolution limit is fixed; W6 write-up.",
         "",
     ]
     path.write_text("\n".join(L))
@@ -1370,6 +1480,8 @@ def main() -> int:
         "w3": load("w3_frontier.json"),
         "w3b": load("w3b_frontier.json"),
         "w3c": load("w3c_utility.json"),
+        "w3c_seeds": load("w3c_seed_variance.json"),
+        "w4": load("w4_irregular.json"),
         "regimes": load("deck/summary.json"),
     }
     # W3c's analysis keeps only exclusions; its per-cell scores live in the shards.
