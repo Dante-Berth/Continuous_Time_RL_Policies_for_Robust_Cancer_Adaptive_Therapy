@@ -699,3 +699,39 @@ No LTC or Neural-CDE rescue, and no extra seeds or rates. W5 is not required.
 W6 (write-up) is next. The paper's findings about the world: at regular visits a
 burden threshold suffices; as visits go missing, the ODE-RNN degrades least of
 the learned arms, but the value of feedback itself collapses below a fixed schedule.
+
+## [2026-09-29] — Pre-write-up check: only 9.8% of our LV patients lie inside Strobl 2021's published ranges; the cost of resistance is far stronger than theirs
+**Verdict:** OPEN — blocks W6: every LV result so far is on provisional ranges that sampling.py says may not reach a paper · **Gate:** n/a (literature check, not pre-registered) · r_R/r_S median 0.297 [0.09–0.885], 13.7% in Strobl's 0.5–1.0 · n_0 0.30–0.85, 82% ≤ 0.75 · d_S/r_S 97.8% ≤ 0.5 · jointly 9.8% of 2000 sampled patients · **Artifacts:** Strobl Table 1 read from PMC8455086 HTML (doi 10.1158/0008-5472.CAN-20-0806); cohort check inline, `sample_cohort("lotka_volterra", 2000, seed=0)`
+
+### Context
+Starting W6, `adaptive_therapy/envs/sampling.py` states its θ ranges are
+provisional and "must be replaced with sourced values … before any number
+computed from them appears in a paper". Their named source, Strobl et al. 2021
+(PMC8455086), was still `2°`.
+
+### What was tried
+Read Strobl's Table 1 from the PMC HTML (not the PDF, so no page locators and
+the review stays `2°`). Compared it with 2000 patients from our LV sampler.
+
+### Results
+Strobl Table 1: r_S = 0.027/d fixed; r_R/r_S **0.5–1.0**; turnover d_T/r_S
+0–0.5, one d_T for both populations; drug kill 1.5; n_0 **0.1–0.75**; f_R
+0.001–0.1. Ours: r_S 0.015–0.045 and d_D 0.8–2.0 bracket their fixed values;
+f_R matches. **The resistant growth ratio does not match:** ours has median 0.30,
+so a resistance cost of ~70% against their 0–50%, and 86% of our patients fall
+outside their range. n_0 runs to 0.85 against their 0.75, and our d_S, d_R are
+drawn separately where they use one turnover. Jointly, 9.8% of patients are inside.
+
+**Why this can matter for every verdict.** A strong cost of resistance slows
+resistant regrowth, so simple control goes a long way. That fits what we
+observed: the MLP and thr0.8 sit at the 357-d horizon with 60–87% censoring
+([L496](RESEARCH_LOG.md#L496)), and MTD holds 258 d flat
+([L668](RESEARCH_LOG.md#L668)). Whether the rankings (MLP ≥ recurrent arms,
+no continuous-time edge) hold at Strobl's weaker costs is untested.
+
+### Decision
+No verdict is re-graded: each stands for the ranges it ran on. A paper may not
+report them as "Strobl-parameterised LV". Owner's call between (a) a registered
+re-run of the decisive comparisons (W3c, W4b) on Strobl's ranges, or (b) writing
+up on the current ranges, declared as a synthetic high-cost-of-resistance
+regime, with sampling.py's rule amended explicitly rather than ignored.
