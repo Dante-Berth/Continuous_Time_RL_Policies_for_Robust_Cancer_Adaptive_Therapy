@@ -762,3 +762,41 @@ to mostly half (78% half, 15–23% off). The provisional MLPs do the same past
 visits above 1.3× baseline come at or after TTP. There, TTP is fixed and a
 dose only adds exposure cost.
 VERDICTS and LAW L1 now say "U"; `reward.py`'s comment is corrected, code unchanged.
+
+## [2026-09-29] — S1 FAILED as registered: on Strobl 2021's LV ranges, no continuous-time edge at Tiers 0, 1 or 4; the negative replicates across both θ regimes
+**Verdict:** CLOSED — H_ct_S and H_ct4b_S fail; MLP > LSTM ≈ ODE-RNN at regular visits, and no learned arm beats MTD at 50% missed visits · **Gate:** Part A Tier 1, w 0.1: capped median TTP MLP 273 [182–357], ODE 217 [84–308]; exposure 241 / 243; burden integral 1.01e6 / 9.66e5; Wilcoxon p(ODE > MLP) = 1 at every w · Part B w 0.1, p 0.5: ODE 336 [252–357], MLP 259 [161–357], MTD 343 [273–357]; exposure 326 / 194 / 357 · 10 fresh seeds per part × 4 w × 200 pts, ITT, 0 non-finite cells · **Artifacts:** `research/s1_strobl.py`, `research/outputs/s1_strobl.{json,png,log}`, `s1_shards/`, `s1_policies/`
+
+### Context
+PREREG S1 (8e34d2b), committed before the run. One smoke cell (a mlp w0.05 s31)
+ran after the prereg was written and before its commit; it is a deterministic
+registered cell, resumed unchanged. Only the θ box changed ([L703](RESEARCH_LOG.md#L703)).
+**Failed as registered**; no amendment.
+
+### Results
+**Part A (regular visits), seed+patient CIs.** Tier 1: ODE−MLP −50.0 [−63.5,
+−37.9] (all 10 seeds < 0), ODE−LSTM −5.9 [−27.9, +19.9], LSTM−MLP −44.1
+[−64.8, −30.1]. Tier 0 agrees (−50.4, −8.4, −42.0), so this is not a robustness
+effect. The MLP ties thr0.8 again: mean U 215.0 vs 214.9 (Tier 1), 282.0 vs 282.8
+(Tier 0). W3c's ordering on the provisional box ([L596](RESEARCH_LOG.md#L596)) replicates.
+**Part B (35%-missed training).** ODE−MLP −5.4 [−24.3, +9.3], −LSTM −16.1
+[−37.7, +2.3], −LSTM+Δt −1.7 [−25.2, +17.7], −MTD −13.5 [−33.0, +2.3].
+H_grace fails: ODE degrades less than MLP (+38.9 [+26.7, +48.8]) but **more than
+LSTM** (−20.3 [−33.9, −8.3]), so graceful degradation is a recurrence effect,
+not continuous time. Mean U over w, p 0 → 0.5: MLP 281 → 206, thr0.8 284 → 159,
+LSTM 233 → 247, ODE 237 → 224, LSTM+Δt 233 → 226, MTD 242 flat.
+**H_fb fails, regime-dependent.** At p 0.5 the best learned arm is the LSTM,
++5.4 [−3.5, +13.6] vs MTD (a tie; W4b: every arm below). MLP −36.0 [−44, −28],
+ODE −17.7 [−39.7, 0.0], LSTM+Δt −16.3 [−29.4, −4.3]. At p 0.2 the MLP still
+leads MTD (262 vs 242). Where the ODE-RNN beats the collapsing MLP at p 0.5
+(one-sided Wilcoxon p ≤ 0.003 at every w), it doses 326 vs 194: TTP bought with drug.
+**LSTM+Δt − LSTM −14.4 [−27.0, −1.7]**, against +38.8 in W4 and +3.5 in W4b:
+the Δt input's effect is not stable across seeds or regimes.
+
+### Decision
+Both kill readings fire: the negative is not an artefact of the provisional box.
+The paper reports Strobl's ranges as primary and the provisional box as a
+second regime. LAW L1 gains a third confirmation (a second θ regime); CLOSED #2
+a second (Tier 4 on Strobl ranges). Proposed, not promoted, because promotion is
+the owner's call: "recurrence costs control on LV at regular visits" (W3c, S1 A:
+two regimes). The paper's Tier-4 wording becomes "no learned policy beats a
+fixed maximum-dose schedule at 50% missed visits", not "every arm is below MTD".

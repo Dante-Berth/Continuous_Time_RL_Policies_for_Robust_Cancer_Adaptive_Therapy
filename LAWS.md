@@ -37,6 +37,11 @@ each against a different baseline:
   [L739](adaptive_therapy/RESEARCH_LOG.md#L739)), with a seed+patient CI of
   [−43, +22] ([L596](adaptive_therapy/RESEARCH_LOG.md#L596)).
 
+- **On a second θ regime:** S1 Part A re-ran W3c's design on Strobl 2021's
+  ranges ([L766](adaptive_therapy/RESEARCH_LOG.md#L766)): ODE−MLP −50.0 d
+  [−63.5, −37.9], ODE−LSTM −5.9 [−27.9, +19.9] at Tier 1. The law is not an
+  artefact of the provisional box's strong cost of resistance.
+
 **The law says "no edge", not "worse".** Once seeds are resampled, the ODE-RNN
 is not distinguishable from the LSTM ([L596](adaptive_therapy/RESEARCH_LOG.md#L596)).
 Its deficit against the MLP is a memory/training effect that the LSTM shares,

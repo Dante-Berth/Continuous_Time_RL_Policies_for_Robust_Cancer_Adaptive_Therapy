@@ -191,7 +191,7 @@ range — Phase 1 found untreated Hahnfeldt TTP resolution-limited (7.0 d, zero
 IQR, [L88](adaptive_therapy/RESEARCH_LOG.md#L88)). If it does not, Tier 2 is cut and the limitation stated. It is the
 first thing §16's minimum paper can lose, not the last.
 
-### W6 — Write-up (≈ 1 week)
+### W6 — Write-up (≈ 1 week) — *in progress:* draft in `paper/`; primary regime = Strobl 2021 ranges after S1 ([L703](adaptive_therapy/RESEARCH_LOG.md#L703), [L766](adaptive_therapy/RESEARCH_LOG.md#L766))
 
 4–9 pp. Figures: closed-loop validity across trainers (the open-loop pitfall);
 TTP-vs-exposure frontiers for Tiers 0/1/4; the MLP's dose-vs-burden rule. A
