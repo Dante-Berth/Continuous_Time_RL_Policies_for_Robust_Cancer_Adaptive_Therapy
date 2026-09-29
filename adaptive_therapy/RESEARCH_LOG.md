@@ -836,3 +836,34 @@ is enough") becomes an untested hypothesis. A different trainer or budget is no
 longer a re-parametrization if, under it, the full-information reference beats
 the burden-only MLP; only then is a continuous-time re-run worth registering.
 LAWS.md amended; the paper states the mechanism as untested.
+
+## [2026-09-30] — S3 still trainer-limited: at PQN's published parallelism the full-information reference remains 41 d below the burden-only MLP; the headroom gate stays closed
+**Verdict:** CLOSED — for this paper, as registered: the budget search ends; headroom stays unmeasured · **Gate:** Tier 0 Δ U O_full−MLP −41.4 [−53.9, −27.6] (all 10 seeds < 0), Tier 1 −51.5 [−64.7, −36.8]; R (training return, O_full − MLP) −2.80, higher in 14/40 cells · w 0.05, Tier 0: capped median TTP MLP 357 [336–357], O_full 329 [203–357]; exposure 196 / 178; burden integral 1.40e6 / 1.49e6 · one-sided Wilcoxon p(O_full > MLP) = 1 at every w · 10 seeds × 4 w × 200 test pts, 2048 training pts per seed, ITT, 0 non-finite · **Artifacts:** `research/s3_budget.py`, `research/outputs/s3_budget.{json,log}`, `s3_shards/`, `s3_policies/`
+
+### Context
+PREREG S3 (9e2a71f), committed before any registered cell ran (timing only on
+unregistered seed 99). LAW L1's gate ([L804](RESEARCH_LOG.md#L804)): a new
+trainer or budget counts only if the full-information reference beats the MLP
+under it. The one change: 1024 patients per update from a 2048-patient cohort
+(was 32 from 200). **Failed as registered** (the gate did not open; reading
+"still trainer-limited"); no amendment.
+
+### Results
+The registered order: CI lower bound is not > +10 d, and R < 0, so the reading
+is "still trainer-limited". The budget helps the reference far more than the MLP:
+O_full +29.0 [+11.3, +47.1] vs its S2 cells, MLP +7.2 [+5.3, +9.3] vs S1's
+(same seeds and test patients). The gap narrows by a third (−63.2 → −41.4), and
+the training-return deficit falls from −17.7 to −2.8. Both stay negative.
+**Descriptive, not a test:** with the larger budget the burden-only MLP edges
+past the one-line thr0.8 rule, mean U 289.2 vs 282.8 at Tier 0 and 228.4 vs
+214.9 at Tier 1, by dosing less (median exposure 196 vs 238 at w 0.05). "The MLP
+only ties the rule" ([L565](RESEARCH_LOG.md#L565), [L766](RESEARCH_LOG.md#L766))
+holds at the 32-patient budget only.
+
+### Decision
+The kill fires as registered: no other budget in this paper. The trainer caveat
+is the paper's final word on why memory does not help. The trend (a third of the
+gap closed, R near 0) says a stronger trainer might open the gate. That is a
+new registration for a later program (more gradient steps or another algorithm),
+not a re-run here. LAW L1 is unchanged in substance; its mechanism paragraph
+cites S3 as a second trainer-limited result.

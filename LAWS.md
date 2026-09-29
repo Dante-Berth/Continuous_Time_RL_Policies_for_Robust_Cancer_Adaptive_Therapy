@@ -57,7 +57,9 @@ S2 could not test it: a reference that also sees S, R and θ scored 63 d
 training patients ([L804](adaptive_therapy/RESEARCH_LOG.md#L804)). Under PQN
 at this budget, extra state lowers U whether it is remembered or given, so
 "nothing to integrate" and "the trainer cannot integrate it" are not yet told
-apart. (L461's "≥ 0.94 of doses explained" is 1 by construction for a
+apart. At PQN's published parallelism (1024 patients per update, S3) the
+reference is still 41 d below the MLP
+([L840](adaptive_therapy/RESEARCH_LOG.md#L840)). (L461's "≥ 0.94 of doses explained" is 1 by construction for a
 memoryless arm; the finding is the threshold shape.)
 
 **Rejects without further work:** any Tier-0/1 re-run on LV proposing a
