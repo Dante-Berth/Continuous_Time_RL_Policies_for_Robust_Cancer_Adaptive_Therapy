@@ -14,6 +14,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## OPEN
 
+- **S2 FAILED: a reference that also sees S, R and θ scores 63 d BELOW the burden-only MLP (−63.2 [−75.5, −50.4], all 10 seeds; S, R only: −49.0), and earns less training reward even on its own training patients** — PQN at this budget cannot use extra state, so headroom is unmeasured and LAW L1's mechanism ("the current observation is enough") is untested; a new trainer must first make this reference beat the MLP → [L804](RESEARCH_LOG.md#L804)
 - **Erratum: U is not "the trained objective" — the reward pays its survival term every visit, progressed or not, so training sees only burden above 1.2 × nadir and w·dose**; every U comparison stands as registered, only the wording changes → [L739](RESEARCH_LOG.md#L739)
 - **Recurrent-arm PQN training is chaotic: a CI that holds trained policies fixed is conditional, not architectural** — per-cell Tier-1 mean U spans 49–273 d across 5 seeds (ODE-RNN), 67–264 (LSTM), 177–295 (MLP); a 2e-7 float perturbation moved one ODE cell 132 → 256 d. Architecture CIs resample seeds and patients from W4 on → [L596](RESEARCH_LOG.md#L596)
 - **W3b INVALID again — recurrent Q-networks go open-loop in ~1 of 14 PQN cells (4/54; MLP 0/33)**: one failing cell per recurrent arm on fresh seeds; H_ct overlap 1%. RMST removed the ceiling: MLP Tier-1 RMST 291–318 d vs LSTM 138–283, ODE-RNN 93–265; descriptive LSTM−MLP −45 d [−59, −40]. Next registration must fix per-cell vs per-arm validity first → [L526](RESEARCH_LOG.md#L526)

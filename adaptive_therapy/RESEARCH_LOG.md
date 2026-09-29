@@ -800,3 +800,39 @@ a second (Tier 4 on Strobl ranges). Proposed, not promoted, because promotion is
 the owner's call: "recurrence costs control on LV at regular visits" (W3c, S1 A:
 two regimes). The paper's Tier-4 wording becomes "no learned policy beats a
 fixed maximum-dose schedule at 50% missed visits", not "every arm is below MTD".
+
+## [2026-09-29] — S2 FAILED as registered: a reference that also sees S, R and θ scores 63 d BELOW the burden-only MLP; PQN at this budget cannot use extra state, so headroom is unmeasured
+**Verdict:** OPEN — no headroom claim; the trainer, not the information, binds · **Gate:** Tier 0 Δ U O_full−MLP −63.2 [−75.5, −50.4] (all 10 seeds < 0), O_state−MLP −49.0 [−60.1, −39.4]; Tier 1 −75.4 / −55.2 · w 0.05, Tier 0: capped median TTP MLP 357 [315–357], O_state 308 [196–357], O_full 259 [175–357]; exposure 221 / 204 / 179; burden integral 1.34e6 / 1.29e6 / 1.45e6 · one-sided Wilcoxon p(O > MLP) = 1 at every w · 10 seeds × 4 w × 200 pts per part, ITT, 0 non-finite · **Artifacts:** `research/s2_headroom.py`, `research/s2_diagnose.py`, `research/outputs/s2_headroom.{json,log}`, `s2_diagnose.json`, `s2_shards/`, `s2_policies/`
+
+### Context
+PREREG S2 (3df03bf), committed before the run; one smoke cell (a o_full w0.05
+s31) ran after the prereg was written, before its commit, and was resumed
+unchanged. Owner-approved exception to burden-only: the reference is never an
+arm. A guard re-scored S1's saved MLP cells bit-identically under the new code.
+**Failed as registered**; no amendment.
+
+### Results
+**Primary, as registered:** CI wholly < 0 ⇒ "the trainer cannot use the input;
+no headroom claim either way". Every seed is negative for both references
+(O_full −28 to −94 d, O_state −33 to −82); they dose less and progress earlier.
+**Part B's registered reading is not claimed.** O_full−MTD at p 0.5 is −55.3
+[−65.7, −45.2], which the prereg reads as "collapse inherent to missed visits".
+That reading presumes the reference bounds every burden-only policy; the primary
+shows it does not, since it is below the MLP at regular visits. Descriptive:
+O_full−LSTM at p 0.5 −60.7 [−71.4, −50.5]; O_full−MLP over p {.2, .5} −28.3.
+**Diagnostic (not pre-registered; saved policies, no retraining):** the
+references also earn LESS training reward than the MLP, on test patients
+(O_full −15.8, higher in 5/40 cells; O_state −14.1, 4/40) and on their own
+training patients (−17.7, 7/40; −17.1, 5/40). U is higher in 0/40 cells. So it
+is neither reward/U misalignment (return would rise) nor overfitting (training
+patients would favour it): PQN at 300 updates optimises worse with more input.
+The diagnostic's test ΔU reproduces the primary (−63.16).
+
+### Decision
+Headroom stays unmeasured: under this trainer, extra state lowers U whether it
+is remembered (LSTM, ODE-RNN) or given (the reference). LAW L1's "no edge"
+stands on its three confirmations, but its mechanism ("the current observation
+is enough") becomes an untested hypothesis. A different trainer or budget is no
+longer a re-parametrization if, under it, the full-information reference beats
+the burden-only MLP; only then is a continuous-time re-run worth registering.
+LAWS.md amended; the paper states the mechanism as untested.

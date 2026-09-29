@@ -47,17 +47,25 @@ is not distinguishable from the LSTM ([L596](adaptive_therapy/RESEARCH_LOG.md#L5
 Its deficit against the MLP is a memory/training effect that the LSTM shares,
 not something continuous time adds.
 
-**Mechanism.** On LV under burden-only observation, dosing is near-sufficiently
-a function of the *current* observation: the MLP learned a burden-threshold
-switch that explains ≥ 0.94 of its doses
-([L461](adaptive_therapy/RESEARCH_LOG.md#L461)), and it only ties the one-line
-0.8 × baseline rule ([L565](adaptive_therapy/RESEARCH_LOG.md#L565)). With
-regular visits, a policy has nothing for a continuous-time state to integrate
-that the next observation does not already report.
+**Mechanism — a hypothesis, untested (amended 2026-09-29).** Dosing may be
+near-sufficiently a function of the *current* observation. The MLP learns a
+burden-threshold switch ([L461](adaptive_therapy/RESEARCH_LOG.md#L461)) and
+only ties the one-line 0.8 × baseline rule
+([L565](adaptive_therapy/RESEARCH_LOG.md#L565), [L766](adaptive_therapy/RESEARCH_LOG.md#L766)).
+S2 could not test it: a reference that also sees S, R and θ scored 63 d
+*below* the burden-only MLP, and earned less training reward even on its own
+training patients ([L804](adaptive_therapy/RESEARCH_LOG.md#L804)). Under PQN
+at this budget, extra state lowers U whether it is remembered or given, so
+"nothing to integrate" and "the trainer cannot integrate it" are not yet told
+apart. (L461's "≥ 0.94 of doses explained" is 1 by construction for a
+memoryless arm; the finding is the threshold shape.)
 
 **Rejects without further work:** any Tier-0/1 re-run on LV proposing a
-different continuous-time cell (LTC, Neural CDE), width, trainer or curriculum.
-Each is a re-parametrization of the mechanism above.
+different continuous-time cell (LTC, Neural CDE), width or curriculum. Each is a
+re-parametrization. **A different trainer or budget** is admissible only with
+demonstrated headroom: under it, S2's full-information reference must beat the
+burden-only MLP on a seed+patient CI. Without that, it is a re-parametrization
+too ([L804](adaptive_therapy/RESEARCH_LOG.md#L804)).
 
 **Does not cover:** irregular visits (Tier 4 — closed separately as
 [CLOSED #2](CLOSED.md), a different mechanism), a mechanism
