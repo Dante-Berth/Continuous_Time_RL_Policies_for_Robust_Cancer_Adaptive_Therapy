@@ -494,3 +494,45 @@ a vmapped batch pays its longest gap; MLP 40 s, LSTM+Δt 33 s).
 **Honest prior:** H_ct4 fails. At regular visits the ODE-RNN sits ~100 d below
 the MLP, and hold dosing costs every arm alike. H_zs is the likelier place for
 an edge, and is still more likely to fail.
+
+## [2026-09-29] — W4b: W4 re-registered intention-to-treat, with MTD as a reference arm every learned arm must beat
+
+**Why.** W4 was INVALID ([L632](RESEARCH_LOG.md#L632)) because its closed-loop gate
+excluded 25–52% of recurrent cells, and those excluded near-fixed schedules scored
+*higher* U than the valid cells. At Tier 4 an open-loop schedule is a legitimate
+policy, not a trainer collapse. The gate's original job (catch collapse, L312) is
+now done by the seed+patient CI ([L596](RESEARCH_LOG.md#L596)): a collapsed seed
+widens the CI; it no longer needs excluding. W4's data have been seen, so they
+cannot be re-graded; W4b trains **fresh seeds {21..30}**.
+**Unchanged from W4:** missed-visit semantics (hold), arms MLP-441 / LSTM-26 /
+LSTM-26+Δt / ODE-RNN, PQN Phase-2c settings, p_train 0.35, w {0.05, 0.10, 0.20,
+0.40}, 200 Tier-0 test patients at p ∈ {0, 0.2, 0.5}, U = min(TTP, 357) − w·exposure,
+2000 seed+patient bootstrap resamples. 160 cells + 4 rules × 10 seeds.
+**Validity (changed): intention-to-treat.** Every cell counts, whatever its
+closed-loop score. The only exclusion is a non-finite rollout, and > 5% of an
+arm's cells non-finite makes that arm INVALID. Closed-loop fraction is reported
+per arm, descriptively.
+**H_ct4b (primary).** Δ(ODE, X) = mean over w and p ∈ {0.2, 0.5} of the mean paired
+U_ODE − U_X. Passes iff the 95% CI lies above 0 for **every** X ∈ {MLP, LSTM,
+LSTM+Δt, MTD} (intersection–union). MTD is in the set because an edge over
+learned arms that stays below a fixed schedule is not a scheduling edge.
+**H_grace (secondary).** The same rule on U(p) − U(0), X ∈ {MLP, LSTM, LSTM+Δt}
+(MTD's degradation is zero by construction).
+**H_fb (secondary).** Does feedback still pay? The best learned arm by point Δ
+vs MTD at p = 0.5 alone: CI above 0 ⇒ yes; below 0 ⇒ "at 50% missed visits a fixed
+schedule beats every learned policy".
+**Descriptive:** Δ at p = 0; per-seed Δ; LSTM+Δt − LSTM; per-(w, p) one-sided
+paired Wilcoxon; per (arm, w, p) capped median TTP + IQR, censoring, median
+exposure, median burden integral; closed-loop fraction; rules none / MTD / AT50 /
+thr0.8. W4's cells under the ITT rule, labelled **post-hoc, not a test**.
+**Kill.** H_ct4b fails ⇒ no continuous-time edge under missed visits; with LAW L1
+the negative holds on both axes; the program closes and W6 is written. No extra
+seeds, rates, arms (LTC, Neural CDE) or grid after seeing results.
+**Declared risks.** W4's risks (1)–(4) carry over. (5) ITT lets a seed that
+collapsed to a *bad* schedule pull its arm down; this is the intended reading:
+unreliable training is part of the architecture's cost.
+**Compute:** ≈ 75 min on CPU (W4 measured).
+**Artifacts:** `research/w4b_itt.py` → `research/outputs/w4b_itt.{json,png,log}`,
+`w4b_shards/`, `w4b_policies/`.
+**Honest prior:** H_ct4b fails; the ODE-RNN was below the MLP in W4 (−42.8 [−76, −4]).
+H_fb likely fails at p = 0.5 (W4: MTD 260 vs MLP 216).

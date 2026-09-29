@@ -107,7 +107,7 @@ def evaluate(policy, seed: int, w: float) -> dict:
     return out
 
 
-def train_cell(arch: str, w: float, seed: int) -> dict:
+def train_cell(arch: str, w: float, seed: int, pol_dir: Path | None = None) -> dict:
     k_init, k_train, _ = jax.random.split(jax.random.PRNGKey(seed), 3)
     c = sample_cohort(g.FAM, g.N_TRAIN, seed=seed)
     t0 = time.perf_counter()
@@ -122,7 +122,7 @@ def train_cell(arch: str, w: float, seed: int) -> dict:
     )
     out = {"arch": arch, "w": w, "seed": seed, "train_seconds": time.perf_counter() - t0}
     out.update(evaluate(policy, seed, w))
-    pol_dir = g.OUT / "w4_policies"
+    pol_dir = pol_dir or g.OUT / "w4_policies"
     pol_dir.mkdir(parents=True, exist_ok=True)
     eqx.tree_serialise_leaves(pol_dir / f"{arch}_w{w}_s{seed}.eqx", policy)
     return out
@@ -312,16 +312,18 @@ MARKERS = {"mlp": "o", "lstm": "s", "lstm_dt": "^", "ode_rnn": "D"}
 RULE_STYLE = {"none": ":", "MTD": "--", "AT50": "-.", "thr0.8": (0, (5, 1, 1, 1))}
 
 
-def plot(res: dict, path: Path) -> None:
+W4_ROWS = (
+    ("train", "trained with 35% of visits missed"),
+    ("zs", "trained on regular visits (W3c)"),
+)
+
+
+def plot(res: dict, path: Path, rows=W4_ROWS, title: str = "W4") -> None:
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    rows = (
-        ("train", "trained with 35% of visits missed"),
-        ("zs", "trained on regular visits (W3c)"),
-    )
     fig, axes = plt.subplots(2, len(WEIGHTS), figsize=(13, 6.4), sharex=True, sharey="col")
     for (name, title), ax_row in zip(rows, axes, strict=True):
         tab = res[f"{name}_table"]
@@ -342,7 +344,7 @@ def plot(res: dict, path: Path) -> None:
         ax.set_xlabel("visits missed at test")
     handles, labels = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, labels, frameon=False, fontsize=8, loc="lower center", ncol=8)
-    fig.suptitle("W4: U = min(TTP, 357) − w · exposure, Tier-0 patients", fontsize=11)
+    fig.suptitle(f"{title}: U = min(TTP, 357) − w · exposure, Tier-0 patients", fontsize=11)
     fig.tight_layout(rect=(0, 0.05, 1, 1))
     fig.savefig(path, dpi=160)
     plt.close(fig)
