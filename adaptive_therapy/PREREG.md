@@ -625,3 +625,45 @@ has 9× the MLP's input weights (Q-path ~6.6k vs 3.1k params).
 `s2_shards/`, `s2_policies/`.
 **Honest prior:** inconclusive to small. The MLP ties a one-line rule, but only
 the S/R split says when treatment has become futile, and burden reveals it late.
+
+## [2026-09-29] — S3: LAW L1's headroom gate — does PQN at its published parallelism let the full-information reference beat the burden-only MLP?
+
+**Why.** S2 ([L804](RESEARCH_LOG.md#L804)): the reference that also sees S, R
+and θ scored 63 d below the burden-only MLP and earned less training reward even
+on its own training patients, an optimisation failure. Our PQN collects 32
+patients per update; the published setting is 1024 parallel environments
+(arxiv-2407.04811 Table 4; noted in `pqn.py`). LAW L1 (amended) admits a new
+trainer or budget only if, under it, this reference beats the MLP. S3 is that
+gate and nothing else: no continuous-time arm runs here.
+**The one change (trainer).** `PQNConfig(batch_patients=1024)`: 4 minibatches of
+256 whole episodes, from a **2048-patient** training cohort per seed (was 200),
+sampled without replacement. Unchanged from S2: 300 updates, lr, ε and λ
+schedules, Strobl ranges, regular visits, MLP-441 LayerNorm, O_full's 9 inputs.
+**Arms.** MLP and O_full, both retrained; w {0.05, 0.10, 0.20, 0.40}; seeds
+{31..40}, the same test cohorts and eval keys as S1/S2.
+**Primary.** Δ = mean over w of the mean paired U_Ofull − U_MLP at Tier 0, 95%
+CI over 2000 seed+patient resamples. **R** = mean over the 40 cells of the
+reference's minus the MLP's mean training return on its own 2048-patient
+training cohort (S2's diagnostic, built into every cell). Readings, in order:
+CI lower bound > **+10 d** ⇒ **headroom**: the gate opens, and a continuous-time
+re-run under this trainer may be registered (not run here). Else R < 0 ⇒
+**still trainer-limited**: the caveat stands as the paper's final word. Else CI
+upper bound < 0 ⇒ **reward-limited**: the reference optimises the reward as
+well but loses on U, so the reward (no TTP term, [L739](RESEARCH_LOG.md#L739))
+binds. Else upper bound < +10 d ⇒ **no headroom**: L1's mechanism gains support.
+Else inconclusive.
+**Descriptive.** Tier 1; the budget effect on each arm vs its S1/S2 cells (same
+seeds and test patients); capped median TTP + IQR, median exposure, burden
+integral; one-sided paired Wilcoxon (O_full > MLP) per w; ITT, non-finite only.
+**Kill.** No other budget (updates, lr, batch, cohort) after seeing results; a
+trainer-limited result ends the budget search in this paper.
+**Declared risks.** (1) Batch and training-cohort size change together; the gate
+asks whether *some* budget works, not which part. (2) Gradient steps are
+unchanged (300 × 4 × 4): if the failure is too few steps, 1024 patients per
+step may not cure it. (3) R is a point estimate; its per-cell sign counts are reported.
+**Compute:** measured on unregistered seed 99, timing only: 641 s (MLP) and 575 s
+(O_full) per cell alone; 80 cells, 6 in parallel ≈ 2–3 h on CPU.
+**Artifacts:** `research/s3_budget.py` → `research/outputs/s3_budget.{json,log}`,
+`s3_shards/`, `s3_policies/`.
+**Honest prior:** still trainer-limited or no headroom. The MLP gains from the
+budget too, and 300 gradient steps may be the limit.

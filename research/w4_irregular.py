@@ -111,20 +111,28 @@ def evaluate(policy, seed: int, w: float, cohort=tier0_cohort, drops=DROPS, ep=N
 
 
 def train_policy(
-    arch: str, w: float, seed: int, train_drop: float = TRAIN_DROP, ep=None, make=None
+    arch: str,
+    w: float,
+    seed: int,
+    train_drop: float = TRAIN_DROP,
+    ep=None,
+    make=None,
+    cfg=None,
+    n_train=None,
 ):
     """PQN on the seed's training cohort; returns (policy, train seconds).
 
-    `make` overrides ARCHS[arch] and `ep` the base episode (S2's reference)."""
+    `make` overrides ARCHS[arch] and `ep` the base episode (S2's reference);
+    `cfg` and `n_train` the trainer and cohort size (S3's budget)."""
     k_init, k_train, _ = jax.random.split(jax.random.PRNGKey(seed), 3)
-    c = sample_cohort(g.FAM, g.N_TRAIN, seed=seed, ranges=g.RANGES)
+    c = sample_cohort(g.FAM, n_train or g.N_TRAIN, seed=seed, ranges=g.RANGES)
     t0 = time.perf_counter()
     policy, _ = pqn.train(
         (make or ARCHS[arch])(k_init),
         jnp.asarray(c.thetas),
         jnp.asarray(c.y0s),
         k_train,
-        pqn.PQNConfig(),
+        cfg or pqn.PQNConfig(),
         replace(ep or g.EP, drop_rate=train_drop),
         RewardConfig(exposure_penalty=w),
     )
