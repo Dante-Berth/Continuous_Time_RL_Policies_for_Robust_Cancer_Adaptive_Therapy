@@ -31,8 +31,8 @@ them on paired virtual patients, with confidence intervals that resample both
 training seeds and patients. Every comparison was pre-registered. The ODE-RNN
 shows no edge over the best discrete arm in range, under a parameter shift, or
 with up to half of the visits missed, and the memoryless MLP is the best learned
-policy at regular visits. The MLP learns a burden-threshold rule and does no
-better than the one-line rule it resembles. With half of the visits missed, no
+policy at regular visits. The MLP learns a burden-threshold rule close to a
+one-line clinical rule. With half of the visits missed, no
 learned policy beats a fixed maximum-dose schedule, and the arm that degrades
 most gracefully is a plain LSTM. The negative replicates on a second parameter
 regime. A reference policy that also sees the hidden state scores lower still,
@@ -100,8 +100,9 @@ second input, the standard discrete baseline for irregular series), and ODE-RNN
 \cite{rubanova2019}. The ODE-RNN is a GRU jump at each observation, with a
 tanh-bounded latent flow between observations in fixed $7/8$\,d steps, so gaps
 of whole weeks compose exactly. All use a LayerNorm Q-readout, trained by PQN
-\cite{gallici2024} with its published RNN settings, untuned here, for 300
-updates of 32 patients.
+\cite{gallici2024} with its published recurrent settings, untuned here, except
+parallelism: 300 updates of 32 patients from a 200-patient training cohort,
+where the paper uses 1024 environments (we test 1024 in \S3).
 \paragraph{Statistic.} Per patient, $U=\min(\mathrm{TTP},357)-w\cdot\text{exposure}$:
 the TTP endpoint net of the exposure price the policy was trained with.
 $\Delta(A,B)$ is the mean over $w$ (and over $p\in\{0.2,0.5\}$ at Tier~4) of
@@ -148,7 +149,9 @@ a function of the current observation by construction. What matters is the
 function's shape (Fig.~\ref{fig:rule}). On Strobl's ranges the mean dose crosses
 one half at $\RuleHalfStrobl\times$ baseline and is full by $0.8\times$. The
 one-line thr0.8 rule matches the MLP: mean $U$ \SAUMlpOne\ vs \SAUThrOne\ at
-Tier~1, and \SAUMlpZero\ vs \SAUThrZero\ at Tier~0.
+Tier~1, and \SAUMlpZero\ vs \SAUThrZero\ at Tier~0. With PQN's published
+parallelism (below) the MLP edges past the rule, \SThreeUMlpZero\ vs
+\SThreeUThrZero\ at Tier~0, by dosing less.
 
 \paragraph{Why memory does not help is not established.} A natural reading is
 that the current observation already carries what dosing needs, leaving memory
@@ -162,6 +165,11 @@ reward misalignment nor overfitting. Under this trainer and budget, extra state
 lowers $U$ whether it is remembered (LSTM, ODE-RNN) or given (the reference).
 ``Nothing to integrate'' and ``the trainer cannot integrate it'' are therefore
 not yet told apart. % S2, L804
+Our PQN collects 32 patients per update; the published setting is 1024. With
+1024, from a 2048-patient training cohort, the reference gains \SThreeBudgetFull\
+and the MLP \SThreeBudgetMlp, so a third of the gap closes. The reference still
+trails, at \SThreeFull, and still earns less training reward (\SThreeR, higher
+in \SThreeRPos\ cells). As pre-registered, the budget search ends there. % S3, L840
 
 \begin{figure}[t]
 \centering
@@ -241,17 +249,19 @@ W4 & Tier 4, trained at 35\% missed & invalid: gate removed better cells & L632 
 W4b & intention-to-treat, MTD reference & FAIL: no CT edge & L668 \\
 S1 & Strobl ranges, W3c + W4b designs & FAIL: no CT edge, Tiers 0/1/4 & L766 \\
 S2 & reference that also sees $S$, $R$, $\theta$ & below the MLP: no headroom claim & L804 \\
+S3 & S2 at PQN's published parallelism & still trainer-limited & L840 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \section{Limitations}
 One ODE family (LV), virtual patients only, and no claim about clinical
-outcomes. PQN's settings are the published ones, untuned, and the recurrent arms
-are chaotic in training; we treat that as part of their cost rather than tuning
-it away. The binding limit is the trainer. Given the true hidden state, the
-same PQN scores below the burden-only MLP, so a trainer that can profit from
-extra state might change the ranking. Before any continuous-time re-run is
+outcomes. PQN's settings are the published ones except parallelism (32 patients
+per update, not 1024) and untuned, and the recurrent arms are chaotic in
+training; we treat that as part of their cost rather than tuning it away. The
+binding limit is the trainer. Given the true hidden state, the same PQN scores
+below the burden-only MLP, at our parallelism and at the published one, so a
+trainer that can profit from extra state might change the ranking. Before any continuous-time re-run is
 worth registering, that trainer must make the full-information reference beat
 the burden-only MLP. Training rewards burden above $1.2\times$ the nadir, not TTP itself.
 Missed visits are i.i.d., so the next gap is unknown when the policy doses;
