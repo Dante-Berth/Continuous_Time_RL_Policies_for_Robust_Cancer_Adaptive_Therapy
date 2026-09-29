@@ -664,3 +664,38 @@ registration must first decide how validity works when observations are
 unreliable. One option: keep the gate, but add the best fixed schedule (MTD) as
 a reference arm every candidate must beat. Owner's call. LAW L1 is unaffected
 (its scope excludes Tier 4).
+
+## [2026-09-29] — W4b FAILED: no continuous-time edge on LV Tier 4 (missed visits), and at 50% missed a fixed MTD schedule beats every learned arm
+**Verdict:** CLOSED — H_ct4b fails as registered (ODE ties MLP, loses to MTD); the negative now holds on Tiers 0, 1 and 4 · **Gate:** seed+patient CI, mean over w & p ∈ {.2,.5}: ODE−MLP −6.1 [−34.7, +12.9], ODE−LSTM +25.7 [−13.0, +56.4], ODE−LSTM+Δt +22.2 [+0.8, +43.2], ODE−MTD −23.7 [−47.5, −5.8] · capped median TTP at w 0.1, p 0.5: MLP 287 [126–357], ODE 357 [175–357], MTD 357 [357–357] · median exposure (mean over w) MLP 202, ODE 187, MTD 357 · median burden integral ODE 1.90e6 vs MTD 1.32e6 · one-sided paired Wilcoxon ODE>MLP at p 0.5: p ≤ 8e-4 at w ≤ 0.2, p = 1 at w 0.4 · 10 fresh seeds {21..30} × 4 w × 200 pts, ITT, 0 non-finite cells · **Artifacts:** `research/w4b_itt.py`, `research/outputs/w4b_itt.{json,png,log}`, `w4b_shards/`, `w4b_policies/`
+
+### Context
+PREREG W4b (4c80a0f), committed before any W4b cell ran. It fixes W4's validity
+problem ([L632](RESEARCH_LOG.md#L632)) by intention-to-treat (every finite cell
+counts) and adds MTD to the set the ODE-RNN must beat. **Failed as registered**;
+no amendment.
+
+### Results
+**(1) H_ct4b fails.** The ODE-RNN beats LSTM+Δt (CI above 0) but only ties the
+MLP and is below MTD. **H_grace fails** only against the LSTM (−3.1 [−12.8,
++6.8]); against MLP (+29.0 [+19.2, +38.4]) and LSTM+Δt (+17.4 [+0.2, +36.6]) the
+ODE-RNN degrades less. Mean U over w, p 0 → 0.5: MLP 281 → 217, ODE 246 → 229,
+LSTM 217 → 202, LSTM+Δt 241 → 194, thr0.8 279 → 189, MTD 258 flat.
+**(2) H_fb fails: feedback stops paying at 50% missed visits.** The best learned
+arm there is the ODE-RNN, still −29.1 [−55.8, −8.2] below MTD; MLP −40,
+LSTM −56, LSTM+Δt −63. At p 0.2 the MLP (263) is still above MTD (258).
+**(3) Replication.** W4's cells re-scored ITT (post-hoc, not a test) agree on
+signs vs MLP (−15.9) and MTD (−34.4); they disagree vs LSTM+Δt (−23.1 there,
++22.2 here), and W4's LSTM+Δt − LSTM +38.8 [+5.9, +72.6] did not replicate
+(+3.5 [−28.4, +35.2]). Treat LSTM+Δt effects as seed noise.
+**(4) Spread.** Seed 26 alone sits −110 d ODE−MLP at p 0 (other seeds −26…+24).
+ITT keeps it: training unreliability is part of the arm's cost (declared risk 5).
+**(5) Open-loop is not failure here.** Cells below 0.10 closed-loop: MLP 0%,
+LSTM 12%, ODE 22%, LSTM+Δt 52%, with no non-finite cells.
+
+### Decision
+The kill clause fires. There is no continuous-time edge under missed visits, and
+with LAW L1 the negative holds on LV Tiers 0, 1 and 4: promoted to CLOSED #2.
+No LTC or Neural-CDE rescue, and no extra seeds or rates. W5 is not required.
+W6 (write-up) is next. The paper's findings about the world: at regular visits a
+burden threshold suffices; as visits go missing, the ODE-RNN degrades least of
+the learned arms, but the value of feedback itself collapses below a fixed schedule.

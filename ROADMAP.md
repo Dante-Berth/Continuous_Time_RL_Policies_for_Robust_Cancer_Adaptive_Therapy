@@ -153,7 +153,7 @@ ODE-RNN isolates continuous time** — the comparison Phase 2 could not make.
 An arm that fails the closed-loop gate is reported as a trainability result,
 never dropped. Compute ≈ 1 h on CPU (PQN: ~20 s per MLP cell, ~130 s per ODE cell).
 
-### W4 — Irregular observation: the decisive test (≈ 1–2 d; registered) — *INVALID as registered:* [L632](adaptive_therapy/RESEARCH_LOG.md#L632)
+### W4 — Irregular observation: the decisive test (≈ 1–2 d; registered) — *INVALID as registered:* [L632](adaptive_therapy/RESEARCH_LOG.md#L632); W4b *FAILED — no edge, kill fires:* [L668](adaptive_therapy/RESEARCH_LOG.md#L668)
 
 *Registered 2026-09-25 in [PREREG.md](adaptive_therapy/PREREG.md) W4, which
 supersedes this sketch in two places.* (1) Every arm **trains** with 35% of

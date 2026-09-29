@@ -38,6 +38,29 @@ mechanism, and is tested fresh as ROADMAP W4.
 
 ---
 
+## 2. No continuous-time edge on LV under missed visits (Tier 4)
+
+**Closed 2026-09-29** by W4b ([L668](adaptive_therapy/RESEARCH_LOG.md#L668)),
+registered intention-to-treat after W4's gate proved unfit for Tier 4
+([L632](adaptive_therapy/RESEARCH_LOG.md#L632)). Trained and tested with missed
+visits, the ODE-RNN ties the MLP (−6.1 d [−34.7, +12.9]) and is below a fixed
+MTD schedule (−23.7 [−47.5, −5.8]) on a seed+patient CI. With [LAW L1](LAWS.md)
+the negative covers LV Tiers 0, 1 and 4.
+
+**Do not re-propose:** LTC, Neural CDE or another continuous-time cell on the
+same test; more seeds, other drop rates, a different hold rule, or a different
+p_train. Each is a re-parametrization.
+
+**Reserved re-open condition:** a Tier-4 setting where the next visit's timing
+is *known* to the policy when it doses (scheduled rather than i.i.d. gaps). W4's
+declared risk (1) — i.i.d. gaps make Δt describe only the past — is the one
+mechanism this closure did not test.
+
+**Not covered:** mechanism shift (Tier 2), within-episode drift (Tier 3), other
+ODE families.
+
+---
+
 The scope exclusions the spec declares up front are **not** closures — they were
 never opened, and they live in [PROJECT.md §2](PROJECT.md) ("explicit
 non-questions"): no clinical-outcome claims, minimal PK only, no real-patient RL

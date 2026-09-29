@@ -53,7 +53,8 @@ that the next observation does not already report.
 different continuous-time cell (LTC, Neural CDE), width, trainer or curriculum.
 Each is a re-parametrization of the mechanism above.
 
-**Does not cover:** irregular visits (Tier 4, registered as W4), a mechanism
+**Does not cover:** irregular visits (Tier 4 — closed separately as
+[CLOSED #2](CLOSED.md), a different mechanism), a mechanism
 shift (Tier 2), within-episode drift (Tier 3), or other ODE families. Each
 breaks the "the current observation is enough" premise differently, and must
 be tested, not assumed.
