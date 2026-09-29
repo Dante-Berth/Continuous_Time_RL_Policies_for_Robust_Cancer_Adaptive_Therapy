@@ -86,12 +86,12 @@ def eval_key(seed: int):
     return jax.random.split(jax.random.PRNGKey(seed), 3)[2]
 
 
-def evaluate(policy, seed: int, w: float) -> dict:
-    """Tier-0 test cohort at every drop rate, one eval key for all of them."""
-    th, y0 = (jnp.asarray(x) for x in tier0_cohort(g.N_TEST, seed))
+def evaluate(policy, seed: int, w: float, cohort=tier0_cohort, drops=DROPS) -> dict:
+    """A test cohort (Tier 0 by default) at every drop rate, one eval key for all."""
+    th, y0 = (jnp.asarray(x) for x in cohort(g.N_TEST, seed))
     rw, k = RewardConfig(exposure_penalty=w), eval_key(seed)
     out = {}
-    for p in DROPS:
+    for p in drops:
         ev = ppo.evaluate(policy, th, y0, k, replace(g.EP, drop_rate=p), rw)
         burden = np.asarray(ev["burden"])
         ttp = ttp_running_nadir(burden, g.TS)
@@ -107,9 +107,10 @@ def evaluate(policy, seed: int, w: float) -> dict:
     return out
 
 
-def train_cell(arch: str, w: float, seed: int, pol_dir: Path | None = None) -> dict:
+def train_policy(arch: str, w: float, seed: int, train_drop: float = TRAIN_DROP):
+    """PQN on the seed's training cohort; returns (policy, train seconds)."""
     k_init, k_train, _ = jax.random.split(jax.random.PRNGKey(seed), 3)
-    c = sample_cohort(g.FAM, g.N_TRAIN, seed=seed)
+    c = sample_cohort(g.FAM, g.N_TRAIN, seed=seed, ranges=g.RANGES)
     t0 = time.perf_counter()
     policy, _ = pqn.train(
         ARCHS[arch](k_init),
@@ -117,14 +118,22 @@ def train_cell(arch: str, w: float, seed: int, pol_dir: Path | None = None) -> d
         jnp.asarray(c.y0s),
         k_train,
         pqn.PQNConfig(),
-        replace(g.EP, drop_rate=TRAIN_DROP),
+        replace(g.EP, drop_rate=train_drop),
         RewardConfig(exposure_penalty=w),
     )
-    out = {"arch": arch, "w": w, "seed": seed, "train_seconds": time.perf_counter() - t0}
-    out.update(evaluate(policy, seed, w))
-    pol_dir = pol_dir or g.OUT / "w4_policies"
+    return policy, time.perf_counter() - t0
+
+
+def save_policy(policy, pol_dir: Path, arch: str, w: float, seed: int) -> None:
     pol_dir.mkdir(parents=True, exist_ok=True)
     eqx.tree_serialise_leaves(pol_dir / f"{arch}_w{w}_s{seed}.eqx", policy)
+
+
+def train_cell(arch: str, w: float, seed: int, pol_dir: Path | None = None) -> dict:
+    policy, secs = train_policy(arch, w, seed)
+    out = {"arch": arch, "w": w, "seed": seed, "train_seconds": secs}
+    out.update(evaluate(policy, seed, w))
+    save_policy(policy, pol_dir or g.OUT / "w4_policies", arch, w, seed)
     return out
 
 
@@ -231,12 +240,12 @@ def delta_ci(d: np.ndarray, drops, seed: int = 0) -> dict:
     }
 
 
-def wilcoxon_per_w_p(cells, valid, a, b, seeds) -> dict:
+def wilcoxon_per_w_p(cells, valid, a, b, seeds, drops=DROPS) -> dict:
     """One-sided (a > b) paired Wilcoxon on U, per (w, p), pooled over valid seeds."""
     by = {(c["arch"], c["w"], c["seed"]): c for c in cells}
     out = {}
     for w in WEIGHTS:
-        for p in DROPS:
+        for p in drops:
             ok = [s for s in seeds if valid[(a, w, s)] and valid[(b, w, s)]]
             if ok:
                 ua = np.concatenate([utility(by[(a, w, s)], p, w) for s in ok])
@@ -245,13 +254,13 @@ def wilcoxon_per_w_p(cells, valid, a, b, seeds) -> dict:
     return out
 
 
-def table(cells, valid, rules, archs, seeds) -> dict:
+def table(cells, valid, rules, archs, seeds, drops=DROPS) -> dict:
     """Per (policy, w, p), valid cells only: mean U, and the PROJECT.md 10 block --
     capped median TTP + IQR, median exposure, median burden integral -- over
     the pooled patient x seed values."""
     tab = {}
     for w in WEIGHTS:
-        for p in DROPS:
+        for p in drops:
             groups = {a: [c for c in cells if c["arch"] == a and c["w"] == w] for a in archs}
             groups = {a: [c for c in cs if valid[(a, w, c["seed"])]] for a, cs in groups.items()}
             groups.update(

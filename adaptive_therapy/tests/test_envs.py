@@ -180,3 +180,28 @@ def test_cohort_solve_vmaps_over_patients():
 def test_unknown_model_id_raises():
     with pytest.raises(ValueError, match="unknown model_id"):
         observe(jnp.zeros((2,)), "not_a_model")
+
+
+def test_strobl2021_lv_cohort_lies_inside_strobls_published_ranges():
+    from adaptive_therapy.envs.sampling import STROBL_D_D, STROBL_R_S, sample_cohort
+
+    c = sample_cohort("lotka_volterra", 300, seed=3, ranges="strobl2021")
+    r_S, r_R, K, d_S, d_R, d_D = c.thetas.T
+    n_0 = c.y0s.sum(axis=1) / K
+    f_R = c.y0s[:, 1] / c.y0s.sum(axis=1)
+    assert c.n == 300
+    assert (r_S == STROBL_R_S).all() and (d_D == STROBL_D_D).all()
+    assert (r_R / r_S >= 0.5).all() and (r_R / r_S <= 1.0).all()
+    assert (d_S == d_R).all() and (d_S / r_S <= 0.5).all() and (d_S >= 0).all()
+    assert (n_0 >= 0.1 - 1e-9).all() and (n_0 <= 0.75 + 1e-9).all()
+    assert (f_R >= 0.001 - 1e-9).all() and (f_R <= 0.1 + 1e-9).all()
+
+
+def test_default_ranges_are_the_provisional_box_so_logged_runs_reproduce():
+    from adaptive_therapy.envs.sampling import sample_cohort
+
+    a = sample_cohort("lotka_volterra", 50, seed=7)
+    b = sample_cohort("lotka_volterra", 50, seed=7, ranges="provisional")
+    assert (a.thetas == b.thetas).all() and (a.y0s == b.y0s).all()
+    with pytest.raises(ValueError):
+        sample_cohort("hahnfeldt", 5, ranges="strobl2021")

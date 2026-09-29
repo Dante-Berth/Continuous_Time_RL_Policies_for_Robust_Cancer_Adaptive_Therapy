@@ -536,3 +536,48 @@ unreliable training is part of the architecture's cost.
 `w4b_shards/`, `w4b_policies/`.
 **Honest prior:** H_ct4b fails; the ODE-RNN was below the MLP in W4 (−42.8 [−76, −4]).
 H_fb likely fails at p = 0.5 (W4: MTD 260 vs MLP 216).
+
+## [2026-09-29] — S1: the decisive comparisons re-run on Strobl 2021's LV ranges (W3c's Tiers 0/1 and W4b's Tier 4)
+
+**Why.** Only 9.8% of the provisional LV patients lie inside Strobl 2021's ranges
+([L703](RESEARCH_LOG.md#L703)): our cost of resistance is ~70% against their 0–50%.
+Every verdict so far holds only on that box, so none can reach a paper as
+"Strobl-parameterised LV". This re-runs the two designs the paper rests on,
+changing **only the θ box**.
+**Cohort.** `sample_cohort(..., ranges="strobl2021")`: r_S 0.027/d and drug kill
+1.5 fixed; r_R/r_S 0.5–1.0; one turnover d_T/r_S 0–0.5 on both populations;
+f_R 0.001–0.1; n_0 0.1–0.75 (Table 1, PMC8455086 HTML). Tier-1 shift unchanged
+(r_S, r_R × 1.5; K × 0.6). The provisional default reproduces bit-for-bit (hash-checked).
+**Precondition, checked before registering (rules only, seed 0, no learned
+policy):** Tier 1 untreated median TTP 14 d; MTD 224 d with 10% censored; thr0.8
+312 d, 38%; no NaN. More headroom than the provisional box (MTD 357 d, 57%).
+**Part A: W3c's design (regular visits, Tiers 0/1).** Arms MLP-441, LSTM-26,
+ODE-RNN; PQN Phase-2c; w {0.05, 0.10, 0.20, 0.40}; **fresh seeds {31..40}**;
+200 test patients per tier. **H_ct_S (primary):** Δ(ODE, X) = mean over w of the
+mean paired U = min(TTP, 357) − w·exposure on **Tier 1**. Passes iff the 95%
+seed+patient CI (2000 resamples) lies above 0 for **both** X ∈ {MLP, LSTM}.
+Passing kills LAW L1 in this regime. Secondary: the same on Tier 0; LSTM − MLP (memory).
+**Part B: W4b exactly** (train at p 0.35, Tier-0 test at p {0, 0.2, 0.5}, hold,
++LSTM+Δt), **fresh seeds {41..50}**. **H_ct4b_S** passes iff ODE's CI is above
+0 for every X ∈ {MLP, LSTM, LSTM+Δt, MTD}; H_grace_S and H_fb_S as in W4b.
+**Validity (both parts): intention-to-treat**, as in W4b. The only exclusion is a
+non-finite rollout, and an arm with > 5% such cells is INVALID. This departs from
+W3c's per-cell closed-loop gate (L632 showed the gate conflates collapse with
+legitimate fixed schedules). Closed-loop fraction is reported descriptively.
+**Descriptive:** per (arm, w, tier/p): capped median TTP + IQR, censoring, median
+exposure, median burden integral; one-sided paired Wilcoxon per w; rules none /
+MTD / AT50 / thr0.8.
+**Kill / reading.** Neither ODE hypothesis passes ⇒ the negative replicates on
+Strobl's ranges; the paper reports the Strobl regime as primary and the
+provisional one as a second, high-cost-of-resistance regime. Either passes ⇒
+the negative was an artefact of the provisional box; logged as such, with
+no re-grade of earlier entries. No extra seeds, arms or grid after seeing results.
+**Declared risks.** (1) PQN settings were tuned nowhere and may suit one regime
+better. (2) r_S is fixed, so the Tier-1 shift moves r_S to 0.0405, further
+outside training than under the provisional box. (3) f_R is sampled
+log-uniformly (2 decades); Strobl sweeps it, and gives no sampling distribution.
+**Compute:** ≈ 2 h on CPU (Part A 120 cells, Part B 160, W4b measured 87 min).
+**Artifacts:** `research/s1_strobl.py` → `research/outputs/s1_strobl.{json,png,log}`,
+`s1_shards/`, `s1_policies/`.
+**Honest prior:** both fail. The MLP's threshold rule should survive, and a
+weaker cost of resistance gives memory less to exploit, not more.

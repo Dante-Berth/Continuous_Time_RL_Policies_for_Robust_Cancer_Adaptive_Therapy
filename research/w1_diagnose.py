@@ -48,7 +48,7 @@ OBS_GRID = np.linspace(-4.0, 1.0, 501)  # log(burden / baseline)
 
 def tier0_cohort(n: int, seed: int):
     """The Tier-1 patients before the shift: same sample, theta and y0 as drawn."""
-    c = sample_cohort(g.FAM, n, seed=seed + 1000)
+    c = sample_cohort(g.FAM, n, seed=seed + 1000, ranges=g.RANGES)
     return c.thetas, c.y0s
 
 

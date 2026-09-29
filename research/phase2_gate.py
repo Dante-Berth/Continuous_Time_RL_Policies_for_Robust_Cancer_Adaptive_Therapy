@@ -86,6 +86,10 @@ from adaptive_therapy.rl.rollout import EpisodeConfig, observation_dependence
 OUT = Path(__file__).resolve().parent / "outputs"
 CLOSED_LOOP_MIN = 0.10  # PREREG Phase 2b/2c criterion (0), fixed before either run
 FAM = "lotka_volterra"
+# Theta box for every cohort built through this module. Scripts that re-run on
+# Strobl 2021 ranges set it before sampling (RESEARCH_LOG L703); the default
+# reproduces every logged run.
+RANGES = "provisional"
 N_TRAIN = 200
 N_TEST = 200
 SEEDS = (0, 1, 2)
@@ -134,7 +138,7 @@ def tier1_cohort(n: int, seed: int):
     them up to NaN -- scored as censored. Scaling y0 by K'/K is exact because
     lotka_volterra.initial_state is linear in K.
     """
-    c = sample_cohort(FAM, n, seed=seed + 1000)
+    c = sample_cohort(FAM, n, seed=seed + 1000, ranges=RANGES)
     th = c.thetas.copy()
     names = list(THETA_RANGES[FAM].keys())
     for k, mult in TIER1.items():

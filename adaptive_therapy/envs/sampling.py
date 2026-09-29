@@ -59,6 +59,24 @@ IC_RANGES: dict[ModelId, dict[str, tuple[float, float]]] = {
     "kuznetsov": {"t_0": (1e4, 5e5)},
 }
 
+# LV ranges from Strobl et al. 2021, Cancer Research, Table 1
+# (doi 10.1158/0008-5472.CAN-20-0806; read from the PMC8455086 HTML, so the
+# literature row stays 2°). 2026-09-29 (RESEARCH_LOG L703): only 9.8% of
+# "provisional" LV patients fall inside these ranges -- r_R/r_S median 0.30
+# against Strobl's 0.5-1.0, i.e. a far stronger cost of resistance. r_S and the
+# drug kill are fixed as in the paper; one turnover d_T acts on both
+# populations; K only sets the scale (Strobl normalises it away).
+STROBL_R_S = 0.027  # /day, Table 1
+STROBL_D_D = 1.5  # drug kill, Table 1: (1 - 1.5 u) at full dose u = 1
+STROBL_LV = {
+    "r_R/r_S": (0.5, 1.0),
+    "K": (5e3, 2e4),
+    "d_T/r_S": (0.0, 0.5),
+    "f_R": (0.001, 0.10),
+    "n_0": (0.10, 0.75),
+}
+RANGE_SETS = ("provisional", "strobl2021")
+
 _FAMILY_MODULES = {
     "lotka_volterra": lotka_volterra,
     "hahnfeldt": hahnfeldt,
@@ -102,23 +120,43 @@ def _scale(unit: np.ndarray, lo: float, hi: float) -> np.ndarray:
     return lo + unit * (hi - lo)
 
 
-def sample_cohort(model_id: ModelId, n: int, seed: int = 0) -> Cohort:
-    """LHS-sample `n` virtual patients, then apply the untreated sanity gate."""
+def _strobl_lv(unit: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(thetas, ics) in the LV layout from a (n, 5) unit LHS over STROBL_LV."""
+    v = {k: _scale(unit[:, j], *r) for j, (k, r) in enumerate(STROBL_LV.items())}
+    n = unit.shape[0]
+    r_S = np.full(n, STROBL_R_S)
+    d_T = v["d_T/r_S"] * STROBL_R_S
+    thetas = np.column_stack([r_S, v["r_R/r_S"] * r_S, v["K"], d_T, d_T, np.full(n, STROBL_D_D)])
+    return thetas, np.column_stack([v["f_R"], v["n_0"]])
+
+
+def sample_cohort(model_id: ModelId, n: int, seed: int = 0, ranges: str = "provisional") -> Cohort:
+    """LHS-sample `n` virtual patients, then apply the untreated sanity gate.
+
+    `ranges` selects the theta box: "provisional" (every run up to W4b) or
+    "strobl2021" (LV only). The default stays "provisional" so logged runs
+    reproduce bit-for-bit.
+    """
+    if ranges not in RANGE_SETS:
+        raise ValueError(f"unknown ranges {ranges!r}; expected one of {RANGE_SETS}")
+    if ranges == "strobl2021" and model_id != "lotka_volterra":
+        raise ValueError("strobl2021 ranges exist for lotka_volterra only")
     rng = np.random.default_rng(seed)
     theta_spec = THETA_RANGES[model_id]
     ic_spec = IC_RANGES[model_id]
 
     n_draw = int(n * 1.6) + 16  # headroom so the gate still leaves ~n
-    unit = _lhs(n_draw, len(theta_spec) + len(ic_spec), rng)
-
-    thetas = np.column_stack(
-        [_scale(unit[:, j], *rng_) for j, rng_ in enumerate(theta_spec.values())]
-    )
-    ics = np.column_stack(
-        [_scale(unit[:, len(theta_spec) + j], *rng_) for j, rng_ in enumerate(ic_spec.values())]
-    )
-
-    if model_id == "lotka_volterra":
+    if ranges == "strobl2021":
+        thetas, ics = _strobl_lv(_lhs(n_draw, len(STROBL_LV), rng))
+    else:
+        unit = _lhs(n_draw, len(theta_spec) + len(ic_spec), rng)
+        thetas = np.column_stack(
+            [_scale(unit[:, j], *rng_) for j, rng_ in enumerate(theta_spec.values())]
+        )
+        ics = np.column_stack(
+            [_scale(unit[:, len(theta_spec) + j], *rng_) for j, rng_ in enumerate(ic_spec.values())]
+        )
+    if ranges == "provisional" and model_id == "lotka_volterra":
         # Enforce the cost of resistance rather than rejecting draws that
         # violate it: r_R >= r_S is a different biology, not a bad sample.
         r_S, r_R = thetas[:, 0], thetas[:, 1]
