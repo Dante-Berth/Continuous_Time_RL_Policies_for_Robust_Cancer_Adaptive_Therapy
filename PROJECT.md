@@ -212,7 +212,7 @@ The four moves that separate "solid specialist paper" from "high-club," ranked b
 
 ## §12-REF. Verified references (all resolve)
 - Gallagher K, Strobl MAR, Park DS, et al. *Cancer Research* 2024;84(11):1929–1941.
-- Strobl MAR, Gallaher J, West J, Robertson-Tessi M, Maini PK, Anderson ARA. "Turnover Modulates the Need for a Cost of Resistance in Adaptive Therapy." *Cancer Research* 2021. PMC8455086 / PubMed 33172930.
+- Strobl MAR, West J, Viossat Y, Damaghi M, Robertson-Tessi M, Brown JS, Gatenby RA, Maini PK, Anderson ARA. "Turnover Modulates the Need for a Cost of Resistance in Adaptive Therapy." *Cancer Research* 2021;81(4):1135–1147. DOI 10.1158/0008-5472.CAN-20-0806. PMC8455086 / PubMed 33172930. *(Author list corrected 2026-09-29 from PubMed 33172930, owner-approved; the earlier list named Gallaher J, who is not an author.)*
 - Hahnfeldt P, Panigrahy D, Folkman J, Hlatky L. "Tumor development under angiogenic signaling." *Cancer Research* 1999. (Ranges: PLOS One 2015, journal.pone.0120007.)
 - Kuznetsov VA, Makalkin IA, Taylor MA, Perelson AS. "Nonlinear dynamics of immunogenic tumors." *Bull Math Biol* 1994;56(2):295–321. DOI 10.1007/BF02460644.
 - "Adaptive therapy under parametric, structural, and measurement uncertainty." arXiv:2608.18387 (2025).
