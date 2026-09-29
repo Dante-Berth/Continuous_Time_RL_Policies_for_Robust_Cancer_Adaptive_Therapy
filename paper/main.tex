@@ -35,7 +35,8 @@ policy at regular visits. The MLP learns a burden-threshold rule and does no
 better than the one-line rule it resembles. With half of the visits missed, no
 learned policy beats a fixed maximum-dose schedule, and the arm that degrades
 most gracefully is a plain LSTM. The negative replicates on a second parameter
-regime. We also report four
+regime. A reference policy that also sees the hidden state scores lower still,
+so the negative describes what this trainer extracts, not what the task allows. We also report four
 ways the evaluation misled us before it was valid.
 \end{abstract}
 
@@ -57,7 +58,8 @@ evaluation, with only the Q-network swapped; the recurrent arms are matched at
 ${\sim}3{,}100$ Q-path parameters.
 \item \textbf{Negative results with seed+patient CIs}: no continuous-time edge
 in range (Tier~0), under a parameter shift (Tier~1), or under missed visits
-(Tier~4), on two parameter regimes.
+(Tier~4), on two parameter regimes. A full-information reference locates the
+limit in the trainer rather than in the task.
 \item \textbf{A task finding.} At regular visits the best learned policy is a
 burden threshold. With half of the visits missed, no learned policy beats
 dosing at the maximum tolerated dose, on either parameter regime.
@@ -146,9 +148,20 @@ a function of the current observation by construction. What matters is the
 function's shape (Fig.~\ref{fig:rule}). On Strobl's ranges the mean dose crosses
 one half at $\RuleHalfStrobl\times$ baseline and is full by $0.8\times$. The
 one-line thr0.8 rule matches the MLP: mean $U$ \SAUMlpOne\ vs \SAUThrOne\ at
-Tier~1, and \SAUMlpZero\ vs \SAUThrZero\ at Tier~0. With regular visits, a
-policy has nothing for a continuous-time state to integrate that the next
-observation does not already report.
+Tier~1, and \SAUMlpZero\ vs \SAUThrZero\ at Tier~0.
+
+\paragraph{Why memory does not help is not established.} A natural reading is
+that the current observation already carries what dosing needs, leaving memory
+nothing to recover. We tested it with a reference that is trained identically
+but also sees the hidden populations $S, R$ and the patient's parameters
+$\theta$. This is an owner-approved exception to burden-only observation, never
+an arm. Its $\Delta U$ against the burden-only MLP is \HFullZero\ at Tier~0
+($S, R$ only: \HStateZero), negative on every seed. It also earns less of the
+training reward, even on its own training patients, so the cause is neither
+reward misalignment nor overfitting. Under this trainer and budget, extra state
+lowers $U$ whether it is remembered (LSTM, ODE-RNN) or given (the reference).
+``Nothing to integrate'' and ``the trainer cannot integrate it'' are therefore
+not yet told apart. % S2, L804
 
 \begin{figure}[t]
 \centering
@@ -227,6 +240,7 @@ W3c & per-cell gate, $U$ primary & valid; no memory or CT edge & L565, L596 \\
 W4 & Tier 4, trained at 35\% missed & invalid: gate removed better cells & L632 \\
 W4b & intention-to-treat, MTD reference & FAIL: no CT edge & L668 \\
 S1 & Strobl ranges, W3c + W4b designs & FAIL: no CT edge, Tiers 0/1/4 & L766 \\
+S2 & reference that also sees $S$, $R$, $\theta$ & below the MLP: no headroom claim & L804 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -235,7 +249,11 @@ S1 & Strobl ranges, W3c + W4b designs & FAIL: no CT edge, Tiers 0/1/4 & L766 \\
 One ODE family (LV), virtual patients only, and no claim about clinical
 outcomes. PQN's settings are the published ones, untuned, and the recurrent arms
 are chaotic in training; we treat that as part of their cost rather than tuning
-it away. Training rewards burden above $1.2\times$ the nadir, not TTP itself.
+it away. The binding limit is the trainer. Given the true hidden state, the
+same PQN scores below the burden-only MLP, so a trainer that can profit from
+extra state might change the ranking. Before any continuous-time re-run is
+worth registering, that trainer must make the full-information reference beat
+the burden-only MLP. Training rewards burden above $1.2\times$ the nadir, not TTP itself.
 Missed visits are i.i.d., so the next gap is unknown when the policy doses;
 scheduled gaps, where continuous time has more to use, are untested. Mechanism
 shift and within-episode drift (Tiers~2--3) are out of scope.
@@ -244,7 +262,9 @@ shift and within-episode drift (Tiers~2--3) are out of scope.
 On this task, a memoryless burden threshold is a hard baseline, and continuous
 time did not beat it on either parameter regime. When half of the visits are
 missed, the question is no longer which architecture uses feedback best, but
-whether feedback pays at all; here it did not.
+whether feedback pays at all; here it did not. A reference given the hidden
+state also lost to the burden-only threshold. The next test of continuous time
+therefore needs a trainer that can first profit from extra state.
 
 \begin{thebibliography}{9}
 \bibitem{gallagher2024} K.~Gallagher, M.~A.~R. Strobl, D.~S. Park,
