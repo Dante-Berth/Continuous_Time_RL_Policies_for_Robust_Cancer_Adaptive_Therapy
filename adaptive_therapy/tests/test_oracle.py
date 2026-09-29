@@ -24,7 +24,9 @@ def _traj(oracle: str):
     th, y0 = _patient()
     ep = EpisodeConfig(n_visits=12, oracle=oracle)
     # MTD ignores its input, so all three rollouts dose identically.
-    return rollout(RulePolicy("MTD"), th, y0, jax.random.PRNGKey(5), ep, RewardConfig(), greedy=True)
+    return rollout(
+        RulePolicy("MTD"), th, y0, jax.random.PRNGKey(5), ep, RewardConfig(), greedy=True
+    )
 
 
 def test_burden_only_is_the_default_observation():
