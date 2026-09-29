@@ -44,10 +44,10 @@ SHARDS = g.OUT / "s1_shards"
 POLICIES = g.OUT / "s1_policies"
 
 
-def tiers_eval(policy, seed: int, w: float) -> dict:
+def tiers_eval(policy, seed: int, w: float, ep=None) -> dict:
     out = {}
     for tier, cohort in (("tier0", w4.tier0_cohort), ("tier1", g.tier1_cohort)):
-        ev = w4.evaluate(policy, seed, w, cohort=cohort, drops=(0.0,))
+        ev = w4.evaluate(policy, seed, w, cohort=cohort, drops=(0.0,), ep=ep)
         out[tier] = ev["0.0"]
         out[f"closed_loop_{tier}"] = ev["closed_loop"]
     out["closed_loop"] = out["closed_loop_tier1"]

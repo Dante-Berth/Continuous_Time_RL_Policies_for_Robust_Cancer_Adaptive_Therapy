@@ -86,13 +86,16 @@ def eval_key(seed: int):
     return jax.random.split(jax.random.PRNGKey(seed), 3)[2]
 
 
-def evaluate(policy, seed: int, w: float, cohort=tier0_cohort, drops=DROPS) -> dict:
-    """A test cohort (Tier 0 by default) at every drop rate, one eval key for all."""
+def evaluate(policy, seed: int, w: float, cohort=tier0_cohort, drops=DROPS, ep=None) -> dict:
+    """A test cohort (Tier 0 by default) at every drop rate, one eval key for all.
+
+    `ep` replaces g.EP as the base episode (S2's reference sets its oracle)."""
+    base = ep or g.EP
     th, y0 = (jnp.asarray(x) for x in cohort(g.N_TEST, seed))
     rw, k = RewardConfig(exposure_penalty=w), eval_key(seed)
     out = {}
     for p in drops:
-        ev = ppo.evaluate(policy, th, y0, k, replace(g.EP, drop_rate=p), rw)
+        ev = ppo.evaluate(policy, th, y0, k, replace(base, drop_rate=p), rw)
         burden = np.asarray(ev["burden"])
         ttp = ttp_running_nadir(burden, g.TS)
         out[str(p)] = {
@@ -103,22 +106,26 @@ def evaluate(policy, seed: int, w: float, cohort=tier0_cohort, drops=DROPS) -> d
             "seen_fraction": float(np.asarray(ev["seen"]).mean()),
         }
         if p == 0.0:
-            out["closed_loop"] = observation_dependence(policy, ev["obs"], g.EP, k, greedy=True)
+            out["closed_loop"] = observation_dependence(policy, ev["obs"], base, k, greedy=True)
     return out
 
 
-def train_policy(arch: str, w: float, seed: int, train_drop: float = TRAIN_DROP):
-    """PQN on the seed's training cohort; returns (policy, train seconds)."""
+def train_policy(
+    arch: str, w: float, seed: int, train_drop: float = TRAIN_DROP, ep=None, make=None
+):
+    """PQN on the seed's training cohort; returns (policy, train seconds).
+
+    `make` overrides ARCHS[arch] and `ep` the base episode (S2's reference)."""
     k_init, k_train, _ = jax.random.split(jax.random.PRNGKey(seed), 3)
     c = sample_cohort(g.FAM, g.N_TRAIN, seed=seed, ranges=g.RANGES)
     t0 = time.perf_counter()
     policy, _ = pqn.train(
-        ARCHS[arch](k_init),
+        (make or ARCHS[arch])(k_init),
         jnp.asarray(c.thetas),
         jnp.asarray(c.y0s),
         k_train,
         pqn.PQNConfig(),
-        replace(g.EP, drop_rate=train_drop),
+        replace(ep or g.EP, drop_rate=train_drop),
         RewardConfig(exposure_penalty=w),
     )
     return policy, time.perf_counter() - t0

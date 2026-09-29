@@ -28,6 +28,7 @@ from adaptive_therapy.envs.base import ModelId, PKConfig, SolverConfig, observe
 from adaptive_therapy.envs.cohort import solve_one_patient
 from adaptive_therapy.envs.pk import administer, decay, effect
 from adaptive_therapy.envs.reward import RewardConfig, step_reward
+from adaptive_therapy.envs.sampling import STROBL_R_S
 from adaptive_therapy.policies.base import DOSE_LEVELS, normalise_obs
 
 
@@ -38,6 +39,37 @@ class EpisodeConfig:
     obs_noise: float = 0.05
     model_id: ModelId = "lotka_volterra"
     drop_rate: float = 0.0  # P(a visit after the first is missed); Tier 4
+    # "none" (every arm), or a REFERENCE that also sees the hidden state:
+    # "state" adds S, R; "full" adds theta too. 2026-09-29, owner-approved
+    # exception to burden-only for PREREG S2's headroom bound -- never an arm,
+    # never reported as a policy. See oracle_features.
+    oracle: str = "none"
+
+
+ORACLE_DIMS = {"none": 0, "state": 2, "full": 8}
+
+
+def oracle_features(y, theta, baseline, level: str) -> jnp.ndarray:
+    """The hidden quantities a burden-only policy never sees, scaled for a network.
+
+    THIS DELIBERATELY CROSSES THE POMDP BOUNDARY (envs/base.observe). It exists
+    only for PREREG S2's full-information reference: "state" -> noise-free
+    log(S/b0), log(R/b0); "full" adds theta as log(r_S/r0), log(r_R/r0),
+    log(K/b0), d_S/r0, d_R/r0, d_D with r0 = Strobl's r_S. LV only.
+    """
+    b0 = jnp.maximum(baseline, 1e-10)
+    feats = [jnp.log(jnp.maximum(y[0], 1e-10) / b0), jnp.log(jnp.maximum(y[1], 1e-10) / b0)]
+    if level == "full":
+        r_S, r_R, K, d_S, d_R, d_D = (theta[i] for i in range(6))
+        feats += [
+            jnp.log(jnp.maximum(r_S, 1e-10) / STROBL_R_S),
+            jnp.log(jnp.maximum(r_R, 1e-10) / STROBL_R_S),
+            jnp.log(jnp.maximum(K, 1e-10) / b0),
+            d_S / STROBL_R_S,
+            d_R / STROBL_R_S,
+            d_D,
+        ]
+    return jnp.stack(feats)
 
 
 # The visit mask is drawn from fold_in(key, _MASK_STREAM), never from the key
@@ -92,6 +124,10 @@ def rollout(
     """
     pk = pk or PKConfig()
     cfg = SolverConfig(t0=0.0, t1=ep.visit_interval, dt0=0.05, n_save=2)
+    if ep.oracle not in ORACLE_DIMS:
+        raise ValueError(f"unknown oracle {ep.oracle!r}; expected one of {tuple(ORACLE_DIMS)}")
+    if ep.oracle != "none" and ep.model_id != "lotka_volterra":
+        raise ValueError("oracle observations exist for lotka_volterra only")
 
     baseline = observe(y0, ep.model_id)
 
@@ -102,6 +138,8 @@ def rollout(
         true_b = observe(y, ep.model_id)
         noisy = true_b * jnp.exp(jax.random.normal(k_obs) * ep.obs_noise)
         obs = normalise_obs(noisy, baseline)
+        if ep.oracle != "none":  # S2's reference only; the burden obs stays first
+            obs = jnp.concatenate([obs[None], oracle_features(y, theta, baseline, ep.oracle)])
 
         logits, h2, since2 = _visit(policy, h, since, obs, seen, ep.visit_interval)
         if eps is None:

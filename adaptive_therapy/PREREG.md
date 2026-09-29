@@ -581,3 +581,47 @@ log-uniformly (2 decades); Strobl sweeps it, and gives no sampling distribution.
 `s1_shards/`, `s1_policies/`.
 **Honest prior:** both fail. The MLP's threshold rule should survive, and a
 weaker cost of resistance gives memory less to exploit, not more.
+
+## [2026-09-29] — S2: full-state headroom bound — how much does seeing the hidden state gain over the burden-only MLP?
+
+**Why.** LAW L1 explains the negative by assuming the current burden is near-
+sufficient for dosing ([L461](RESEARCH_LOG.md#L461)). That assumption was never
+measured. If seeing the hidden state gains little, memory had nothing to recover.
+If it gains a lot, the recurrent arms (−44 to −50 d vs the MLP, [L766](RESEARCH_LOG.md#L766))
+failed to learn what was there.
+**Owner-approved exception to "burden-only" (2026-09-29).** The oracle is a
+labelled reference, never an arm, and is never reported as a policy.
+**Oracle.** S1's MLP-441 (LayerNorm, PQN Phase-2c) with a wider input: the same
+noisy log-burden observation the arms get, plus noise-free log(S/b0), log(R/b0)
+(**O_state**, 3 inputs); **O_full** adds θ as log(r_S/0.027), log(r_R/0.027),
+log(K/b0), d_S/0.027, d_R/0.027, d_D (9 inputs). O_full's information contains
+that of any burden-only policy, recurrent or not. Only the first layer grows.
+**Pairing.** Same seeds, training cohorts, eval keys, observation noise and visit
+masks as S1: Part A seeds {31..40}, Part B {41..50}, Strobl ranges. The
+comparators are **S1's existing cells** (seen); only the oracle cells are new,
+and no oracle setting is tuned.
+**Primary (Part A, Tier 0, regular visits).** Δ = mean over w of the mean paired
+U_Ofull − U_MLP, 95% CI over 2000 seed+patient resamples. Readings fixed now:
+CI upper bound < **+10 d** ⇒ **no headroom** (the hidden state is worth < 10 d of
+U to this trainer); CI lower bound > +10 d ⇒ **headroom** (the recurrent arms'
+deficit is a learning failure); CI wholly < 0 ⇒ the trainer cannot use the
+input, and no headroom claim either way; otherwise inconclusive. 10 d is a
+quarter of the MLP's Tier-0 margin over MTD (40.4 d, S1).
+**Secondary.** O_state vs MLP (Tier 0); both oracles at Tier 1 (descriptive:
+the shift puts θ outside training); **Part B (35%-missed training, W4b design):**
+Δ(O_full, MTD) at p = 0.5, with the same three readings at threshold 0: CI > 0 ⇒
+full information restores feedback's value at 50% missed; CI < 0 ⇒ the collapse
+is inherent to missed visits under hold; Δ(O_full, LSTM) at p 0.5 descriptive.
+**Standing:** capped median TTP + IQR, median exposure, burden integral,
+one-sided paired Wilcoxon (oracle > MLP) per w; ITT (non-finite only); 10 seeds.
+**Kill.** No extra seeds, inputs, widths or trainers after seeing results; the
+oracle is not re-run until it "works". A below-MLP oracle is reported as such.
+**Declared risks.** (1) An empirical bound: PQN may not reach the full-information
+optimum, so a small Δ bounds what *this trainer* extracts. (2) log(R/b0) reaches
+−7 at f_R = 0.001; LayerNorm follows the first layer. (3) O_full's first layer
+has 9× the MLP's input weights (Q-path ~6.6k vs 3.1k params).
+**Compute:** 160 MLP-sized cells, ≈ 20 min on CPU.
+**Artifacts:** `research/s2_headroom.py` → `research/outputs/s2_headroom.{json,log}`,
+`s2_shards/`, `s2_policies/`.
+**Honest prior:** inconclusive to small. The MLP ties a one-line rule, but only
+the S/R split says when treatment has become futile, and burden reveals it late.

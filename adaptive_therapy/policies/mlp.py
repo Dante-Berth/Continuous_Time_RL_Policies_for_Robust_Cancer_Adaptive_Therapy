@@ -25,22 +25,24 @@ class MLPPolicy(eqx.Module):
     norm: eqx.nn.LayerNorm | None
     width: int = eqx.field(static=True)
 
-    def __init__(self, key, width: int = 384, layer_norm: bool = False):
+    def __init__(self, key, width: int = 384, layer_norm: bool = False, in_dim: int = 1):
         # 384, not 64: it is what makes this arm parameter-matched to the
         # ODE-RNN (3076 each, ratio 1.00). See the PREREG amendment
         # [2026-09-22]. A 64-wide MLP has 516 params against the ODE arm's
         # 3076, and a win for the bigger network would be uninterpretable.
         k1, k2, k3, k4 = jax.random.split(key, 4)
         self.width = width
+        # in_dim > 1 only for PREREG S2's full-information reference, which
+        # also sees the hidden state (rollout.oracle_features); every arm is 1.
         self.layers = [
-            eqx.nn.Linear(1, width, key=k1),
+            eqx.nn.Linear(in_dim, width, key=k1),
             eqx.nn.Linear(width, N_ACTIONS, key=k2),
         ]
         # Optional LayerNorm on the hidden layer: the Q-network regulariser PQN's
         # stability argument relies on (arxiv-2407.04811 p.6). Off for PPO.
         self.norm = eqx.nn.LayerNorm(width) if layer_norm else None
         self.critic = [
-            eqx.nn.Linear(1, width, key=k3),
+            eqx.nn.Linear(in_dim, width, key=k3),
             eqx.nn.Linear(width, 1, key=k4),
         ]
 
