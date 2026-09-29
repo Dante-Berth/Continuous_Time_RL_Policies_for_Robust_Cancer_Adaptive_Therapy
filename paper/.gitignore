@@ -3,4 +3,4 @@
 *.out
 *.fls
 *.fdb_latexmk
-*.pdf
+/main.pdf
