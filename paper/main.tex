@@ -1,0 +1,180 @@
+% W6 draft -- workshop paper. Swap to the ICLR 2027 workshop style file when
+% released; plain article until then. Every number cites its RESEARCH_LOG
+% entry in a comment (Lnnn), so a reviewer's question traces to a logged run.
+% \pending{...} marks what S1 (PREREG 2026-09-29) must fill; do not submit
+% while any remains:  grep -n pending paper/main.tex
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,graphicx,xcolor,hyperref}
+\newcommand{\pending}[1]{\textcolor{red}{[#1]}}
+
+\title{Neither Memory nor Continuous Time: A Pre-Registered Negative Result\\
+for Learned Adaptive-Therapy Policies under Burden-Only Observation}
+\author{Anonymous}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Continuous-time recurrent policies are often proposed for control problems
+whose dynamics are themselves differential equations, and irregularly observed
+ones in particular. We test this inductive-bias claim on adaptive cancer
+therapy, where a policy doses a virtual patient from noisy total tumour burden
+alone. One RL algorithm (PQN) trains a memoryless MLP, a parameter-matched
+LSTM, an LSTM with the inter-visit gap as input, and an ODE-RNN on a
+Lotka--Volterra competition model. We compare them on paired virtual patients,
+with confidence intervals that resample both training seeds and patients. Every
+comparison was pre-registered. The ODE-RNN shows no edge over the best
+discrete arm in range, under a parameter shift, or with up to 50\% of visits
+missed. At regular visits the memoryless MLP learns a burden-threshold switch
+and only ties a one-line rule. When half of the visits are missed, no learned
+policy beats dosing at the maximum tolerated dose throughout. \pending{S1:
+whether both hold on Strobl et al.'s published parameter ranges.} We also report
+four ways this evaluation misled us before it was valid, each caught by a
+pre-registered check.
+\end{abstract}
+
+\section{Introduction}
+Adaptive therapy doses a tumour to keep a drug-sensitive population alive as a
+competitor of the resistant one, rather than to eradicate it. Reinforcement
+learning has been used to schedule it: on a Lotka--Volterra (LV) model with
+burden-only observation, A3C learns a treat-above-threshold rule close to the
+clinical algorithm \cite{gallagher2024}. Recurrence has been reported to help
+chemotherapy control when part of the state is hidden \cite{kiram2026}. A
+natural next claim is that a policy whose hidden state is itself an ODE
+\cite{rubanova2019} should carry the right inductive bias. It should be most
+useful when the biology shifts or when visits are irregular.
+
+We test that claim as a falsifiable, pre-registered comparison, and it fails.
+Our contributions are:
+\begin{itemize}
+\item A strict ablation: one trainer, one environment and one evaluation, with
+only the Q-network architecture swapped. The recurrent arms are matched at
+${\sim}3{,}100$ Q-path parameters.
+\item Three negative results with seed+patient confidence intervals: no
+continuous-time edge in range (Tier~0), under a parameter shift (Tier~1), or
+under missed visits (Tier~4).
+\item One finding about the task: as visits go missing, the value of feedback
+collapses below that of a fixed maximum-dose schedule.
+\item Four evaluation traps that each produced a publishable-looking wrong
+answer on the way (\S\ref{sec:pitfalls}).
+\end{itemize}
+
+\section{Setup}
+\paragraph{Virtual patients.} Sensitive $S$ and resistant $R$ cells compete for
+a shared capacity $K$:
+\begin{align*}
+\dot S &= r_S S\,(1 - \tfrac{S+R}{K})(1 - d_D u) - d_S S, &
+\dot R &= r_R R\,(1 - \tfrac{S+R}{K}) - d_R R,
+\end{align*}
+with drug effect $u\in[0,1]$ from one-compartment PK. Patients are
+Latin-hypercube samples of $\theta$ and of the initial resistant fraction $f_R$
+and fill level $n_0$. The primary regime follows Strobl et al.\ \cite{strobl2021}
+(Table~1): $r_S = 0.027\,\mathrm{d}^{-1}$, $r_R/r_S \in [0.5, 1]$, one turnover
+$d_T/r_S\in[0,0.5]$, $d_D=1.5$, $n_0\in[0.1,0.75]$, $f_R\in[10^{-3},10^{-1}]$.
+A second, provisional regime has a much stronger cost of resistance (median
+$r_R/r_S = 0.30$). It is reported as a robustness check, not as a parameterisation
+from the literature. % L703
+\paragraph{Episodes.} 52 weekly visits (357\,d). The policy sees only
+$\log(\text{burden}/\text{baseline})$ with 5\% log-normal noise, never $S$ or
+$R$, and picks a dose in $\{0, \tfrac12, 1\}$. Progression (TTP) is a 20\% rise
+over the running nadir, confirmed over 28\,d. The reward is
+survival-per-day minus a burden penalty minus $w\cdot$dose; we sweep
+$w\in\{0.05,0.1,0.2,0.4\}$.
+\paragraph{Tiers.} Tier~0 uses the training ranges. Tier~1 scales
+$r_S, r_R$ by 1.5 and $K$ by 0.6, outside the training box. Tier~4 misses each
+visit with probability $p$ i.i.d.; a missed visit gives no observation and
+no decision, and the last dose continues (``hold'').
+\paragraph{Arms.} MLP (width 441), LSTM (26 units), LSTM+$\Delta t$ (the gap as
+a second input, the standard discrete baseline for irregular series), and
+ODE-RNN \cite{rubanova2019}. The ODE-RNN is a GRU jump at each observation,
+with a tanh-bounded latent flow between them in fixed $7/8$\,d steps, so gaps of
+whole weeks compose exactly. All use a LayerNorm Q-readout, trained by PQN
+\cite{gallici2024} with its published RNN settings, untuned here.
+\paragraph{Statistic.} Per patient,
+$U=\min(\mathrm{TTP},357)-w\cdot\text{exposure}$, the trained objective's two
+main terms. $\Delta(A,B)$ is the mean over $w$ (and, at Tier~4, over
+$p\in\{0.2,0.5\}$) of the paired mean $U_A-U_B$. The 95\% CI comes from 2000
+bootstrap resamples of \emph{training seeds and patients}. We report capped
+median TTP with IQR, median exposure, and the burden integral (a metastasis
+proxy) alongside it. Rules are the references: no treatment, MTD (full dose
+throughout), AT50 (the clinical adaptive-therapy trial rule), and thr0.8 (full
+dose above $0.8\times$ baseline).
+
+\section{Results}
+\pending{S1 Part A table: ODE$-$MLP, ODE$-$LSTM, LSTM$-$MLP at Tiers 0/1, Strobl
+regime, with the provisional regime (W3c, L565/L596) beside it.}
+
+\paragraph{No continuous-time edge at regular visits.} On the provisional
+regime, LSTM$-$MLP is $-82.9$\,d $[-106.8,-58.7]$ and ODE$-$LSTM is $-15.7$\,d
+$[-43.0,+21.8]$ at Tier~1 (L565, L596). Tier~0 lies within 10\,d of Tier~1, so
+the gap is not a robustness effect. The MLP's dose is a function of the current
+observation in $\geq 0.94$ of visits: dose off below ${\sim}0.8\times$ baseline,
+full dose above (L461, L554). It ties thr0.8 (246.8 vs 245.9\,d mean $U$).
+\pending{Strobl regime.}
+
+\paragraph{Missed visits.} \pending{S1 Part B.} On the provisional regime
+(W4b, L668), with no cell excluded, ODE$-$MLP is $-6.1$ $[-34.7,+12.9]$ and
+ODE$-$MTD is $-23.7$ $[-47.5,-5.8]$. The ODE-RNN degrades least of the learned
+arms ($U$ 246$\to$229 from $p=0$ to $0.5$; MLP 281$\to$217), but at $p=0.5$
+every learned arm is below MTD (best $-29.1$ $[-55.8,-8.2]$). The mechanism
+under hold is that a threshold policy that switched off keeps the drug off
+through the gap while the tumour regrows.
+
+\section{Four ways the comparison misled us}\label{sec:pitfalls}
+\begin{enumerate}
+\item \textbf{Open-loop collapse.} Under PPO, the ODE-RNN gave all 200
+patients one identical exposure in 4 of 6 cells. The first ``architecture''
+result compared feedback with a fixed schedule (L312). The cause was
+initialisation: each 7-day flow drove the hidden state to a saturated fixed
+point, and an untrained policy's entropy fell from 1.07 to 0 within one
+episode (L353). A closed-loop check (does the dose depend on the observation?)
+is now a gate.
+\item \textbf{The gate becomes wrong under missed visits.} Near-fixed schedules
+scored \emph{higher} than closed-loop cells once observations were unreliable,
+so excluding them biased the comparison (L632). We switched to
+intention-to-treat and made MTD a reference arm to beat.
+\item \textbf{Training chaos masquerades as architecture.} A $2\times10^{-7}$
+float perturbation moved one ODE-RNN cell's mean $U$ from 132 to 256\,d.
+Patient-only CIs ($[-20,-11]$) called the ODE-RNN worse than the LSTM, and
+resampling seeds widened them to $[-43,+22]$ (L596).
+\item \textbf{A mis-built shifted cohort.} Shifting $K$ after computing $y_0$
+put 43--50\% of Tier-1 patients above capacity. Under full dose 14--18\% of
+them diverged to NaN, and these were scored as censored, i.e.\ as successes
+(L242). The progressor-only TTP median and TTP bought with extra drug misled
+us in the same way, and both are why every TTP here comes with a censoring-aware
+estimator and exposure.
+\end{enumerate}
+
+\section{Limitations}
+One ODE family (LV), virtual patients only, and no claim about clinical
+outcomes. The PQN settings are the published ones, untuned. Missed visits are
+i.i.d., so the next gap is unknown when the policy doses. Scheduled gaps, where
+continuous time has more to use, are untested. Mechanism shift and
+within-episode drift (Tiers~2--3) are out of scope.
+
+\section{Conclusion}
+On this task, a memoryless burden threshold is a hard baseline to beat, and
+continuous time did not beat it. When observations are unreliable, the
+question is whether feedback pays at all before which architecture uses it
+best. \pending{Final wording after S1.}
+
+\begin{thebibliography}{9}
+\bibitem{gallagher2024} K.~Gallagher, M.~A.~R. Strobl, D.~S. Park, et al.
+Mathematical model-driven deep learning enables personalized adaptive therapy.
+\emph{Cancer Research} 84(11):1929--1941, 2024. doi:10.1158/0008-5472.CAN-23-2040.
+\bibitem{strobl2021} M.~A.~R. Strobl, J.~West, Y.~Viossat, M.~Damaghi,
+M.~Robertson-Tessi, J.~S. Brown, R.~A. Gatenby, P.~K. Maini, A.~R.~A. Anderson. Turnover modulates the need for a cost of
+resistance in adaptive therapy. \emph{Cancer Research} 81(4):1135--1147, 2021.
+doi:10.1158/0008-5472.CAN-20-0806.
+\bibitem{kiram2026} F.~M.~E. Kiram, I.~Youkana, R.~Saouli, G.~A. Susto,
+L.~Kahloul. Recurrent deep reinforcement learning for chemotherapy control
+under partial observability. arXiv:2605.02552, 2026.
+\bibitem{rubanova2019} Y.~Rubanova, R.~T.~Q. Chen, D.~Duvenaud. Latent ODEs
+for irregularly-sampled time series. \emph{NeurIPS}, 2019.
+\bibitem{gallici2024} M.~Gallici, M.~Fellows, B.~Ellis, B.~Pou, I.~Masmitja,
+J.~N. Foerster, M.~Martin. Simplifying deep temporal difference
+learning. arXiv:2407.04811, 2024.
+\end{thebibliography}
+\end{document}

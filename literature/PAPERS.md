@@ -77,7 +77,7 @@ what promotes a row to `1°` and makes it citable in a design argument.
 | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | arXiv:2609.12264 | policy | other | full-state | survival-proxy | no | 2° | queued |
 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Bulletin of Mathematical Biology 1994;56(2):295-321 | model | kuznetsov | full-state | none | no | 2° | queued |
 | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | Cancer Research 1999;59(19):4770-4775 | model | hahnfeldt | full-state | none | no | 2° | queued |
-| [pmc-8455086](papers/pmc-8455086.md) | Cancer Research 2021 | model | lotka-volterra | full-state | TTP | no | 2° | queued |
+| [pmc-8455086](papers/pmc-8455086.md) | Cancer Research 2021;81(4):1135-1147, doi 10.1158/0008-5472.CAN-20-0806 | model | lotka-volterra | full-state | TTP | no | 2° | queued |
 | [url-neurips-2019-latent-odes](papers/url-neurips-2019-latent-odes.md) | NeurIPS 2019, pp. 5320-5330 | model | none | n/a | none | no | 2° | queued |
 | [url-zhang-2017-mcrpc-at](papers/url-zhang-2017-mcrpc-at.md) | Nature Communications 2017 (referenced by Strobl 2021) | policy | lotka-volterra | burden-only | TTP | no | 2° | queued |
 | [doi-10.1038-s41540-023-00317-1](papers/doi-10.1038-s41540-023-00317-1.md) | npj Systems Biology and Applications 2023 | model | other | burden-only | OS | no | 2° | queued |
@@ -94,4 +94,4 @@ what promotes a row to `1°` and makes it citable in a design argument.
 - **Observability:** `burden-only` 6, `full-state` 7, `n/a` 4
 - **Bearing on identifiability (PROJECT.md §5):** 1
 
-*Generated 2026-09-24 by `research/lit_table.py`.*
+*Generated 2026-09-29 by `research/lit_table.py`.*
