@@ -18,7 +18,12 @@ import jax.numpy as jnp
 
 @dataclass(frozen=True)
 class RewardConfig:
-    survival_bonus: float = 1.0  # per day alive and not progressed
+    # Paid at EVERY visit, progressed or not, and episodes never terminate, so
+    # over an episode it is a constant: the progression signal is the burden
+    # term alone. 2026-09-29 (RESEARCH_LOG L739): this comment used to say "per
+    # day alive and not progressed", and W3c's prereg called U "the trained
+    # objective" on that basis. Code unchanged; every logged run used it.
+    survival_bonus: float = 1.0
     burden_penalty: float = 1.0  # per unit relative burden above threshold
     exposure_penalty: float = 0.1  # per unit dose; report at >= 2 values
     progression_threshold: float = 1.2  # relative to the running nadir

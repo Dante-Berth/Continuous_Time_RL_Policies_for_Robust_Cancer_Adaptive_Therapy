@@ -33,7 +33,8 @@ each against a different baseline:
   ([L424](adaptive_therapy/RESEARCH_LOG.md#L424), [CLOSED #1](CLOSED.md)). The
   paired direction favoured the MLP in all four Phase-2 runs, under two trainers.
 - **vs a parameter-matched LSTM:** W3c ([L565](adaptive_therapy/RESEARCH_LOG.md#L565)).
-  ODE − LSTM is −15.7 d on the trained objective, with a seed+patient CI of
+  ODE − LSTM is −15.7 d on U = min(TTP, 357) − w·exposure (not the reward;
+  [L739](adaptive_therapy/RESEARCH_LOG.md#L739)), with a seed+patient CI of
   [−43, +22] ([L596](adaptive_therapy/RESEARCH_LOG.md#L596)).
 
 **The law says "no edge", not "worse".** Once seeds are resampled, the ODE-RNN

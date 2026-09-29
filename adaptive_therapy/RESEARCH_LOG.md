@@ -735,3 +735,30 @@ report them as "Strobl-parameterised LV". Owner's call between (a) a registered
 re-run of the decisive comparisons (W3c, W4b) on Strobl's ranges, or (b) writing
 up on the current ranges, declared as a synthetic high-cost-of-resistance
 regime, with sampling.py's rule amended explicitly rather than ignored.
+
+## [2026-09-29] — Erratum: U is an evaluation statistic, not "the trained objective"; the reward's survival term is a constant
+**Verdict:** OPEN — correction only; no comparison changes · **Gate:** n/a · **Artifacts:** `adaptive_therapy/envs/reward.py` (`step_reward`), `adaptive_therapy/rl/rollout.py`
+
+Found while drawing the MLP's dose rule for W6. `step_reward` pays
+`survival_bonus · dt` at **every** visit, whether or not the patient has
+progressed (the dataclass comment "per day alive and not progressed" is wrong),
+and episodes never terminate. Over an episode that term is a constant. The
+training signal is therefore −(burden above 1.2 × running nadir) − w · dose;
+no term of the reward is TTP.
+
+PREREG W3c ("Change 2") called U = min(TTP, 357) − w · exposure "the survival
+and exposure terms of envs/reward.py … which every cell was trained to
+maximise". That is not so: U keeps the trained exposure cost, and replaces the
+burden-excess term by the TTP endpoint it approximates. Every U-based comparison
+(W3c [L565](RESEARCH_LOG.md#L565), [L596](RESEARCH_LOG.md#L596); W4b
+[L668](RESEARCH_LOG.md#L668); S1) stands as registered: all arms share one
+reward and one statistic. Only the wording changes: "U", or "TTP net of the
+exposure cost", never "the trained objective".
+
+It also explains a feature of the learned rule. Past ~1.4× baseline (Strobl
+ranges; S1's 40 MLP policies on a burden grid) the MLP steps down from full dose
+to mostly half (78% half, 15–23% off). The provisional MLPs do the same past
+~1.8× ([L461](RESEARCH_LOG.md#L461)). Checked on Tier-0 rollouts: 99.9% of
+visits above 1.3× baseline come at or after TTP. There, TTP is fixed and a
+dose only adds exposure cost.
+VERDICTS and LAW L1 now say "U"; `reward.py`'s comment is corrected, code unchanged.
