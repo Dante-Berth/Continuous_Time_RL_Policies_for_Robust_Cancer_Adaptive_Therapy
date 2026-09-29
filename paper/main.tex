@@ -82,8 +82,10 @@ al.\ \cite{strobl2021}: $r_S = 0.027\,\mathrm{d}^{-1}$, $r_R/r_S \in [0.5, 1]$,
 one turnover $d_S=d_R=d_T$ with $d_T/r_S\in[0,0.5]$, $d_D=1.5$,
 $n_0\in[0.1,0.75]$, $f_R\in[10^{-3},10^{-1}]$. A \emph{provisional regime}, on
 which our program first ran, has a much stronger cost of resistance (median
-$r_R/r_S = 0.30$; only 9.8\% of its patients fall inside Strobl's ranges). We
-report it as a second regime, not as a parameterisation from the literature.
+$r_R/r_S = 0.30$; only 9.8\% of its patients fall inside Strobl's sweep
+ranges). Strobl et al.'s own fits to prostate-cancer patients extend to costs
+above 50\%, paired with low turnover (their Fig.~5C). We therefore report it as
+a second, high-cost regime, whose ranges are not taken from the literature.
 % L703
 \paragraph{Episodes and reward.} 52 weekly visits (357\,d). The policy sees
 only $\log(\text{burden}/\text{baseline})$ with 5\% log-normal noise, never $S$

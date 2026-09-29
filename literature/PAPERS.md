@@ -11,7 +11,7 @@ index; the judgment lives in `papers/<id>.md`.
 > uv run python research/lit_table.py --check   # exit 1 if stale
 > ```
 
-**Provenance status: 3/17 read from the PDF (`1°`); 14 are `2°` (82%).**
+**Provenance status: 4/17 read from the PDF (`1°`); 13 are `2°` (76%).**
 
 A `2°` row is seeded from PROJECT.md §12-REF — the citation resolves, but
 the paper has not been read. **A `2°` cell may not be cited in a design**
@@ -28,7 +28,7 @@ to our design", and it is the only section most readers need.
 
 | Route | Paper | Prov | What it does to the design |
 |---|---|---|---|
-| `threshold` | [pmc-8455086](papers/pmc-8455086.md) | 2° | Source of the LV parameter ranges and of the four factors PROJECT.md 6.1 says to randomise (f_R, n_0, r_R, d_T). |
+| `threshold` | [pmc-8455086](papers/pmc-8455086.md) | 1° | Source of our 'strobl2021' LV ranges, now read 1°: every value matches Table 1 (p.29). Those are theory sweep ranges; its fitted patients reach costs well above 50% (Fig. 5C, p.26), so our provisional high-cost box is outside the sweep, not outside the patients. |
 | `threshold` | [url-zhang-2017-mcrpc-at](papers/url-zhang-2017-mcrpc-at.md) | 2° | The AT algorithm itself -- the burden-threshold rule Gallagher's learned policy collapsed to. The interpretable structure Q1-alt asks whether a policy can preserve. |
 | `threshold` | [doi-10.1371-journal.pone.0120007](papers/doi-10.1371-journal.pone.0120007.md) | 2° | Where the Hahnfeldt numbers come from. Pull from the source tables; do not hardcode from memory. |
 | `threshold` | [doi-10.1155-2017-1642976](papers/doi-10.1155-2017-1642976.md) | 2° | Secondary source for the non-dimensional Kuznetsov values. |
@@ -56,7 +56,6 @@ what promotes a row to `1°` and makes it citable in a design argument.
 | 2 | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | TD3 vs DQN under parametric tumour heterogeneity, full observation, 100-patient generalization |
 | 2 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Effector-tumour predation dynamics with immunostimulation, sneaking-through, and a dormant state; BCL1 lymphoma parameters |
 | 2 | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | Tumour growth under a dynamic vascular carrying capacity; inhibition released through the tumour surface gives the V^(2/3) term |
-| 2 | [pmc-8455086](papers/pmc-8455086.md) | Turnover modulates whether a cost of resistance is needed for adaptive therapy to work |
 | 2 | [url-neurips-2019-latent-odes](papers/url-neurips-2019-latent-odes.md) | ODE-RNN: hidden state obeys an ODE between observations and jumps at them |
 | 2 | [url-zhang-2017-mcrpc-at](papers/url-zhang-2017-mcrpc-at.md) | The clinical adaptive-therapy algorithm: dose on PSA rise, withdraw on PSA fall past a fraction of baseline |
 | 3 | [doi-10.1038-s41540-023-00317-1](papers/doi-10.1038-s41540-023-00317-1.md) | Neural-ODE tumour dynamic model with an interpretable latent space, predicting overall survival |
@@ -77,7 +76,7 @@ what promotes a row to `1°` and makes it citable in a design argument.
 | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | arXiv:2609.12264 | policy | other | full-state | survival-proxy | no | 2° | queued |
 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Bulletin of Mathematical Biology 1994;56(2):295-321 | model | kuznetsov | full-state | none | no | 2° | queued |
 | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | Cancer Research 1999;59(19):4770-4775 | model | hahnfeldt | full-state | none | no | 2° | queued |
-| [pmc-8455086](papers/pmc-8455086.md) | Cancer Research 2021;81(4):1135-1147, doi 10.1158/0008-5472.CAN-20-0806 | model | lotka-volterra | full-state | TTP | no | 2° | queued |
+| [pmc-8455086](papers/pmc-8455086.md) | Cancer Research 2021;81(4):1135-1147, doi 10.1158/0008-5472.CAN-20-0806 | model | lotka-volterra | n/a | TTP | yes | 1° | reviewed |
 | [url-neurips-2019-latent-odes](papers/url-neurips-2019-latent-odes.md) | NeurIPS 2019, pp. 5320-5330 | model | none | n/a | none | no | 2° | queued |
 | [url-zhang-2017-mcrpc-at](papers/url-zhang-2017-mcrpc-at.md) | Nature Communications 2017 (referenced by Strobl 2021) | policy | lotka-volterra | burden-only | TTP | no | 2° | queued |
 | [doi-10.1038-s41540-023-00317-1](papers/doi-10.1038-s41540-023-00317-1.md) | npj Systems Biology and Applications 2023 | model | other | burden-only | OS | no | 2° | queued |
@@ -91,7 +90,7 @@ what promotes a row to `1°` and makes it citable in a design argument.
 ## What the pile looks like
 
 - **Model families:** `hahnfeldt` 2, `kuznetsov` 2, `lotka-volterra` 5, `none` 4, `other` 4
-- **Observability:** `burden-only` 6, `full-state` 7, `n/a` 4
-- **Bearing on identifiability (PROJECT.md §5):** 1
+- **Observability:** `burden-only` 6, `full-state` 6, `n/a` 5
+- **Bearing on identifiability (PROJECT.md §5):** 2
 
-*Generated 2026-09-29 by `research/lit_table.py`.*
+*Generated 2026-09-30 by `research/lit_table.py`.*

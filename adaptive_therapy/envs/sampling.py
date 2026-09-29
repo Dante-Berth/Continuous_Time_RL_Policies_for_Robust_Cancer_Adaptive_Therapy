@@ -3,13 +3,15 @@
 A virtual patient is `(model_id, theta)`. This module owns the per-family theta
 ranges and the untreated sanity gate that decides which draws are kept.
 
-RANGES ARE PROVISIONAL. They are order-of-magnitude plausible and internally
-consistent, but every literature source for them is currently `2` (unread) in
+THETA_RANGES ARE PROVISIONAL. They are order-of-magnitude plausible and
+internally consistent, but their literature sources are `2` (unread) in
 literature/PAPERS.md, so per REVIEW_PROTOCOL.md 0.3 none of them may be cited
-as justification for a design choice. They are here to make the machinery
-runnable, and must be replaced with sourced values -- read the PDFs, add the
-locators, promote the rows to `1` -- before any number computed from them
-appears in a paper. Tracked as such rather than silently pretended to be final.
+as justification for a design choice. A number computed from them reaches a
+paper only as a declared non-literature regime.
+
+The exception is `ranges="strobl2021"` (LV only): every value is Strobl et al.
+2021 Table 1, read 1° from the PDF (literature/papers/pmc-8455086.md, p.29,
+2026-09-30).
 """
 
 from __future__ import annotations
@@ -60,8 +62,8 @@ IC_RANGES: dict[ModelId, dict[str, tuple[float, float]]] = {
 }
 
 # LV ranges from Strobl et al. 2021, Cancer Research, Table 1
-# (doi 10.1158/0008-5472.CAN-20-0806; read from the PMC8455086 HTML, so the
-# literature row stays 2°). 2026-09-29 (RESEARCH_LOG L703): only 9.8% of
+# (doi 10.1158/0008-5472.CAN-20-0806; checked 1° against the PDF, p.29, on
+# 2026-09-30: every value matches). 2026-09-29 (RESEARCH_LOG L703): only 9.8% of
 # "provisional" LV patients fall inside these ranges -- r_R/r_S median 0.30
 # against Strobl's 0.5-1.0, i.e. a far stronger cost of resistance. r_S and the
 # drug kill are fixed as in the paper; one turnover d_T acts on both
