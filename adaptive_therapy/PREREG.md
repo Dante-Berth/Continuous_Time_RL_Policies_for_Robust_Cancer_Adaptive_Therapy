@@ -833,3 +833,30 @@ continuous-time re-run under this trainer may be registered (not run here).
 **Artifacts:** `research/t1_steps.py` → `research/outputs/t1_steps.{json,log}`, `t1_shards/`, `t1_policies/`.
 **Honest prior:** S3 closed a third of the gap with R near 0, so a narrower gap
 is likely; the +10 d margin is not.
+
+## [2026-09-30] — R2: reproduce Strobl 2021's LV fits to the Bruchovsky IADT cohort before replaying policies on them
+
+**Why.** Owner-approved real-data step (PROJECT.md §11 "calibration touch"). R1
+([L871](RESEARCH_LOG.md#L871)) verified Strobl's simulations, not its patient
+fits (Fig. 5C). Fitted patients are only usable as replay patients if the fit
+itself reproduces. Protocol from Strobl p.6 (1°).
+**Data.** `data/bruchovsky/dataTanaka/Bruchovsky_et_al` (Tanaka; gitignored),
+72 patients minus the 5 metastatic ones in `classificationsofpatients.txt` = 67,
+Strobl's count. Relapse labels from that file.
+**Fit (Strobl p.6).** Our `lotka_volterra.vector_field`, K = 1, r_S = 0.027,
+d_D = 1.5, u = the file's on/off flag held until the next row. Residual:
+PSA(t)/PSA(0) − n(t)/n0 over rows with a PSA value. Free, bounded: r̂_R [0,1],
+d̂_T [0,1], n0 [0.1,1], f_R [1e-5, 0.25]. 25 seeded restarts (seed 0);
+best = min RSS (AIC with k fixed). **Declared deviations:** bounded
+trust-region least squares (scipy `trf`) instead of lmfit's LM; RK4 at 10
+steps/day; PSA(0) = first recorded PSA.
+**Pass — all three, else "fails to reproduce" per criterion:** (F1) patients
+with r² < 0.5 excluded: 10–20 (Strobl 15); (F2) Pearson(r̂_R, d̂_T) over kept
+patients ≥ 0.5 (Strobl 0.77); (F3) r̂_R + d̂_T separates relapse from
+non-relapse, two-sided Mann-Whitney p < 0.01 (Strobl U = 82).
+**Descriptive.** Fitted ranges; share inside Strobl's sweep box and in each M1
+bin; share meeting indefinite control; restarts landing within 1% of the best
+RSS with r̂_R differing by > 0.1 (non-identifiability, Phase 0 [L48](RESEARCH_LOG.md#L48)).
+**Kill.** > 25 patients excluded ⇒ no replay on these fits. No change to
+bounds, residual, restarts or the exclusion rule after seeing fits.
+**Artifacts:** `research/r2_bruchovsky_fit.py` → `research/outputs/r2_bruchovsky_fit.{json,log}`.
