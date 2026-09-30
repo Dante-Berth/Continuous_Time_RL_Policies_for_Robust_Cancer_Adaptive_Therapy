@@ -667,3 +667,28 @@ step may not cure it. (3) R is a point estimate; its per-cell sign counts are re
 `s3_shards/`, `s3_policies/`.
 **Honest prior:** still trainer-limited or no headroom. The MLP gains from the
 budget too, and 300 gradient steps may be the limit.
+
+## [2026-09-30] — R1: reproduce Strobl 2021's published TTPs with our own LV vector field before building on its axes
+
+**Why.** The monitoring study (M1, owner-approved 2026-09-30) will bin patients
+on Strobl's cost and turnover axes, and the paper cites Strobl's ranges. We
+verify rather than trust: our `lotka_volterra.vector_field` (no PK: u = d), fed
+Table 1's parameters and the paper's two schedules, must land on its numbers.
+**Setup (from the 1° review, pmc-8455086).** r_S 0.027/d, d_D 1.5, K = 1,
+d_S = d_R = d̂_T·r_S, r_R = r̂_R·r_S; S0 = n0(1 − f_R), R0 = n0·f_R. CT: d = 1.
+AT50: d = 1 until n < 0.5 n0, then 0 until n ≥ n0 (p.5). TTP = first day with
+n > 1.2 n0 (`ttp_from_baseline`, confirm 0; p.6). RK4, 20 steps per day,
+switching checked every step, 3000-d horizon.
+**Targets.** Fig. 4E (p.24), Tumour 1 (n0 25%, f_R 0.1%): (i) d̂_T 0, r̂_R 1:
+CT 303, AT 323 d; (ii) d̂_T 0, r̂_R 0.5: CT 575, AT 646; (iii) d̂_T 0.5, r̂_R 1:
+CT 616, AT 848; (iv) d̂_T 0.5, r̂_R 0.5: no progression under either. Text p.6-7
+(d̂_T 0, r̂_R 1), AT − CT at n0 25% / 75%: f_R 0.1%: 19 / 211 d; f_R 1%: 3 / 104 d;
+f_R 10%: ≈ 0 at both.
+**Pass iff** every finite target is within max(±3%, ±3 d); (iv) shows no
+progression within 3000 d; and both f_R-10% gains are ≤ 3 d.
+**Fail ⇒** log which targets miss and by how much. The paper's Fig. 5C framing
+sentence is removed. M1 proceeds on our simulator, which never used Strobl's
+numbers, and states the discrepancy. No re-tuning of our model to hit a target.
+**Declared risk.** Their AT switches in continuous time; ours checks every
+0.05 d, which can move a TTP by about a day.
+**Artifacts:** `research/r1_strobl_repro.py` → `research/outputs/r1_strobl_repro.json`.
