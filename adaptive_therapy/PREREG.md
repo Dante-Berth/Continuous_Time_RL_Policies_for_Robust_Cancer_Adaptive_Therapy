@@ -761,3 +761,26 @@ test cohorts: 4–25% at low turnover, 38–95% at high.
 replacing caveat 1 with a measured statement.
 **Compute:** ≈ 3× M1 (M1 ran about 25 min) ≈ 75–90 min on CPU.
 **Artifacts:** `research/m1b_horizon.py` → `research/outputs/m1b_horizon.{json,log}`, `m1b_shards/`.
+
+## [2026-09-30] — M1c: do M1/M1b's monitoring findings hold for the median patient?
+
+**Why.** PROJECT.md §10 asks for medians, never means, and M1b showed they can
+disagree: in the no-cost high-turnover bin the mean-U winner has a *shorter*
+median TTP than MTD (196 vs 266 d, [L932](RESEARCH_LOG.md#L932)). **Post-hoc**
+on M1/M1b's saved per-patient shards; no new simulation. Declared selection
+risk: that one bin's medians were seen before this registration.
+**Statistic.** Δ_med = median U(best thr) − median U(MTD) over pooled test
+patients (10 seeds × 200), mean over w {0.05, 0.1, 0.2, 0.4}. Best x chosen per
+(seed, bin, p, miss rule, w) by **median** U on the selection cohort. CI: 2000
+seed+patient resamples, both arms resampled jointly, as in M1.
+**P1 (primary).** M1b (1085 d), p 0.5, hold, the 4 high-turnover Strobl bins:
+Δ_med CI > 0 in all 4 ⇒ "the three-year reversal holds for the median
+patient"; CI < 0 or covering 0 in all 4 ⇒ "the reversal is a mean/tail
+effect"; otherwise mixed, reported per bin.
+**P2.** H_cost under Δ_med at both horizons (M1's bins, p 0.5, hold): CI < 0 in
+both turnover bins ⇒ "the cost effect holds for the median patient".
+**Descriptive.** Δ_med map and p*_med per bin, both horizons, both miss rules;
+Δ_med with M1's mean-selected x; capped median TTP + IQR and median exposure.
+**Kill.** No other statistic (trimmed means, quantiles other than the median)
+added after seeing results. Enters the paper either way.
+**Artifacts:** `research/m1c_medians.py` → `research/outputs/m1c_medians.{json,log}`.
