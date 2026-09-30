@@ -40,8 +40,10 @@ so the negative describes what this trainer extracts, not what the task allows.
 Across cost of resistance and turnover, the share of missed visits at which
 feedback stops beating the fixed schedule is 10--50\% over one year. It is
 highest where resistance is cheap and turnover high, and it depends on the
-horizon: over three years at high turnover, sparing feedback still wins with
-60\% of visits missed. We also report four
+horizon: over three years at high turnover, sparing feedback still wins on
+average with 60\% of visits missed, but for the median patient only where
+resistance is nearly free, and never on median time to progression. We also
+report four
 ways the evaluation misled us before it was valid.
 \end{abstract}
 
@@ -262,6 +264,19 @@ rewards and the median does not. Dosing through missed visits, which helped
 over one year (\MOneMiss), now helps at low turnover but hurts at high turnover
 (pooled \MOneBMiss). % M1b, L932
 
+\paragraph{Medians narrow the claim.} $U$ above is a mean over patients. Scored
+on medians instead (a post-hoc analysis of the same runs, with the threshold
+also chosen by median), the three-year gain at high turnover and 50\% missed
+survives only in the two lowest-cost bins, $\hat r_R \ge 0.75$ (\MOneCHighThree\
+and \MOneCHighFour\ days). In the two costliest bins inside Strobl's sweep it
+reverses (\MOneCHighOne\ and \MOneCHighTwo). The cost effect holds under medians
+over three years but not over one year at low turnover (\MOneCCostOneLow). In
+all 20 bin$\times$horizon cells at 50\% missed, the selected threshold rule has
+a shorter median TTP and a larger median burden integral than MTD (by
+\MOneCBurdenNoCost\ at the three-year no-cost end, $\MOneCBurdenCostly\times$ in
+the costliest Strobl bin). Where sparing wins for the median patient, it wins
+on drug saved, not on time bought or tumour held down. % M1c, L968
+
 \section{Four ways the comparison misled us}\label{sec:pitfalls}
 \begin{enumerate}
 \item \textbf{Open-loop collapse.} Under PPO, the ODE-RNN gave all 200 patients
@@ -310,6 +325,7 @@ S2 & reference that also sees $S$, $R$, $\theta$ & below the MLP: no headroom cl
 S3 & S2 at PQN's published parallelism & still trainer-limited & L840 \\
 M1 & threshold rules vs MTD, cost $\times$ turnover bins & met: $p^*$ 0.10--0.50 & L896 \\
 M1b & M1 over three years & met; crossover moves later & L932 \\
+M1c & M1, M1b on medians (post hoc) & mixed: holds only if $\hat r_R \ge 0.75$ & L968 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -331,8 +347,9 @@ policies were compared over one year only. The monitoring maps show that the
 absolute value of feedback under missed visits depends on the horizon, so
 ``no learned policy beats MTD at 50\% missed'' is a one-year statement. The maps
 cover threshold rules only; over one year at low turnover the best rule sits
-at the grid's most aggressive level. $U$ is a mean, and over three years the
-sparing rules win through a heavy tail with a shorter median TTP.
+at the grid's most aggressive level. $U$ is a mean. On medians the three-year
+win holds only where resistance is nearly free, and the sparing rules always
+carry a larger tumour burden, which our metastasis proxy counts against them.
 
 \section{Conclusion}
 On this task, a memoryless burden threshold is a hard baseline, and continuous
@@ -344,8 +361,9 @@ continuous time needs a trainer that can first profit from extra state. How
 many missed visits feedback can absorb depends on the tumour and on the
 horizon. Over one year it is 10--50\%, most where resistance is cheap and
 turnover high. Over three years at high turnover, sparing feedback outlasts MTD
-even with most visits missed, although its median time to progression is
-shorter.
+on average even with most visits missed. For the median patient that holds
+only where resistance is nearly free, and it is bought with drug saved, not
+with time to progression or a smaller tumour burden.
 
 \begin{thebibliography}{9}
 \bibitem{gallagher2024} K.~Gallagher, M.~A.~R. Strobl, D.~S. Park,
