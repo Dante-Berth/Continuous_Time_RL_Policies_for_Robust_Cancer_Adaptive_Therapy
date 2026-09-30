@@ -54,7 +54,9 @@ the negative covers LV Tiers 0, 1 and 4.
 **Confirmed 2026-09-29 on Strobl 2021's ranges** (S1 Part B,
 [L766](adaptive_therapy/RESEARCH_LOG.md#L766)): ODE−MLP −5.4 [−24.3, +9.3],
 ODE−MTD −13.5 [−33.0, +2.3]. No learned arm beats MTD at 50% missed visits in
-either regime.
+either regime over the 357-d horizon. Over three years, sparing threshold rules
+overtake MTD at high turnover ([L932](adaptive_therapy/RESEARCH_LOG.md#L932)); the
+continuous-time closure itself is unaffected.
 
 **Do not re-propose:** LTC, Neural CDE or another continuous-time cell on the
 same test; more seeds, other drop rates, a different hold rule, or a different

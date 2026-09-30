@@ -928,3 +928,39 @@ monitoring, feedback always beats MTD. The missed-visit rate it survives spans
 10–50%, set by the cost of resistance and turnover, and it depends on what is
 dosed through a gap. A longer horizon would test caveat (1). It is a new
 registration, not a re-run.
+
+## [2026-09-30] — M1b: M1's cost effect survives a three-year horizon, but the monitoring picture flips at high turnover — sparing feedback beats MTD even with 60% of visits missed
+**Verdict:** FROZEN — H_cost_long met as registered ("not a horizon artefact"); every absolute monitoring claim is horizon-dependent · **Gate:** p 0.5, hold, highest-cost − no-cost Strobl bin: −82.5 d [−96.6, −68.5] (low turnover), −208.9 [−255.3, −162.3] (high) · H_miss (full − hold, pooled) −5.6 [−13.9, +2.4], inconclusive (M1: +38.5) · high turnover, r̂_R [0.875,1], p 0.5, hold, w 0.1: capped median TTP best thr 196 [77–1085] vs MTD 266 [231–308], censored 29% vs 0%, exposure 304 vs 1085, burden integral 6.45e6 vs 5.33e6, one-sided Wilcoxon (U) p = 1.8e-32 · 10 seeds × 10 bins × 200 + 200 pts, 1085-d horizon · **Artifacts:** `research/m1b_horizon.py`, `research/outputs/m1b_horizon.{json,log}`, `m1b_shards/`
+
+### Context
+PREREG M1b (dfcb327): M1 with 156 weekly visits (1085 d) instead of 52, the same
+patients followed three times longer. **Met as registered.**
+
+### Results
+**Registered:** the cost effect keeps its sign and grows at both turnovers, so it
+is not the 357-d cap.
+**The absolute picture moves with the horizon.** p\* (hold), 1 y → 3 y: low
+turnover, Strobl bins 0.10→0.36, 0.15→0.42, 0.19→0.46, 0.26→0.49; high
+turnover, Strobl bins 0.23–0.50 → > 0.6 in all four. At p 0.5 the best rule
+beats MTD by +92.0 [+61.7, +122.9] to +300.9 [+265.2, +336.0]. The outside-sweep
+high-cost bins move the other way (0.10→0.19, 0.22→0.13), because MTD holds 8% /
+62% of those patients for three years.
+**Why, at high turnover:** within three years MTD fails in 99–100% of Strobl-range
+patients (median TTP 266–511 d). Sparing thresholds (x = 1.2) keep 29–31% of
+patients controlled for the whole horizon, with ~70% less drug. Their **median**
+TTP is shorter than MTD's (196 vs 266; 217 vs 511 d). The gain is a heavy right
+tail plus drug saved, which U, a mean, rewards; the median does not.
+**Dosing through gaps** helps at low turnover (+98 to +197 d vs hold, Strobl
+bins, p 0.5) and hurts at high turnover (−135 to −188 d): pooled, inconclusive.
+**Strobl's indefinite-control criterion** (38–95% of high-turnover patients) does
+not transfer to our nadir rule: MTD progresses in 99–100% of them. That is
+plausibly because MTD drives the nadir far down, so regrowth crosses 1.2 ×
+nadir well below 1.2 n0.
+
+### Decision
+The cost effect stands. Every absolute monitoring claim is horizon-bound. That
+includes W4b's and S1's "no learned arm beats MTD at 50% missed visits", which
+were measured over 357 d: at high turnover, sparing feedback overtakes MTD in
+years 2–3. VERDICTS, CLOSED #2 and the paper now carry the horizon. The learned
+arms are not re-run: a 3-year architecture comparison would be a new
+registration, and LAW L1's trainer gate still binds.
