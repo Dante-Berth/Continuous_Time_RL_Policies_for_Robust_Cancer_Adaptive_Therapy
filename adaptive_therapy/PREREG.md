@@ -806,3 +806,30 @@ censoring, median exposure, median burden integral.
 limitation. No change to θ ranges, PK/effect, TTP rule, visit interval or
 policy set to rescue it; re-opening needs 1°-read literature ranges (new data).
 **Artifacts:** `research/w5_precondition.py` → `research/outputs/w5_precondition.{json,log}`.
+
+## [2026-09-30] — T1: with 10× the gradient steps, does the full-information reference beat the burden-only MLP?
+
+**Why.** S3 ([L840](RESEARCH_LOG.md#L840)) closed the budget search *in the
+paper* and named "more gradient steps" as a new registration; its declared risk
+(2) was that steps were unchanged. Owner-approved 2026-09-30 as a follow-up
+program; reported as such, never as a re-run of S3.
+**The one change.** `n_updates` 300 → **3000**; ε decay and lr decay keep their
+S3 *fractions* of training (ε over the first 10%, lr linear to 0). Everything
+else is S3: 1024 patients per update from a 2048-patient cohort, Strobl
+ranges, regular visits, MLP-441 LayerNorm, O_full's 9 inputs, w {0.05, 0.10,
+0.20, 0.40}, seeds {31..40}, S1/S2/S3's test cohorts and eval keys.
+**Primary and readings:** S3's, unchanged and in the same order (Δ U O_full −
+MLP at Tier 0, seed+patient CI; R = training-return difference): lo > +10 d ⇒
+headroom, the gate opens; else R < 0 ⇒ still trainer-limited; else hi < 0 ⇒
+reward-limited; else hi < +10 d ⇒ no headroom; else inconclusive.
+**Descriptive.** Tier 1; step effect per arm vs its S3 cells (same seeds and
+patients); capped median TTP + IQR, median exposure, burden integral;
+one-sided Wilcoxon per w; MLP vs thr0.8.
+**Kill.** Still trainer-limited ⇒ PQN is retired as this program's trainer; the
+next attempt is another algorithm, never more steps, batch or lr. Headroom ⇒ a
+continuous-time re-run under this trainer may be registered (not run here).
+**Compute:** not timed; ≈ 10× S3's 690 s per cell, 80 cells, 6 in parallel ≈
+25–30 h on CPU.
+**Artifacts:** `research/t1_steps.py` → `research/outputs/t1_steps.{json,log}`, `t1_shards/`, `t1_policies/`.
+**Honest prior:** S3 closed a third of the gap with R near 0, so a narrower gap
+is likely; the +10 d margin is not.
