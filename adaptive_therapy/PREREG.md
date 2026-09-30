@@ -784,3 +784,25 @@ both turnover bins ⇒ "the cost effect holds for the median patient".
 **Kill.** No other statistic (trimmed means, quantiles other than the median)
 added after seeing results. Enters the paper either way.
 **Artifacts:** `research/m1c_medians.py` → `research/outputs/m1c_medians.{json,log}`.
+
+## [2026-09-30] — W5-pre: does treated Hahnfeldt / Kuznetsov have TTP dynamic range?
+
+**Why.** ROADMAP W5 and Stage 2 (M1's monitoring map across mechanisms) both
+need it; untreated, both families progress within 1–2 visits with zero IQR
+([L88](RESEARCH_LOG.md#L88)). Rules only, no learning. A diagnostic gate, not an
+architecture or monitoring result.
+**Cohort.** Provisional θ ranges (the only ones these families have; sources
+2°), 200 patients × seeds {1, 2, 3} per family, cohort seed 300_000 + seed.
+**Policies.** none, MTD, AT50, thr_x for x ∈ {0.5 … 1.2} (M1's set). Weekly
+visits, horizons 357 d (primary) and 1085 d; p ∈ {0, 0.5}, miss rule hold.
+**Pass, per family, at 357 d, p 0 — all three:** (P1) MTD capped TTP median
+≥ 28 d (not resolution-limited); (P2) spread across patients under MTD or the
+best thr: IQR width ≥ 14 d and censoring in [5%, 95%]; (P3) policies separate:
+some thr_x vs MTD, paired over the 600 patients, has |median paired ΔTTP| ≥ 7 d
+with two-sided Wilcoxon p < 0.01. Every trajectory finite, or the family fails.
+**Reported.** Per family × policy × horizon × p: capped median TTP + IQR,
+censoring, median exposure, median burden integral.
+**Kill.** A family that fails is cut from W5 and from Stage 2, stated as a
+limitation. No change to θ ranges, PK/effect, TTP rule, visit interval or
+policy set to rescue it; re-opening needs 1°-read literature ranges (new data).
+**Artifacts:** `research/w5_precondition.py` → `research/outputs/w5_precondition.{json,log}`.

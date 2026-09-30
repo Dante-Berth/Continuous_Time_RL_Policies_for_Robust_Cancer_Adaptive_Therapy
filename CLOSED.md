@@ -74,6 +74,28 @@ ODE families.
 
 ---
 
+## 3. No dosing comparison on Hahnfeldt or Kuznetsov as simulated (Tier 2, cross-mechanism monitoring)
+
+**Closed 2026-09-30** by W5-pre ([L1004](adaptive_therapy/RESEARCH_LOG.md#L1004)),
+a pre-registered precondition check with rules only. Treated Hahnfeldt progresses at
+the first visit under every policy, MTD included: the drug term cannot outpace
+vascular growth. Treated Kuznetsov is all-or-nothing: MTD cures every patient
+and every sparing rule progresses at 28–42 d. With no resistant compartment,
+MTD is optimal by construction. LV is the program's only family with a
+resistance mechanism, so every adaptive-therapy result is LV-only.
+
+**Do not re-propose:** widening or shifting the provisional θ ranges, rescaling
+the PK/effect map, another TTP rule, visit interval or policy set on these two
+families. Each is a re-parametrization chosen after seeing this result.
+
+**Re-open condition:** Hahnfeldt 1999 / Kuznetsov 1994 read 1°, with θ ranges and
+a drug-effect scale taken from them (new data); for Kuznetsov, additionally a
+resistance mechanism (a new model).
+
+**Not covered:** other mechanistic families; LV's own Tier-3 drift.
+
+---
+
 The scope exclusions the spec declares up front are **not** closures — they were
 never opened, and they live in [PROJECT.md §2](PROJECT.md) ("explicit
 non-questions"): no clinical-outcome claims, minimal PK only, no real-patient RL

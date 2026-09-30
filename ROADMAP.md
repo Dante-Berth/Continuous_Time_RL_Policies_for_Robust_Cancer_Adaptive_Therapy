@@ -184,7 +184,7 @@ arXiv 2605.02552's recurrent win hides a reward-coupled state from one fixed
 patient; it is no prior that memory helps here, where W1 found a memoryless
 burden threshold near-sufficient ([L461](adaptive_therapy/RESEARCH_LOG.md#L461)).
 
-### W5 — Mechanism shift, Tier 2 (optional; only with runway after W4)
+### ~~W5 — Mechanism shift, Tier 2 (optional; only with runway after W4)~~ — killed: its precondition failed on both families ([L1004](adaptive_therapy/RESEARCH_LOG.md#L1004))
 
 Precondition, checked before registering: treated Hahnfeldt must show TTP dynamic
 range — Phase 1 found untreated Hahnfeldt TTP resolution-limited (7.0 d, zero
@@ -217,6 +217,10 @@ machinery, and Q1 asks whether "less frequent monitoring lengthens TTP"
 (Gallagher 2024, a single LV model) holds across mechanisms. Preconditions:
 Gallagher read to 1°; the Hahnfeldt/Kuznetsov resolution limits of [L88](adaptive_therapy/RESEARCH_LOG.md#L88)
 resolved. Real-data replay (Bruchovsky PSA cohort) belongs here too.
+
+*2026-09-30:* the cross-mechanism half is cut. Treated Hahnfeldt and Kuznetsov
+have no TTP dynamic range on provisional θ ([L1004](adaptive_therapy/RESEARCH_LOG.md#L1004)),
+so Stage 2 is LV-only unless a family is rebuilt from 1°-read sources.
 
 ---
 

@@ -1000,3 +1000,41 @@ M1b's "sparing feedback beats MTD at high turnover" is restated: for the median
 patient only where r̂_R ≥ 0.75, only on U (exposure-weighted), with shorter
 median TTP and a larger burden integral. H_cost's 1-year low-turnover leg is a
 mean effect. The paper states all three. No new runs follow from this.
+
+## [2026-09-30] — W5-pre FAILED as registered: treated Hahnfeldt and Kuznetsov have no TTP dynamic range on provisional θ; Tier 2 and cross-mechanism Stage 2 are cut
+**Verdict:** CLOSED — neither non-LV family can host a dosing comparison as simulated · **Gate:** 357 d, p 0, capped median TTP [IQR]: Hahnfeldt MTD 7.0 [7, 7], every policy 7.0; Kuznetsov MTD 357 [357, 357] (100% censored) vs thr0.5–1.2 28–42 d [28–42], thr−MTD −315 to −329 d, Wilcoxon p ≤ 1e-102 / exposure 357 vs 10.5–14 / burden integral ÷ b0: Hahnfeldt MTD 19 883 vs none 23 144; Kuznetsov 3.6 vs 38–90 / 3 seeds × 200 · **Artifacts:** `research/w5_precondition.py`, `research/outputs/w5_precondition.{json,log}`
+
+### Context
+ROADMAP W5 and Stage 2 (M1's monitoring map across mechanisms) need treated
+dynamic range; untreated, both families progress in 1–2 visits
+([L88](#L88)). Rules only, no learning. PREREG W5-pre [2026-09-30].
+
+### What was tried
+M1's rule set (none, MTD, AT50, thr0.5–1.2) through the unchanged closed-loop
+rollout, provisional θ ranges, 200 patients × seeds 1–3 per family, weekly
+visits, 357 d and 1085 d, p 0 and 0.5 (hold). All trajectories finite.
+
+### Results
+**Failed as registered, both families; no amendment.**
+- **Hahnfeldt: P1, P2, P3 all fail.** Every policy, MTD included, progresses at
+  the first visit (7.0 d, zero IQR) at both horizons and both drop rates; MTD
+  lowers the relative burden integral by only 14%. Arithmetic, not fitted: at
+  V = K, dK/K = b − d·V^(2/3) − e·u, with b ≥ 3 /day and the drug term e·u ≤
+  1.2 × 0.67 ≈ 0.8 /day at full weekly dosing, so no policy can stop K from growing.
+  Whether this is the biology or a unit mismatch in our normalised effect (u ≤ 1)
+  cannot be settled while Hahnfeldt 1999 is 2°.
+- **Kuznetsov: P1 and P3 pass, P2 fails.** The outcome is set by the policy, not by
+  the patient: MTD eradicates every patient (100% censored, burden integral
+  3.6 b0·d), while every sparing rule progresses at 28–42 d with IQR ≤ 7 d
+  (≤ 21 d at p 0.5). Kill rate u ≈ 0.67 /day is ~20× growth a ≤ 0.03 /day,
+  and the family has no resistant compartment, so there is nothing for
+  sparing to exploit: MTD is optimal by construction.
+- Horizon (1085 d) and missed visits (p 0.5) change neither picture.
+
+### Decision
+Per the kill: both families are cut from W5 (Tier 2) and from Stage 2's
+cross-mechanism monitoring map, and this is stated as a limitation. LV is the
+program's only family with a resistance mechanism, so any adaptive-therapy
+result is LV-only. No θ, PK/effect, TTP-rule or policy change is tried. Re-open
+only with 1°-read literature ranges and a drug-effect scale (new data), plus, for
+Kuznetsov, a resistance mechanism (a new model, not a re-parametrization).
