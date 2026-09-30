@@ -867,3 +867,28 @@ gap closed, R near 0) says a stronger trainer might open the gate. That is a
 new registration for a later program (more gradient steps or another algorithm),
 not a re-run here. LAW L1 is unchanged in substance; its mechanism paragraph
 cites S3 as a second trainer-limited result.
+
+## [2026-09-30] — R1 PASSED: our LV vector field reproduces Strobl 2021's published TTPs, 14/14 targets; its simulations can be built on
+**Verdict:** FROZEN — Strobl's model results verified independently, not trusted · **Gate:** Fig. 4E (p.24) CT / AT TTP, want → got (d): (i) 303→296 / 323→315; (ii) 575→573 / 646→637; (iii) 616→613 / 848→844; (iv) no progression → none (both) · AT − CT gains (p.6-7), want → got: f_R 0.1% 19→19 / 211→210; f_R 1% 3→3 / 104→104; f_R 10% ≈0→0 / ≈0→0 · tolerance max(3%, 3 d): all within · deterministic, no seeds · **Artifacts:** `research/r1_strobl_repro.py`, `research/outputs/r1_strobl_repro.json`
+
+### Context
+PREREG R1 (3e998f1), committed before the run. The owner asked what we lose if
+Strobl is wrong. We verified instead of trusting: `lotka_volterra.vector_field`
+(no PK, u = d), Table 1 parameters, CT and AT50 schedules, and
+`ttp_from_baseline` (20% over n0, no confirmation). RK4 at 20 steps per day.
+**Met as registered.**
+
+### Results
+All 14 targets pass. The gains match to within a day. The absolute Fig. 4E TTPs
+come out 0.5–2.5% (3–9 d) early in every case, a constant-sign offset, while
+the gains are exact. That points to a difference in counting time or crossings
+(their continuous-time events vs our daily grid), not in dynamics. Both
+case-(iv) tumours never progress, matching the paper's indefinite control,
+whose threshold (1 − 1.2 n0)·r̂_R (p.9) is 0.35 here.
+
+### Decision
+Strobl's model results are reproducible from its equations, so M1 may bin on
+its cost and turnover axes. What R1 does not verify: the patient fits (Fig. 5C,
+p.26). The paper keeps that sentence as a claim attributed to Strobl, never as
+ours. It is also independent evidence that our LV dynamics are implemented as
+specified, beyond the unit tests.

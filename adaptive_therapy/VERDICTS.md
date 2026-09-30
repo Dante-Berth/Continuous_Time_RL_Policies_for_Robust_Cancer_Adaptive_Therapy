@@ -10,7 +10,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## DEPLOYED / FROZEN
 
-*(nothing — this program has produced no gated result)*
+- **R1: our LV vector field reproduces Strobl 2021's published TTPs, 14/14 targets within max(3%, 3 d)** — gains exact (19/210/3/104 d vs 19/211/3/104), absolute Fig. 4E TTPs 3–9 d early with a constant sign (time counting, not dynamics). Their simulations are verified; their patient fits (Fig. 5C) are not → [L871](RESEARCH_LOG.md#L871)
 
 ## OPEN
 

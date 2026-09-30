@@ -80,7 +80,11 @@ Latin-hypercube samples of $\theta$ and of the initial resistant fraction $f_R$
 and fill level $n_0$. The \emph{primary regime} follows Table~1 of Strobl et
 al.\ \cite{strobl2021}: $r_S = 0.027\,\mathrm{d}^{-1}$, $r_R/r_S \in [0.5, 1]$,
 one turnover $d_S=d_R=d_T$ with $d_T/r_S\in[0,0.5]$, $d_D=1.5$,
-$n_0\in[0.1,0.75]$, $f_R\in[10^{-3},10^{-1}]$. A \emph{provisional regime}, on
+$n_0\in[0.1,0.75]$, $f_R\in[10^{-3},10^{-1}]$. Fed these parameters and
+Strobl et al.'s two schedules, our implementation reproduces all 14 of their
+published times to progression and adaptive-therapy gains that we checked,
+within 3\% (their Fig.~4E and text). % R1, L871
+A \emph{provisional regime}, on
 which our program first ran, has a much stronger cost of resistance (median
 $r_R/r_S = 0.30$; only 9.8\% of its patients fall inside Strobl's sweep
 ranges). Strobl et al.'s own fits to prostate-cancer patients extend to costs
