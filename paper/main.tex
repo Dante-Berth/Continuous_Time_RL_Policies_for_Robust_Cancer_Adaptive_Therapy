@@ -32,14 +32,16 @@ training seeds and patients. Every comparison was pre-registered. The ODE-RNN
 shows no edge over the best discrete arm in range, under a parameter shift, or
 with up to half of the visits missed, and the memoryless MLP is the best learned
 policy at regular visits. The MLP learns a burden-threshold rule close to a
-one-line clinical rule. With half of the visits missed, no
+one-line clinical rule. Over one year with half of the visits missed, no
 learned policy beats a fixed maximum-dose schedule, and the arm that degrades
 most gracefully is a plain LSTM. The negative replicates on a second parameter
 regime. A reference policy that also sees the hidden state scores lower still,
 so the negative describes what this trainer extracts, not what the task allows.
 Across cost of resistance and turnover, the share of missed visits at which
-feedback stops beating the fixed schedule ranges from 10\% to 50\%, and is
-highest where adaptive therapy pays most. We also report four
+feedback stops beating the fixed schedule is 10--50\% over one year. It is
+highest where resistance is cheap and turnover high, and it depends on the
+horizon: over three years at high turnover, sparing feedback still wins with
+60\% of visits missed. We also report four
 ways the evaluation misled us before it was valid.
 \end{abstract}
 
@@ -64,10 +66,10 @@ in range (Tier~0), under a parameter shift (Tier~1), or under missed visits
 (Tier~4), on two parameter regimes. A full-information reference locates the
 limit in the trainer rather than in the task.
 \item \textbf{A task finding.} At regular visits the best learned policy is a
-burden threshold. With half of the visits missed, no learned policy beats
-dosing at the maximum tolerated dose, on either parameter regime. A
-pre-registered map over cost of resistance and turnover shows where that
-crossover falls (\S\ref{sec:monitoring}).
+burden threshold. Over one year with half of the visits missed, no learned
+policy beats dosing at the maximum tolerated dose, on either parameter regime.
+Pre-registered maps over cost of resistance, turnover and horizon show where
+that crossover falls, and that it moves with the horizon (\S\ref{sec:monitoring}).
 \item \textbf{Four evaluation traps}, each of which produced a
 publishable-looking wrong answer on the way (\S\ref{sec:pitfalls}), and a record
 of every registered run (Table~\ref{tab:runs}).
@@ -210,7 +212,8 @@ visits, loses most as visits go missing (Fig.~\ref{fig:missed}; mean $U$
 \SBUThrZero$\to$\SBUThrHalf). Under hold, a threshold policy that has switched
 off keeps the drug off through the gap while the tumour regrows. At 20\% missed
 the MLP still beats MTD (\SBUMlpFifth\ vs \SBUMtdFifth). At 50\%, no learned
-policy beats MTD in either regime. On Strobl's ranges the best arm (LSTM) ties it
+policy beats MTD in either regime over our one-year horizon (but see
+\S\ref{sec:monitoring} for three years). On Strobl's ranges the best arm (LSTM) ties it
 (\SBFb); the MLP (\SBFbMlp) and LSTM+$\Delta t$ (\SBFbLstmDt) are below it,
 and the ODE-RNN is at or below it (\SBFbOde). On the provisional ranges all four
 arms are below it (best: \WBFbBest, \WBFb).
@@ -222,8 +225,9 @@ arms are below it (best: \WBFbBest, \WBFb).
 $U$ (mean over the four exposure prices) on held-out test patients, against the
 share of visits missed. The threshold is chosen on a separate selection cohort.
 Lines are bins of $r_R/r_S$; darker means a costlier resistance, and the dashed
-bin lies outside Strobl et al.'s sweep. Rows: a missed visit repeats the last
-dose (top) or gives full dose (bottom). 10 seeds $\times$ 200 test patients per bin.}
+bin lies outside Strobl et al.'s sweep. A missed visit repeats the last dose.
+Rows: the same patients followed for one year (top) and three years (bottom);
+note the different $y$-scales. 10 seeds $\times$ 200 test patients per bin.}
 \label{fig:monitoring}
 \end{figure}
 
@@ -234,16 +238,29 @@ In each bin we compared the best burden-threshold rule with MTD, with rules
 only and no learning (Fig.~\ref{fig:monitoring}; pre-registered). The rule's
 level is chosen on a selection cohort and scored on test patients. With
 reliable monitoring, feedback beats MTD in every bin, by \MOneRegMin\ to
-\MOneRegMax\ days. The share of missed visits at which it stops doing so
-rises as resistance becomes cheaper: from \MOnePStarLowMin\ to
+\MOneRegMax\ days over one year. The share of missed visits at which it stops
+doing so rises as resistance becomes cheaper: from \MOnePStarLowMin\ to
 \MOnePStarLowMax\ at low turnover, and from \MOnePStarHighMin\ to
 \MOnePStarHighMax\ at high turnover. At 50\% missed, the costliest bin inside
 Strobl's sweep trails the no-cost end by \MOneCostLow\ days at low turnover
 and \MOneCostHigh\ at high turnover. Feedback thus tolerates unreliable
-monitoring best exactly where adaptive therapy pays most \cite{strobl2021}.
-Giving full dose at a missed visit, instead of repeating the last dose, gains
-\MOneMiss\ days at 50\% missed, but beats MTD there only where resistance is
-cheap. % M1, L896
+monitoring best where adaptive therapy pays most \cite{strobl2021}. % M1, L896
+
+\paragraph{The horizon changes the answer.} Over one year, MTD reaches the end of
+the horizon for most patients in the costliest bins, so we followed the same
+patients for three years (Fig.~\ref{fig:monitoring}, bottom). The cost effect
+survives: \MOneBCostLow\ and \MOneBCostHigh\ days at 50\% missed. The crossover
+moves later, to \MOneBPStarLowMin--\MOneBPStarLowMax\ at low turnover and
+\MOneBPStarHigh\ at high turnover. There, sparing thresholds beat MTD by
+\MOneBHighMin\ to \MOneBHighMax\ days at 50\% missed. Within three years MTD
+fails in nearly every patient inside Strobl's range, while sparing dosing holds
+a minority for the whole horizon. At the no-cost end, \MOneBTailCens\ of
+patients never progress under the threshold rule, which uses \MOneBExpCut\ less
+drug. Its \emph{median} TTP is nonetheless shorter than MTD's (\MOneBMedThr\ vs
+\MOneBMedMtd\ days): the gain is a heavy right tail plus drug saved, which $U$
+rewards and the median does not. Dosing through missed visits, which helped
+over one year (\MOneMiss), now helps at low turnover but hurts at high turnover
+(pooled \MOneBMiss). % M1b, L932
 
 \section{Four ways the comparison misled us}\label{sec:pitfalls}
 \begin{enumerate}
@@ -292,6 +309,7 @@ S1 & Strobl ranges, W3c + W4b designs & FAIL: no CT edge, Tiers 0/1/4 & L766 \\
 S2 & reference that also sees $S$, $R$, $\theta$ & below the MLP: no headroom claim & L804 \\
 S3 & S2 at PQN's published parallelism & still trainer-limited & L840 \\
 M1 & threshold rules vs MTD, cost $\times$ turnover bins & met: $p^*$ 0.10--0.50 & L896 \\
+M1b & M1 over three years & met; crossover moves later & L932 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -308,21 +326,26 @@ worth registering, that trainer must make the full-information reference beat
 the burden-only MLP. Training rewards burden above $1.2\times$ the nadir, not TTP itself.
 Missed visits are i.i.d., so the next gap is unknown when the policy doses;
 scheduled gaps, where continuous time has more to use, are untested. Mechanism
-shift and within-episode drift (Tiers~2--3) are out of scope. In the
-monitoring map, MTD reaches the 357-day horizon for most patients in the
-costliest bins, so feedback can win there only on drug saved. Part of the
-cost effect is therefore the horizon. The map also covers threshold rules only,
-and at low turnover the best rule sits at the grid's most aggressive level.
+shift and within-episode drift (Tiers~2--3) are out of scope. The learned
+policies were compared over one year only. The monitoring maps show that the
+absolute value of feedback under missed visits depends on the horizon, so
+``no learned policy beats MTD at 50\% missed'' is a one-year statement. The maps
+cover threshold rules only; over one year at low turnover the best rule sits
+at the grid's most aggressive level. $U$ is a mean, and over three years the
+sparing rules win through a heavy tail with a shorter median TTP.
 
 \section{Conclusion}
 On this task, a memoryless burden threshold is a hard baseline, and continuous
 time did not beat it on either parameter regime. When half of the visits are
 missed, the question is no longer which architecture uses feedback best, but
-whether feedback pays at all; here it did not. A reference given the hidden
-state also lost to the burden-only threshold. The next test of continuous time
-therefore needs a trainer that can first profit from extra state. How much
-missed monitoring feedback can absorb is a property of the tumour: 10--50\% of
-visits, most where resistance is cheap and turnover high.
+whether feedback pays at all. Over one year it did not. A reference given the
+hidden state also lost to the burden-only threshold, so the next test of
+continuous time needs a trainer that can first profit from extra state. How
+many missed visits feedback can absorb depends on the tumour and on the
+horizon. Over one year it is 10--50\%, most where resistance is cheap and
+turnover high. Over three years at high turnover, sparing feedback outlasts MTD
+even with most visits missed, although its median time to progression is
+shorter.
 
 \begin{thebibliography}{9}
 \bibitem{gallagher2024} K.~Gallagher, M.~A.~R. Strobl, D.~S. Park,
