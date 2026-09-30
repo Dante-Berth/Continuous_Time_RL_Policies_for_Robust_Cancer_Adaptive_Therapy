@@ -326,6 +326,7 @@ S3 & S2 at PQN's published parallelism & still trainer-limited & L840 \\
 M1 & threshold rules vs MTD, cost $\times$ turnover bins & met: $p^*$ 0.10--0.50 & L896 \\
 M1b & M1 over three years & met; crossover moves later & L932 \\
 M1c & M1, M1b on medians (post hoc) & mixed: holds only if $\hat r_R \ge 0.75$ & L968 \\
+W5-pre & rules on Hahnfeldt, Kuznetsov & FAIL: no TTP range; Tier 2 cut & L1004 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -341,8 +342,16 @@ trainer that can profit from extra state might change the ranking. Before any co
 worth registering, that trainer must make the full-information reference beat
 the burden-only MLP. Training rewards burden above $1.2\times$ the nadir, not TTP itself.
 Missed visits are i.i.d., so the next gap is unknown when the policy doses;
-scheduled gaps, where continuous time has more to use, are untested. Mechanism
-shift and within-episode drift (Tiers~2--3) are out of scope. The learned
+scheduled gaps, where continuous time has more to use, are untested. We checked
+the other two families before testing mechanism shift (Tier~2), and neither
+supports a dosing comparison as simulated. Treated Hahnfeldt tumours progress
+at day~\WFiveHfTtp{} under every rule, MTD included: the drug cannot outpace
+vascular growth. Treated Kuznetsov is all-or-nothing: MTD keeps
+\WFiveKzMtdCens{} of patients progression-free, and every sparing rule
+progresses by day \WFiveKzThrMin--\WFiveKzThrMax. With no resistant population,
+MTD is optimal by construction. LV is the only family here with a resistance
+mechanism, so every result is LV-only; within-episode drift (Tier~3) is
+untested. The learned
 policies were compared over one year only. The monitoring maps show that the
 absolute value of feedback under missed visits depends on the horizon, so
 ``no learned policy beats MTD at 50\% missed'' is a one-year statement. The maps
