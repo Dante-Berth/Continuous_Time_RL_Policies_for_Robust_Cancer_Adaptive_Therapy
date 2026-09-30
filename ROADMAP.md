@@ -207,6 +207,10 @@ inside the ICLR 2027 window.
 
 ## Stage 2 — main-conference follow-up (deferred on runway, not merit)
 
+*2026-09-30:* the observation-schedule question has a first answer within LV.
+M1 ([L896](adaptive_therapy/RESEARCH_LOG.md#L896)) maps the missed-visit rate
+at which feedback stops beating MTD across cost of resistance and turnover.
+
 [PROJECT.md §17](PROJECT.md): the spine should be a finding about the world, not a
 tool comparison. The **observation schedule** is the natural one: W4 builds the
 machinery, and Q1 asks whether "less frequent monitoring lengthens TTP"

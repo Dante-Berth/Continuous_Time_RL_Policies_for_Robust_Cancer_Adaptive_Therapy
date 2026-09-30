@@ -892,3 +892,39 @@ its cost and turnover axes. What R1 does not verify: the patient fits (Fig. 5C,
 p.26). The paper keeps that sentence as a claim attributed to Strobl, never as
 ours. It is also independent evidence that our LV dynamics are implemented as
 specified, beyond the unit tests.
+
+## [2026-09-30] — M1 H_cost PASSED: the missed-visit rate at which feedback stops beating MTD rises with weaker cost of resistance (0.10 → 0.26) and with turnover (→ 0.50); dosing through gaps rescues it only where resistance is cheap
+**Verdict:** FROZEN — met as registered · **Gate:** Δ_fb = U(best thr) − U(MTD) at p 0.5, hold, test patients: highest-cost Strobl bin − no-cost-end bin −25.5 d [−31.2, −20.0] (low turnover), −76.6 [−88.6, −64.7] (high) · H_miss (full − hold, pooled Strobl bins) +38.5 [+36.1, +41.0] · p 0.5, hold, w 0.1, bin r̂_R [0.875,1] low turnover: capped median TTP best thr 238 [182–301] vs MTD 266 [203–322], exposure 357 / 357, burden integral 1.60e6 / 1.55e6; one-sided Wilcoxon p(thr > MTD) = 1 in every bin · 10 seeds × 10 bins × 200 selection + 200 test pts · **Artifacts:** `research/m1_monitoring.py`, `research/outputs/m1_monitoring.{json,log}`, `m1_shards/`
+
+### Context
+PREREG M1 (8a1b5ab), committed before the run: rules only, no architecture.
+The best threshold x is chosen on a selection cohort and scored on a disjoint
+test cohort. R1 ([L871](RESEARCH_LOG.md#L871)) verified the model first.
+**Met as registered.**
+
+### Results
+**H_cost passes, same direction at both turnovers:** a stronger cost of
+resistance makes missed visits favour MTD more. **p\*, the crossover
+(hold):** low turnover 0.095 (r̂_R [.25,.5), outside Strobl's sweep), 0.102,
+0.151, 0.189, 0.259; high turnover 0.22, 0.231, 0.266, 0.372, 0.499. It is
+monotone in cost and higher at high turnover in every cost bin: feedback
+tolerates missed visits longest where Strobl says adaptive therapy pays most.
+**At regular visits feedback beats MTD in all 10 bins**, +13.0 to +122.6 d,
+every CI > 0.
+**H_miss: "hold-protocol artefact" holds on the pooled test, not uniformly.**
+Under full-on-miss at p 0.5, the best rule beats MTD where resistance is
+cheap (r̂_R ≥ 0.75: +5.0, +14.5, +9.2, +39.4), roughly ties at r̂_R
+[.5,.75) with low turnover (−3.8, −0.6), and still loses at high cost with
+high turnover (−34.3, −28.7, −20.4).
+**Caveats, as declared.** (1) Horizon: in high-cost bins MTD's median TTP is
+the 357-d cap with 75–100% of patients censored, so feedback can win only on
+exposure there, and part of H_cost's effect is the cap. (2) Grid edge: at p 0.5
+under hold the chosen x is 0.5, the lowest on the grid, in every low-turnover
+bin; the best rule is drifting toward MTD. High-turnover bins choose 1.1–1.2.
+
+### Decision
+A task finding for the paper, independent of architecture: with reliable
+monitoring, feedback always beats MTD. The missed-visit rate it survives spans
+10–50%, set by the cost of resistance and turnover, and it depends on what is
+dosed through a gap. A longer horizon would test caveat (1). It is a new
+registration, not a re-run.

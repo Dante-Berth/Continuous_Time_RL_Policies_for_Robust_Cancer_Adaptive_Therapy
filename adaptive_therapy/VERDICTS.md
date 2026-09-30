@@ -10,6 +10,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## DEPLOYED / FROZEN
 
+- **M1: with reliable monitoring feedback beats MTD in every cost × turnover bin (+13 to +123 d); the missed-visit rate at which it stops (p\*) rises with weaker cost of resistance (0.10 → 0.26 at low turnover) and with turnover (0.22 → 0.50)** — H_cost passes (high-cost − no-cost bin at 50% missed: −25.5 [−31.2, −20.0], −76.6 [−88.6, −64.7]); full dose at missed visits rescues feedback only where resistance is cheap (pooled +38.5 [+36.1, +41.0]). Caveat: in high-cost bins MTD sits at the 357-d cap → [L896](RESEARCH_LOG.md#L896)
 - **R1: our LV vector field reproduces Strobl 2021's published TTPs, 14/14 targets within max(3%, 3 d)** — gains exact (19/210/3/104 d vs 19/211/3/104), absolute Fig. 4E TTPs 3–9 d early with a constant sign (time counting, not dynamics). Their simulations are verified; their patient fits (Fig. 5C) are not → [L871](RESEARCH_LOG.md#L871)
 
 ## OPEN
