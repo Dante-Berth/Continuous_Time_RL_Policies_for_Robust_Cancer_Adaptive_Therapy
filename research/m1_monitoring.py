@@ -60,6 +60,11 @@ SEEDS = tuple(range(1, 11))
 N = g.N_TEST  # 200 patients per cohort
 P_TEST = DROPS.index(0.5)
 SHARDS = g.OUT / "m1_shards"
+# Episode settings, rebound by research/m1b_horizon.py (a longer horizon); every
+# function below reads these, never g.EP / g.TS / w4.HORIZON directly.
+EP, TS, HORIZON = g.EP, g.TS, w4.HORIZON
+SCRIPT = Path(__file__)  # the file a worker process runs
+RESULT = g.OUT / "m1_monitoring.json"
 FIELDS = ("ttp", "censored", "exposure", "burden_integral")
 
 
@@ -90,23 +95,23 @@ def worker(seed: int) -> None:
             th, y0, key = jnp.asarray(c.thetas), jnp.asarray(c.y0s), jax.random.PRNGKey(cseed)
             for mi, miss in enumerate(MISS):
                 for pi, p in enumerate(DROPS):
-                    ep = replace(g.EP, drop_rate=p, miss_dose=miss)
+                    ep = replace(EP, drop_rate=p, miss_dose=miss)
                     for k, name in enumerate(POLICIES):
                         burden, dose = (
                             np.asarray(x) for x in _rollout(policy(name), th, y0, key, ep)
                         )
-                        ttp = ttp_running_nadir(burden, g.TS)
+                        ttp = ttp_running_nadir(burden, TS)
                         out["ttp"][b, ci, mi, pi, k] = ttp.days
                         out["censored"][b, ci, mi, pi, k] = ttp.censored
-                        out["exposure"][b, ci, mi, pi, k] = cumulative_exposure(dose, g.TS)
-                        out["burden_integral"][b, ci, mi, pi, k] = burden_integral(burden, g.TS)
+                        out["exposure"][b, ci, mi, pi, k] = cumulative_exposure(dose, TS)
+                        out["burden_integral"][b, ci, mi, pi, k] = burden_integral(burden, TS)
     np.savez_compressed(SHARDS / f"seed{seed}.npz", **out)
 
 
 def spawn(seed: int) -> None:
     if not (SHARDS / f"seed{seed}.npz").exists():  # resume: a finished seed is never recomputed
         subprocess.run(
-            [sys.executable, __file__, "--worker", str(seed)],
+            [sys.executable, str(SCRIPT), "--worker", str(seed)],
             check=True,
             cwd=Path(__file__).resolve().parent.parent,
         )
@@ -117,7 +122,7 @@ def spawn(seed: int) -> None:
 
 
 def utility(a: dict, w: float) -> np.ndarray:
-    return np.minimum(a["ttp"], w4.HORIZON) - w * a["exposure"]
+    return np.minimum(a["ttp"], HORIZON) - w * a["exposure"]
 
 
 def paired(a: dict, b: int, mi: int, pi: int) -> tuple[np.ndarray, np.ndarray]:
@@ -168,7 +173,7 @@ def describe(a: dict, b: int, choice_w01: np.ndarray) -> dict:
         pool = {
             f: np.concatenate([a[f][s, b, 1, mi, pi, k] for s, k in enumerate(ks)]) for f in FIELDS
         }
-        cap = np.minimum(pool["ttp"], w4.HORIZON)
+        cap = np.minimum(pool["ttp"], HORIZON)
         out[name] = {
             "ttp_median": float(np.median(cap)),
             "ttp_iqr": np.percentile(cap, [25, 75]).tolist(),
@@ -264,7 +269,7 @@ def main() -> int:
         list(ex.map(spawn, SEEDS))
     res = analyse()
     report(res)
-    (g.OUT / "m1_monitoring.json").write_text(json.dumps(res, indent=2))
+    RESULT.write_text(json.dumps(res, indent=2))
     return 0
 
 

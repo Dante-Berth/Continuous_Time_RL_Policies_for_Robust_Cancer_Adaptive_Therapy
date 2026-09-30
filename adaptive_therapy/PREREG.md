@@ -736,3 +736,28 @@ reported. (2) The threshold family is the whole policy class; a better feedback
 policy could exist. (3) Bins restrict r̂_R and d̂_T only.
 **Compute:** ~27k rule evaluations of 200 patients, ≈ 30–60 min on CPU.
 **Artifacts:** `research/m1_monitoring.py` → `research/outputs/m1_monitoring.{json,log}`, `m1_shards/`.
+
+## [2026-09-30] — M1b: does M1's cost effect survive a three-year horizon?
+
+**Why.** In M1's costliest bins MTD's median TTP sat at the 357-d cap with
+75–100% of patients censored, so feedback could win only on exposure there, and
+part of H_cost's effect may be the horizon ([L896](RESEARCH_LOG.md#L896),
+caveat 1). Owner-approved 2026-09-30.
+**The one change.** 156 weekly visits (horizon 1085 d) instead of 52. Identical
+to M1 otherwise: bins, cohort seeds (the same patients), thresholds, p grid,
+miss rules, selection/test split, w grid, statistic, bootstrap.
+**H_cost_long (primary).** At p 0.5 under hold, highest-cost Strobl bin minus
+no-cost-end bin. CI excluding 0 **with M1's (negative) sign** in both turnover
+bins ⇒ "the cost effect is not a horizon artefact". Both CIs covering 0, or
+either sign flipped ⇒ "M1's cost effect was at least partly the horizon".
+Mixed ⇒ reported per turnover bin. Magnitudes in days are not comparable to
+M1's, since U's range grows with the horizon; signs, CIs and p* are.
+**Secondary.** H_miss as in M1; p* map; MTD censoring per bin at 1085 d.
+Descriptive context: the share of test patients meeting Strobl's
+indefinite-control criterion d̂_T > (1 − 1.2 n0)·r̂_R (p.9), which is derived
+for Strobl's baseline progression rule, not our nadir rule. Measured on seed-1
+test cohorts: 4–25% at low turnover, 38–95% at high.
+**Kill.** No further horizons. The result enters the paper either way,
+replacing caveat 1 with a measured statement.
+**Compute:** ≈ 3× M1 (M1 ran about 25 min) ≈ 75–90 min on CPU.
+**Artifacts:** `research/m1b_horizon.py` → `research/outputs/m1b_horizon.{json,log}`, `m1b_shards/`.
