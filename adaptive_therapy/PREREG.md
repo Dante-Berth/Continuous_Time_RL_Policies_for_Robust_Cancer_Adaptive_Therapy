@@ -692,3 +692,47 @@ numbers, and states the discrepancy. No re-tuning of our model to hit a target.
 **Declared risk.** Their AT switches in continuous time; ours checks every
 0.05 d, which can move a TTP by about a day.
 **Artifacts:** `research/r1_strobl_repro.py` → `research/outputs/r1_strobl_repro.json`.
+
+## [2026-09-30] — M1: when does monitoring stop paying? The missed-visit rate at which the best threshold policy falls to MTD, across cost of resistance and turnover
+
+**Why.** At 50% missed visits no learned policy beat MTD in either regime
+([L668](RESEARCH_LOG.md#L668), [L766](RESEARCH_LOG.md#L766)), and the margin
+differed by regime. Strobl's cost and turnover axes decide whether adaptive
+therapy pays, and R1 verified we reproduce its model ([L871](RESEARCH_LOG.md#L871)).
+This is a question about the task: **no learned policy and no architecture**, so
+it is outside CLOSED #2, whose bans on other drop rates and hold rules apply to
+the architecture comparison only. Owner-approved 2026-09-30.
+**Patients.** `strobl2021` ranges with r̂_R and d̂_T restricted to 10 bins:
+r̂_R [0.25,0.5) [0.5,0.625) [0.625,0.75) [0.75,0.875) [0.875,1.0] × d̂_T [0,0.25)
+[0.25,0.5]. The first r̂_R bin lies **outside Strobl's sweep**, the high-cost
+region of its fitted patients, and is labelled so everywhere. n0 and f_R as in
+S1. Per seed {1..10} and bin: a 200-patient selection cohort and a 200-patient
+test cohort, disjoint draws.
+**Policies (rules only).** MTD; threshold rules thr_x (full dose when burden >
+x·baseline, else none), x ∈ {0.5, 0.6, …, 1.2}; AT50 descriptive. Weekly
+visits, missed i.i.d. with p ∈ {0, 0.1, …, 0.6}. **Miss rule:** hold (the
+protocol so far) or full (full dose at a missed visit). Per (seed, bin, p,
+miss rule, w), the best x is chosen by mean U on the selection cohort and
+scored on the test cohort. No selection happens on test patients.
+**Statistic.** Δ_fb = U(best thr) − U(MTD), paired on test patients, mean over
+w {0.05, 0.1, 0.2, 0.4}; 95% CI over 2000 seed+patient resamples.
+**H_cost (primary).** At p = 0.5 under hold, Δ_fb differs between the
+highest-cost Strobl bin (r̂_R [0.5, 0.625)) and the no-cost-end bin
+([0.875, 1.0]). The CI of the difference must exclude 0 in **both** turnover
+bins. Direction not predicted.
+**H_miss (secondary).** At p = 0.5, U(best thr | full) − U(best thr | hold),
+pooled over the 8 Strobl bins: CI > 0 ⇒ "the collapse is a hold-protocol
+artefact"; CI < 0 ⇒ "dosing through a gap costs more than it saves".
+**Descriptive.** A Δ_fb map (bin × p × miss rule); p*, the interpolated zero
+crossing of Δ_fb per bin; chosen x; per bin at p 0.5: capped median TTP + IQR,
+censoring, median exposure, burden integral; one-sided paired Wilcoxon (thr >
+MTD); AT50.
+**Kill.** H_cost fails ⇒ "within Strobl's range, cost of resistance does not
+change what missed visits do to feedback". No bins, thresholds, rates or miss
+rules added after seeing results.
+**Declared risks.** (1) High turnover with high cost gives indefinite control
+(Strobl p.9): U saturates at the horizon and Δ_fb → −w·ΔExposure; censoring is
+reported. (2) The threshold family is the whole policy class; a better feedback
+policy could exist. (3) Bins restrict r̂_R and d̂_T only.
+**Compute:** ~27k rule evaluations of 200 patients, ≈ 30–60 min on CPU.
+**Artifacts:** `research/m1_monitoring.py` → `research/outputs/m1_monitoring.{json,log}`, `m1_shards/`.

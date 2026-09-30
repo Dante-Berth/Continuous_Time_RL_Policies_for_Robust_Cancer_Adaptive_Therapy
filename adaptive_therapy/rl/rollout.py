@@ -29,7 +29,7 @@ from adaptive_therapy.envs.cohort import solve_one_patient
 from adaptive_therapy.envs.pk import administer, decay, effect
 from adaptive_therapy.envs.reward import RewardConfig, step_reward
 from adaptive_therapy.envs.sampling import STROBL_R_S
-from adaptive_therapy.policies.base import DOSE_LEVELS, normalise_obs
+from adaptive_therapy.policies.base import DOSE_LEVELS, N_ACTIONS, normalise_obs
 
 
 @dataclass(frozen=True)
@@ -44,6 +44,9 @@ class EpisodeConfig:
     # exception to burden-only for PREREG S2's headroom bound -- never an arm,
     # never reported as a policy. See oracle_features.
     oracle: str = "none"
+    # What a missed visit gives: "hold" repeats the last chosen dose (every run
+    # up to S3); "full" gives full dose. 2026-09-30, PREREG M1's protocol question.
+    miss_dose: str = "hold"
 
 
 ORACLE_DIMS = {"none": 0, "state": 2, "full": 8}
@@ -128,6 +131,8 @@ def rollout(
         raise ValueError(f"unknown oracle {ep.oracle!r}; expected one of {tuple(ORACLE_DIMS)}")
     if ep.oracle != "none" and ep.model_id != "lotka_volterra":
         raise ValueError("oracle observations exist for lotka_volterra only")
+    if ep.miss_dose not in ("hold", "full"):
+        raise ValueError(f"unknown miss_dose {ep.miss_dose!r}; expected 'hold' or 'full'")
 
     baseline = observe(y0, ep.model_id)
 
@@ -153,7 +158,8 @@ def rollout(
             explore = jax.random.uniform(k_coin) < eps
             random_a = jax.random.randint(k_rand, (), 0, logits.shape[-1])
             chosen = jnp.where(explore & ~greedy, random_a, jnp.argmax(logits))
-        action = jnp.where(seen, chosen, held)
+        missed = held if ep.miss_dose == "hold" else jnp.array(N_ACTIONS - 1)
+        action = jnp.where(seen, chosen, missed)
         logp = jax.nn.log_softmax(logits)[action]
         dose = DOSE_LEVELS[action]
 

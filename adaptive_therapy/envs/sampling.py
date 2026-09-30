@@ -122,9 +122,9 @@ def _scale(unit: np.ndarray, lo: float, hi: float) -> np.ndarray:
     return lo + unit * (hi - lo)
 
 
-def _strobl_lv(unit: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-    """(thetas, ics) in the LV layout from a (n, 5) unit LHS over STROBL_LV."""
-    v = {k: _scale(unit[:, j], *r) for j, (k, r) in enumerate(STROBL_LV.items())}
+def _strobl_lv(unit: np.ndarray, spec: dict) -> tuple[np.ndarray, np.ndarray]:
+    """(thetas, ics) in the LV layout from a (n, 5) unit LHS over `spec`."""
+    v = {k: _scale(unit[:, j], *r) for j, (k, r) in enumerate(spec.items())}
     n = unit.shape[0]
     r_S = np.full(n, STROBL_R_S)
     d_T = v["d_T/r_S"] * STROBL_R_S
@@ -132,24 +132,34 @@ def _strobl_lv(unit: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return thetas, np.column_stack([v["f_R"], v["n_0"]])
 
 
-def sample_cohort(model_id: ModelId, n: int, seed: int = 0, ranges: str = "provisional") -> Cohort:
+def sample_cohort(
+    model_id: ModelId,
+    n: int,
+    seed: int = 0,
+    ranges: str = "provisional",
+    bounds: dict | None = None,
+) -> Cohort:
     """LHS-sample `n` virtual patients, then apply the untreated sanity gate.
 
     `ranges` selects the theta box: "provisional" (every run up to W4b) or
     "strobl2021" (LV only). The default stays "provisional" so logged runs
-    reproduce bit-for-bit.
+    reproduce bit-for-bit. `bounds` (strobl2021 only) replaces some STROBL_LV
+    ranges, e.g. {"r_R/r_S": (0.5, 0.625)} for one of PREREG M1's bins.
     """
     if ranges not in RANGE_SETS:
         raise ValueError(f"unknown ranges {ranges!r}; expected one of {RANGE_SETS}")
     if ranges == "strobl2021" and model_id != "lotka_volterra":
         raise ValueError("strobl2021 ranges exist for lotka_volterra only")
+    if bounds and (ranges != "strobl2021" or set(bounds) - set(STROBL_LV)):
+        raise ValueError(f"bounds must name STROBL_LV keys under strobl2021: {bounds}")
+    spec = {**STROBL_LV, **(bounds or {})}
     rng = np.random.default_rng(seed)
     theta_spec = THETA_RANGES[model_id]
     ic_spec = IC_RANGES[model_id]
 
     n_draw = int(n * 1.6) + 16  # headroom so the gate still leaves ~n
     if ranges == "strobl2021":
-        thetas, ics = _strobl_lv(_lhs(n_draw, len(STROBL_LV), rng))
+        thetas, ics = _strobl_lv(_lhs(n_draw, len(spec), rng), spec)
     else:
         unit = _lhs(n_draw, len(theta_spec) + len(ic_spec), rng)
         thetas = np.column_stack(

@@ -52,3 +52,26 @@ class RulePolicy(eqx.Module):
 
     def value(self, obs, state) -> jnp.ndarray:
         return jnp.array(0.0)
+
+
+class ThresholdPolicy(eqx.Module):
+    """Full dose when burden > `level` x baseline, else none: M1's policy class.
+
+    `level` is an array leaf, not a static field, so one compiled rollout
+    serves every level. ThresholdPolicy(0.8) doses exactly like RulePolicy("thr0.8").
+    """
+
+    level: jnp.ndarray
+
+    def __init__(self, level: float):
+        self.level = jnp.asarray(level, dtype=jnp.float32)
+
+    def initial_state(self) -> jnp.ndarray:
+        return jnp.zeros((0,))
+
+    def __call__(self, obs, state, dt, key=None):
+        a = jnp.where(obs > jnp.log(self.level), N_ACTIONS - 1, 0)
+        return jax.nn.one_hot(a, N_ACTIONS) * 10.0, state
+
+    def value(self, obs, state) -> jnp.ndarray:
+        return jnp.array(0.0)

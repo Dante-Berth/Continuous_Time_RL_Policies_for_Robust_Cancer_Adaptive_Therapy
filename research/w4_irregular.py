@@ -224,6 +224,22 @@ def paired(cells, valid, a, b, stat, seeds, drops) -> np.ndarray:
     return out
 
 
+def delta_draws(d: np.ndarray, seed: int = 0) -> tuple[np.ndarray, np.ndarray]:
+    """(seed+patient, patient-only) bootstrap draws of delta_ci's statistic.
+
+    Split out 2026-09-30 so M1 can difference two bins' draws; the draw order
+    is unchanged, so every logged CI reproduces.
+    """
+    rng = np.random.default_rng(seed)
+    pi = rng.integers(0, g.N_TEST, (N_BOOT, g.N_TEST))
+    si = rng.integers(0, d.shape[2], (N_BOOT, d.shape[2]))
+    both = np.array(
+        [np.nanmean(np.nanmean(d[:, :, s][..., i], axis=(2, 3))) for s, i in zip(si, pi)]
+    )
+    patients = np.nanmean(np.nanmean(d[..., pi], axis=(2, 4)), axis=(0, 1))
+    return both, patients
+
+
 def delta_ci(d: np.ndarray, drops, seed: int = 0) -> dict:
     """Mean over (w, p) of the pooled paired mean, with two bootstrap CIs.
 
@@ -237,13 +253,7 @@ def delta_ci(d: np.ndarray, drops, seed: int = 0) -> dict:
     patient-only CI, conditional on the trained policies, kept for continuity.
     """
     est_wp = np.nanmean(d, axis=(2, 3))
-    rng = np.random.default_rng(seed)
-    pi = rng.integers(0, g.N_TEST, (N_BOOT, g.N_TEST))
-    si = rng.integers(0, d.shape[2], (N_BOOT, d.shape[2]))
-    both = np.array(
-        [np.nanmean(np.nanmean(d[:, :, s][..., i], axis=(2, 3))) for s, i in zip(si, pi)]
-    )
-    patients = np.nanmean(np.nanmean(d[..., pi], axis=(2, 4)), axis=(0, 1))
+    both, patients = delta_draws(d, seed)
     return {
         "delta": float(np.nanmean(est_wp)),
         "ci95": np.percentile(both, [2.5, 97.5]).tolist(),
