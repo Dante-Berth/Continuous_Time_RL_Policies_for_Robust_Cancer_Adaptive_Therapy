@@ -964,3 +964,39 @@ were measured over 357 d: at high turnover, sparing feedback overtakes MTD in
 years 2–3. VERDICTS, CLOSED #2 and the paper now carry the horizon. The learned
 arms are not re-run: a 3-year architecture comparison would be a new
 registration, and LAW L1's trainer gate still binds.
+
+## [2026-09-30] — M1c medians: the three-year reversal holds for the median patient only where resistance is nearly free, and sparing never wins on median TTP or burden integral
+**Verdict:** FROZEN — P1 mixed, P2 met at 3 y only; M1b's reversal is half a tail effect · **Gate:** M1b, high turnover, p 0.5, hold, Δ_med (median U, mean over w): r̂_R [0.5,.625) −138 [−166, −113], [.625,.75) −29 [−48, −2], [.75,.875) +34 [+4, +58], [.875,1] +62 [+37, +90] · no-cost bin, w 0.1: capped median TTP best thr 214 [105–828] vs MTD 266 [231–308], censored 24% vs 0%, exposure 378 vs 1085, burden integral 6.30e6 vs 5.33e6, one-sided Wilcoxon (U) p = 1.1e-29 · 10 seeds × 10 bins × 200 + 200 pts · **Artifacts:** `research/m1c_medians.py`, `research/outputs/m1c_medians.{json,log}`
+
+### Context
+PREREG M1c (c64705e), **post-hoc** on M1/M1b's shards: best x chosen by median U
+on the selection cohort, Δ_med = median U(thr) − median U(MTD) on test patients.
+Selection risk as declared: one bin's medians were seen in L932. **P1 failed its
+"holds" reading as registered (mixed); P2 met at 1085 d, not at 357 d.**
+
+### Results
+**P1 (3 y, high turnover, p 0.5).** The median patient gains from sparing
+feedback only in the two lowest-cost Strobl bins (r̂_R ≥ 0.75). In the two
+costliest it loses (mean analysis, L932: +92 to +301 in all four). p\*_med at
+3 y, high turnover: 0.35, 0.46, 0.59, > 0.6 (mean: > 0.6 in all four).
+**P2 (H_cost under medians).** 3 y: −95.7 [−108.2, −73.7] (low turnover),
+−200.1 [−241.4, −164.8] (high): holds. 1 y: −9.9 [−22.5, +7.6] at low turnover,
+covers 0; −76.5 [−112.1, −42.0] at high. The 1-year cost effect is a mean effect
+at low turnover.
+**1-year p\*_med** (hold, Strobl bins): low turnover 0.30, 0.22, 0.27, 0.28 (not
+monotone in cost); high 0.40, 0.39, 0.43, 0.50. M1's mean p\* was 0.10–0.26 at
+low turnover: under medians, feedback survives more missed visits there.
+**No bin, either horizon, has the selected threshold's median capped TTP at or
+above MTD's at p 0.5** (e.g. 3 y high turnover: 210–231 vs 266–511 d). Every
+median-U win is drug saved (≈ 70% less), not time bought.
+**The second endpoint goes against sparing everywhere.** Median burden integral
+is higher under the threshold rule in all 20 bin × horizon cells: +18% in the
+3 y no-cost high-turnover bin, ~4.5× in the costliest Strobl bin at 3 y.
+At p 0.5, mean-selected x scored on medians gives the same sign as median-selected x in
+all 20 cells.
+
+### Decision
+M1b's "sparing feedback beats MTD at high turnover" is restated: for the median
+patient only where r̂_R ≥ 0.75, only on U (exposure-weighted), with shorter
+median TTP and a larger burden integral. H_cost's 1-year low-turnover leg is a
+mean effect. The paper states all three. No new runs follow from this.

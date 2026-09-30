@@ -55,7 +55,9 @@ the negative covers LV Tiers 0, 1 and 4.
 [L766](adaptive_therapy/RESEARCH_LOG.md#L766)): ODE−MLP −5.4 [−24.3, +9.3],
 ODE−MTD −13.5 [−33.0, +2.3]. No learned arm beats MTD at 50% missed visits in
 either regime over the 357-d horizon. Over three years, sparing threshold rules
-overtake MTD at high turnover ([L932](adaptive_therapy/RESEARCH_LOG.md#L932)); the
+overtake MTD at high turnover ([L932](adaptive_therapy/RESEARCH_LOG.md#L932)), for
+the median patient only where r̂_R ≥ 0.75 and only through drug saved
+([L968](adaptive_therapy/RESEARCH_LOG.md#L968)); the
 continuous-time closure itself is unaffected.
 
 **Do not re-propose:** LTC, Neural CDE or another continuous-time cell on the
