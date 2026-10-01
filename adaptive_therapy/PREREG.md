@@ -937,3 +937,47 @@ contrast is reported in the main text, not the appendix.
 **Artifacts:** `research/v1_review.py` → `research/outputs/v1_review.{json,log}`, `v1_shards/`.
 **Compute:** V1a 120 + 160 policy evaluations, V1c 160 × 3 drops at 3× length;
 one process per (part, arch) (L207); ≈ 1 h on CPU.
+
+## [2026-10-02] — V2: with a survival term that stops at progression, does the full-information reference beat the burden-only MLP?
+
+**Why.** T1 ([L1042](RESEARCH_LOG.md#L1042)) read "reward-limited": the
+reference ties the MLP on training reward and still trails on U by 20 d. No term
+of the reward is TTP ([L739](RESEARCH_LOG.md#L739)), though the spec's reward is
+"+TTP" ([PROJECT.md §7](../PROJECT.md)). ROADMAP V2. Owner-approved 2026-10-02.
+**The one change.** `RewardConfig(survival_until="progression")`: the survival
+term (1/day) is paid until progression is **confirmed online** —
+`envs/reward.progression_update`, the running-nadir rule with its 28-d window.
+The survival total is then TTP + 28 d, except for progressions in the last 28 d
+of the horizon (tested: `test_online_progression_confirms_exactly_one_window_after_the_offline_ttp`).
+Chosen over the unconfirmed 1.2 × nadir crossing because that crossing can
+recover and is not the endpoint; chosen over a retroactive TTP reward because
+the reward at a visit must not depend on later visits. Burden and exposure
+terms unchanged. Everything else is T1: PQN 1024 patients × 3000 updates,
+2048-patient cohort, Strobl ranges, regular visits, MLP-441 LayerNorm and O_full
+(9 inputs), w {0.05, 0.10, 0.20, 0.40}, seeds {31..40}, S1's test cohorts and
+eval keys.
+**Primary and readings:** T1's, unchanged and in the same order (Δ U O_full −
+MLP at Tier 0, seed+patient CI; R = training-return difference under V2's
+reward): lo > +10 d ⇒ headroom, the gate opens; else R < 0 ⇒ trainer-limited;
+else hi < 0 ⇒ still reward-limited; else hi < +10 d ⇒ no headroom; else
+inconclusive.
+**Descriptive.** Tier 1; reward effect per arm vs its T1 cell (same seeds,
+patients); capped median TTP + IQR, median exposure, burden integral; one-sided
+Wilcoxon per w; MLP vs thr0.8.
+**Kill.** Headroom ⇒ V3 (S1 Part A's architecture comparison under V2's reward)
+may be registered. No headroom ⇒ LAW L1's mechanism ("the current observation
+is enough") gets its first direct support; no continuous-time re-run.
+Trainer-limited or still reward-limited ⇒ the reward search ends in this paper:
+no third reward, no reweighting of the burden or exposure terms.
+**Declared risks.** (1) The survival term now rewards dosing that delays
+progression, so both arms may dose more; exposure is reported beside U.
+(2) The burden term still pays for burden below the progression line, so V2 is
+"T1 + a TTP term", not a pure TTP reward. (3) The policies do not observe the
+run counter; for a burden-only arm the reward depends on unobserved state, as
+the burden term already does through the nadir.
+**Compute:** T1's shards: median 6677 s per cell, 80 cells, 148 CPU-h; 6 in
+parallel ≈ 25–30 h.
+**Artifacts:** `research/v2_ttp_reward.py` → `research/outputs/v2_ttp_reward.{json,log}`, `v2_shards/`, `v2_policies/`.
+**Honest prior:** the reference's T1 deficit came with less drug and more
+burden, which the TTP term now charges for, so the gap should narrow. Whether
+it clears +10 d is open.

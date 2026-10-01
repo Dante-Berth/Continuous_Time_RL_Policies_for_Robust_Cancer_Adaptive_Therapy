@@ -27,7 +27,7 @@ import jax.numpy as jnp
 from adaptive_therapy.envs.base import ModelId, PKConfig, SolverConfig, observe
 from adaptive_therapy.envs.cohort import solve_one_patient
 from adaptive_therapy.envs.pk import administer, decay, effect
-from adaptive_therapy.envs.reward import RewardConfig, step_reward
+from adaptive_therapy.envs.reward import RewardConfig, progression_update, step_reward
 from adaptive_therapy.envs.sampling import STROBL_R_S
 from adaptive_therapy.policies.base import DOSE_LEVELS, N_ACTIONS, normalise_obs
 
@@ -137,7 +137,7 @@ def rollout(
     baseline = observe(y0, ep.model_id)
 
     def step(carry, seen):
-        state, y, conc, h, nadir, k, since, held = carry
+        state, y, conc, h, nadir, k, since, held, run, progressed = carry
         k, k_obs, k_act = jax.random.split(k, 3)
 
         true_b = observe(y, ep.model_id)
@@ -169,7 +169,10 @@ def rollout(
         conc3 = decay(conc2, ep.visit_interval, pk)
 
         nadir2 = jnp.minimum(nadir, true_b)
-        r = step_reward(true_b, nadir2, dose, ep.visit_interval, rw)
+        run2, progressed2 = progression_update(
+            run, progressed, true_b, nadir2, ep.visit_interval, rw
+        )
+        r = step_reward(true_b, nadir2, dose, ep.visit_interval, rw, progressed2)
 
         out = {
             "burden": true_b,
@@ -186,7 +189,7 @@ def rollout(
             # asymmetry the Phase 2 comparison did not declare (L312).
             "value": policy.value(obs, h2),
         }
-        return (state, y2, conc3, h2, nadir2, k, since2, action), out
+        return (state, y2, conc3, h2, nadir2, k, since2, action, run2, progressed2), out
 
     seen = visit_mask(jax.random.fold_in(key, _MASK_STREAM), ep.n_visits, ep.drop_rate)
     init = (
@@ -198,6 +201,8 @@ def rollout(
         key,
         jnp.array(ep.visit_interval),
         jnp.array(0),  # visit 0 is always observed, so this is never given
+        jnp.array(0),  # visits in the current run above 1.2 x nadir
+        jnp.array(False),  # progression confirmed online (RewardConfig.survival_until)
     )
     _, traj = jax.lax.scan(step, init, seen)
     return traj

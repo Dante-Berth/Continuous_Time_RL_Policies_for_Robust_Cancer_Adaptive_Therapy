@@ -15,6 +15,8 @@ from dataclasses import asdict, dataclass
 
 import jax.numpy as jnp
 
+from adaptive_therapy.eval.metrics import DEFAULT_CONFIRM_DAYS
+
 
 @dataclass(frozen=True)
 class RewardConfig:
@@ -27,9 +29,39 @@ class RewardConfig:
     burden_penalty: float = 1.0  # per unit relative burden above threshold
     exposure_penalty: float = 0.1  # per unit dose; report at >= 2 values
     progression_threshold: float = 1.2  # relative to the running nadir
+    # "always": the survival term is paid every visit (every run up to T1).
+    # "progression": it stops once progression is CONFIRMED online, so the
+    # episode's survival total is the TTP plus the confirmation window -- the
+    # spec's "+TTP" (PROJECT.md 7). 2026-10-02, PREREG V2: T1 (RESEARCH_LOG
+    # L1042) found the reference ties the MLP on the old reward and still loses
+    # on U, because no term of that reward is TTP (L739).
+    survival_until: str = "always"
+    confirm_days: float = DEFAULT_CONFIRM_DAYS  # the TTP rule's window
 
     def to_dict(self) -> dict:
         return asdict(self)
+
+
+def progression_update(
+    run: jnp.ndarray,
+    progressed: jnp.ndarray,
+    burden: jnp.ndarray,
+    nadir: jnp.ndarray,
+    dt: float,
+    cfg: RewardConfig,
+) -> tuple[jnp.ndarray, jnp.ndarray]:
+    """One visit of the online TTP rule -> (run', progressed').
+
+    `run` counts consecutive visits above `progression_threshold` x running
+    nadir; progression is confirmed once that run spans `confirm_days`. On a
+    regular grid this flips exactly `confirm_days` after the crossing that
+    eval/metrics.ttp_running_nadir reports, except in the last `confirm_days`
+    of the horizon, where the offline rule counts an unfalsified window as
+    confirmed and an online rule cannot.
+    """
+    above = burden > nadir * cfg.progression_threshold
+    run2 = jnp.where(above, run + 1, 0)
+    return run2, progressed | ((run2 - 1) * dt >= cfg.confirm_days)
 
 
 def step_reward(
@@ -38,6 +70,7 @@ def step_reward(
     dose: jnp.ndarray,
     dt: float,
     cfg: RewardConfig,
+    progressed: jnp.ndarray | bool = False,
 ) -> jnp.ndarray:
     """Reward for one decision interval.
 
@@ -47,6 +80,10 @@ def step_reward(
     report -- the most insidious version of optimising the wrong thing.
     """
     alive = cfg.survival_bonus * dt
+    if cfg.survival_until == "progression":
+        alive = jnp.where(progressed, 0.0, alive)
+    elif cfg.survival_until != "always":
+        raise ValueError(f"unknown survival_until {cfg.survival_until!r}")
 
     rel = burden / jnp.maximum(nadir, 1e-10)
     excess = jnp.maximum(rel - cfg.progression_threshold, 0.0)

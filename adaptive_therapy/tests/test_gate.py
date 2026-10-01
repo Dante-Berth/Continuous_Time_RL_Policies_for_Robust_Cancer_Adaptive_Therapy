@@ -16,8 +16,9 @@ from adaptive_therapy.envs.gate import (
     untreated_sanity_gate,
 )
 from adaptive_therapy.envs.pk import administer, decay, effect
-from adaptive_therapy.envs.reward import RewardConfig, step_reward
+from adaptive_therapy.envs.reward import RewardConfig, progression_update, step_reward
 from adaptive_therapy.envs.sampling import sample_cohort
+from adaptive_therapy.eval.metrics import ttp_running_nadir
 
 CFG = SolverConfig(t1=365.0, n_save=52)
 
@@ -155,3 +156,44 @@ def test_reward_penalises_burden_above_the_nadir_threshold():
     over = float(step_reward(jnp.array(200.0), nadir, jnp.array(0.0), 1.0, cfg))
     assert at == pytest.approx(cfg.survival_bonus, rel=1e-6)  # below +20%
     assert over < at
+
+
+def _online_flags(burden: np.ndarray, dt: float, cfg: RewardConfig) -> np.ndarray:
+    run, progressed = jnp.array(0), jnp.array(False)
+    nadir, flags = burden[0], []
+    for b in burden:
+        nadir = min(nadir, b)
+        run, progressed = progression_update(run, progressed, b, nadir, dt, cfg)
+        flags.append(bool(progressed))
+    return np.array(flags)
+
+
+def test_online_progression_confirms_exactly_one_window_after_the_offline_ttp():
+    """V2's reward and the TTP endpoint must agree on when progression happened."""
+    cfg, dt = RewardConfig(survival_until="progression"), 7.0
+    ts = np.arange(52) * dt
+    lag = int(cfg.confirm_days / dt)
+    rng = np.random.default_rng(0)
+    checked = 0
+    for _ in range(300):
+        b = np.exp(np.cumsum(rng.normal(0.0, 0.12, 52)))
+        flags = _online_flags(b, dt, cfg)
+        ttp = ttp_running_nadir(b[None], ts)
+        if ttp.censored[0]:
+            assert not flags[: 52 - lag].any()
+            continue
+        i = int(np.searchsorted(ts, ttp.days[0]))
+        if i + lag < 52:
+            assert flags.argmax() == i + lag and flags[i + lag :].all()
+            checked += 1
+    assert checked > 50  # the walk must actually exercise the rule
+
+
+def test_survival_term_stops_at_progression_only_when_asked():
+    b = n = jnp.array(100.0)
+    zero = jnp.array(0.0)
+    always = RewardConfig()
+    until = RewardConfig(survival_until="progression")
+    assert float(step_reward(b, n, zero, 1.0, always, jnp.array(True))) == pytest.approx(1.0)
+    assert float(step_reward(b, n, zero, 1.0, until, jnp.array(False))) == pytest.approx(1.0)
+    assert float(step_reward(b, n, zero, 1.0, until, jnp.array(True))) == pytest.approx(0.0)
