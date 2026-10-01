@@ -860,3 +860,4 @@ RSS with r̂_R differing by > 0.1 (non-identifiability, Phase 0 [L48](RESEARCH_L
 **Kill.** > 25 patients excluded ⇒ no replay on these fits. No change to
 bounds, residual, restarts or the exclusion rule after seeing fits.
 **Artifacts:** `research/r2_bruchovsky_fit.py` → `research/outputs/r2_bruchovsky_fit.{json,log}`.
+**AMENDMENT 2026-09-30 (before any fit ran):** rows are sorted by day; patients 016 and 037 each have one empty-PSA row out of date order in the source file.

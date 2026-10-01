@@ -68,12 +68,15 @@ def load(path: Path) -> dict:
             days.append(float(row[8]))
             psa.append(float(row[4]) if row[4].strip() else np.nan)
             on.append(float(row[7]) if row[7].strip() else np.nan)
-    days = np.asarray(days) - days[0]
-    on = np.asarray(on)
+    # 2026-09-30: patients 016 and 037 each carry one row out of date order (an
+    # empty-PSA 1999/2001 row among 1995 rows); sort, never drop (PREREG R2 amendment).
+    order = np.argsort(days, kind="stable")
+    days = np.asarray(days)[order] - min(days)
+    psa, on = np.asarray(psa)[order], np.asarray(on)[order]
     for i in range(len(on)):  # an unrecorded flag continues the previous one
         if np.isnan(on[i]):
             on[i] = on[i - 1] if i else 1.0
-    return {"days": days, "psa": np.asarray(psa), "on": on}
+    return {"days": days, "psa": psa, "on": on}
 
 
 def daily_schedule(p: dict) -> np.ndarray:
