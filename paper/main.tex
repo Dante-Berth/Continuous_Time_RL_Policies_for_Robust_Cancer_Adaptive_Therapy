@@ -35,8 +35,10 @@ policy at regular visits. The MLP learns a burden-threshold rule close to a
 one-line clinical rule. Over one year with half of the visits missed, no
 learned policy beats a fixed maximum-dose schedule, and the arm that degrades
 most gracefully is a plain LSTM. The negative replicates on a second parameter
-regime. A reference policy that also sees the hidden state scores lower still,
-so the negative describes what this trainer extracts, not what the task allows.
+regime, and on models fitted to 55 patients' PSA. A reference policy that also
+sees the hidden state scores lower still; with ten times the gradient steps it
+matches the MLP on the training reward but not on progression time, so the
+reward, which has no progression term, limits what the comparison can show.
 Across cost of resistance and turnover, the share of missed visits at which
 feedback stops beating the fixed schedule is 10--50\% over one year. It is
 highest where resistance is cheap and turnover high, and it depends on the
@@ -66,7 +68,8 @@ ${\sim}3{,}100$ Q-path parameters.
 \item \textbf{Negative results with seed+patient CIs}: no continuous-time edge
 in range (Tier~0), under a parameter shift (Tier~1), or under missed visits
 (Tier~4), on two parameter regimes. A full-information reference locates the
-limit in the trainer rather than in the task.
+limit in the training setup (first the trainer, then the reward) rather than in
+the task.
 \item \textbf{A task finding.} At regular visits the best learned policy is a
 burden threshold. Over one year with half of the visits missed, no learned
 policy beats dosing at the maximum tolerated dose, on either parameter regime.
@@ -185,6 +188,13 @@ Our PQN collects 32 patients per update; the published setting is 1024. With
 and the MLP \SThreeBudgetMlp, so a third of the gap closes. The reference still
 trails, at \SThreeFull, and still earns less training reward (\SThreeR, higher
 in \SThreeRPos\ cells). As pre-registered, the budget search ends there. % S3, L840
+A separately registered follow-up gives ten times the gradient steps. The
+reference gains \TOneStepFull\ more and the MLP \TOneStepMlp. The reference
+now earns as much training reward as the MLP (\TOneR, higher in \TOneRPos\
+cells) yet still trails, at \TOneFull: it doses less and lets more patients
+progress. The reward charges for burden above the nadir and for drug, but has
+no progression term, so it can be optimised without buying time to progression.
+The trainer no longer binds; the reward does. % T1, L1042
 
 \begin{figure}[t]
 \centering
@@ -219,6 +229,19 @@ policy beats MTD in either regime over our one-year horizon (but see
 (\SBFb); the MLP (\SBFbMlp) and LSTM+$\Delta t$ (\SBFbLstmDt) are below it,
 and the ODE-RNN is at or below it (\SBFbOde). On the provisional ranges all four
 arms are below it (best: \WBFbBest, \WBFb).
+
+\paragraph{On models fitted to patients.} Strobl et al.\ fitted this model to
+PSA from \RTwoN\ men in an intermittent androgen-suppression trial
+\cite{strobl2021}. We repeated their fit with our simulator: \RTwoExcl\ fits
+fail their $r^2 \ge 0.5$ rule (theirs: 15), and fitted cost and turnover are
+anticorrelated (\RTwoPearson; theirs $-0.77$). Their relapse separation holds in
+direction only ($p = \RTwoMWp$, post hoc after a mis-registered test). Replaying
+the saved policies, unchanged, on the \POneN\ kept fits: at regular visits
+ODE-RNN$-$MLP is \POneOdeMlp\ and ODE-RNN$-$LSTM \POneOdeLstm; with half the
+visits missed, no learned arm beats MTD (ODE-RNN \POneOdeMtd, LSTM
+\POneLstmMtd). MTD keeps every fitted patient progression-free for a year, so
+this replay tests drug use more than progression time. These are models fitted
+to patients, not patients. % R2 L1075, P1 L1106
 
 \begin{figure}[t]
 \centering
@@ -327,6 +350,9 @@ M1 & threshold rules vs MTD, cost $\times$ turnover bins & met: $p^*$ 0.10--0.50
 M1b & M1 over three years & met; crossover moves later & L932 \\
 M1c & M1, M1b on medians (post hoc) & mixed: holds only if $\hat r_R \ge 0.75$ & L968 \\
 W5-pre & rules on Hahnfeldt, Kuznetsov & FAIL: no TTP range; Tier 2 cut & L1004 \\
+T1 & S3 with $10\times$ gradient steps & reward-limited & L1042 \\
+R2 & Strobl's fits to the Bruchovsky cohort & 2/3 reproduce; relapse weaker & L1075 \\
+P1 & saved policies on the 55 fits & met: both negatives replicate & L1106 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -335,12 +361,13 @@ W5-pre & rules on Hahnfeldt, Kuznetsov & FAIL: no TTP range; Tier 2 cut & L1004 
 One ODE family (LV), virtual patients only, and no claim about clinical
 outcomes. PQN's settings are the published ones except parallelism (32 patients
 per update, not 1024) and untuned, and the recurrent arms are chaotic in
-training; we treat that as part of their cost rather than tuning it away. The
-binding limit is the trainer. Given the true hidden state, the same PQN scores
-below the burden-only MLP, at our parallelism and at the published one, so a
-trainer that can profit from extra state might change the ranking. Before any continuous-time re-run is
-worth registering, that trainer must make the full-information reference beat
-the burden-only MLP. Training rewards burden above $1.2\times$ the nadir, not TTP itself.
+training; we treat that as part of their cost rather than tuning it away. Given
+the true hidden state, PQN at the registered budgets scores below the
+burden-only MLP. With ten times the gradient steps it matches the MLP on the
+training reward and still trails on $U$, so the binding limit is now the reward,
+which has no progression term. Before any continuous-time re-run is worth
+registering, a reward with that term must let the full-information reference
+beat the burden-only MLP. Training rewards burden above $1.2\times$ the nadir, not TTP itself.
 Missed visits are i.i.d., so the next gap is unknown when the policy doses;
 scheduled gaps, where continuous time has more to use, are untested. We checked
 the other two families before testing mechanism shift (Tier~2), and neither
@@ -365,8 +392,10 @@ On this task, a memoryless burden threshold is a hard baseline, and continuous
 time did not beat it on either parameter regime. When half of the visits are
 missed, the question is no longer which architecture uses feedback best, but
 whether feedback pays at all. Over one year it did not. A reference given the
-hidden state also lost to the burden-only threshold, so the next test of
-continuous time needs a trainer that can first profit from extra state. How
+hidden state also lost to the burden-only threshold; given more training it
+matched the MLP on the reward but not on progression time, so the next test of
+continuous time needs a reward that pays for it. Both negatives held on models
+fitted to 55 patients' PSA. How
 many missed visits feedback can absorb depends on the tumour and on the
 horizon. Over one year it is 10--50\%, most where resistance is cheap and
 turnover high. Over three years at high turnover, sparing feedback outlasts MTD
