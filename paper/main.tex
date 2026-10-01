@@ -33,12 +33,14 @@ shows no edge over the best discrete arm in range, under a parameter shift, or
 with up to half of the visits missed, and the memoryless MLP is the best learned
 policy at regular visits. The MLP learns a burden-threshold rule close to a
 one-line clinical rule. Over one year with half of the visits missed, no
-learned policy beats a fixed maximum-dose schedule, and the arm that degrades
-most gracefully is a plain LSTM. The negative replicates on a second parameter
+learned policy beats a fixed maximum-dose schedule on average, and the arm that
+degrades most gracefully is a plain LSTM. The negative replicates on a second parameter
 regime, and on models fitted to 55 patients' PSA. A reference policy that also
 sees the hidden state scores lower still; with ten times the gradient steps it
 matches the MLP on the training reward but not on progression time, so the
-reward, which has no progression term, limits what the comparison can show.
+reward, which has no progression term, limits what the comparison can show. The
+reward does not explain the architecture gap itself: the recurrent arms earn
+less of it than the MLP.
 Across cost of resistance and turnover, the share of missed visits at which
 feedback stops beating the fixed schedule is 10--50\% over one year. It is
 highest where resistance is cheap and turnover high, and it depends on the
@@ -122,7 +124,10 @@ of whole weeks compose exactly. All use a LayerNorm Q-readout, trained by PQN
 parallelism: 300 updates of 32 patients from a 200-patient training cohort,
 where the paper uses 1024 environments (we test 1024 in \S3).
 \paragraph{Statistic.} Per patient, $U=\min(\mathrm{TTP},357)-w\cdot\text{exposure}$:
-the TTP endpoint net of the exposure price the policy was trained with.
+the TTP endpoint net of the exposure price the policy was trained with. Its
+mean over patients is a restricted mean TTP net of exposure. The 357-d cap
+bounds it, so no single patient can carry it. Where the median of the paired
+differences changes a reading, we say so.
 $\Delta(A,B)$ is the mean over $w$ (and over $p\in\{0.2,0.5\}$ at Tier~4) of
 the paired mean $U_A-U_B$ on 200 test patients. The 95\% CI comes from 2000
 bootstrap resamples of \emph{training seeds and patients}. Every cell counts
@@ -195,6 +200,11 @@ cells) yet still trails, at \TOneFull: it doses less and lets more patients
 progress. The reward charges for burden above the nadir and for drug, but has
 no progression term, so it can be optimised without buying time to progression.
 The trainer no longer binds; the reward does. % T1, L1042
+The reward does not explain the gap between the architectures, though. On
+their own training patients the LSTM and the ODE-RNN earn less of the training
+reward than the MLP: $-20.7$ [$-28.4$, $-12.8$] and $-23.5$ [$-34.7$, $-14.0$]
+per episode, lower in 34 and 35 of 40 cells. They do not exploit the reward;
+they optimise it worse. % V1a, L1136
 
 \begin{figure}[t]
 \centering
@@ -228,7 +238,15 @@ policy beats MTD in either regime over our one-year horizon (but see
 \S\ref{sec:monitoring} for three years). On Strobl's ranges the best arm (LSTM) ties it
 (\SBFb); the MLP (\SBFbMlp) and LSTM+$\Delta t$ (\SBFbLstmDt) are below it,
 and the ODE-RNN is at or below it (\SBFbOde). On the provisional ranges all four
-arms are below it (best: \WBFbBest, \WBFb).
+arms are below it (best: \WBFbBest, \WBFb). These are statements about the
+mean. For the median patient the LSTM beats MTD ($+10.7$ [$+1.7$, $+28.0$]):
+about 45\% of patients are progression-free under both at one year, and the
+LSTM uses less drug on them. Replayed unchanged over three years, every learned
+arm beats MTD on $U$, by 32 to 82 days, but only the LSTM matches its time to
+progression ($+9.0$ [$-9.4$, $+28.6$]\,d). The others progress earlier and win
+on drug saved, as the threshold rules do (\S\ref{sec:monitoring}). The
+ODE-RNN shows no edge there either (ODE$-$LSTM $-32.1$ [$-70.9$, $+9.1$]).
+% V1b, V1c, L1136
 
 \paragraph{On models fitted to patients.} Strobl et al.\ fitted this model to
 PSA from \RTwoN\ men in an intermittent androgen-suppression trial
@@ -353,6 +371,7 @@ W5-pre & rules on Hahnfeldt, Kuznetsov & FAIL: no TTP range; Tier 2 cut & L1004 
 T1 & S3 with $10\times$ gradient steps & reward-limited & L1042 \\
 R2 & Strobl's fits to the Bruchovsky cohort & 2/3 reproduce; relapse weaker & L1075 \\
 P1 & saved policies on the 55 fits & met: both negatives replicate & L1106 \\
+V1 & reward, medians, 3 years (post hoc) & not misalignment; LSTM $>$ MTD on medians & L1136 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -367,21 +386,24 @@ burden-only MLP. With ten times the gradient steps it matches the MLP on the
 training reward and still trails on $U$, so the binding limit is now the reward,
 which has no progression term. Before any continuous-time re-run is worth
 registering, a reward with that term must let the full-information reference
-beat the burden-only MLP. Training rewards burden above $1.2\times$ the nadir, not TTP itself.
+beat the burden-only MLP. \pending{V2: that reward, registered and running}
 Missed visits are i.i.d., so the next gap is unknown when the policy doses;
-scheduled gaps, where continuous time has more to use, are untested. We checked
-the other two families before testing mechanism shift (Tier~2), and neither
-supports a dosing comparison as simulated. Treated Hahnfeldt tumours progress
-at day~\WFiveHfTtp{} under every rule, MTD included: the drug cannot outpace
-vascular growth. Treated Kuznetsov is all-or-nothing: MTD keeps
-\WFiveKzMtdCens{} of patients progression-free, and every sparing rule
-progresses by day \WFiveKzThrMin--\WFiveKzThrMax. With no resistant population,
-MTD is optimal by construction. LV is the only family here with a resistance
-mechanism, so every result is LV-only; within-episode drift (Tier~3) is
-untested. The learned
+scheduled gaps, where continuous time has more to use, are untested. Before
+testing mechanism shift (Tier~2) we checked two other tumour models, and neither
+is an adaptive-therapy model as simulated. Kuznetsov has no resistant
+population, so MTD keeps \WFiveKzMtdCens{} of patients progression-free and is
+optimal by construction. In Hahnfeldt, as parameterised here, the drug cannot
+outpace vascular growth, and every rule, MTD included, progresses at
+day~\WFiveHfTtp. These are properties of the two models, not evidence about
+adaptive therapy. LV is the only family here with a resistance mechanism, so
+every result is LV-only. Within LV, the negatives hold on two parameter regimes,
+under a parameter shift, and on models fitted to 55 patients, and our
+implementation reproduces Strobl et al.'s published times to progression.
+Within-episode drift (Tier~3) is untested. The learned
 policies were compared over one year only. The monitoring maps show that the
 absolute value of feedback under missed visits depends on the horizon, so
-``no learned policy beats MTD at 50\% missed'' is a one-year statement. The maps
+``no learned policy beats MTD at 50\% missed'' is a one-year statement about the
+mean. The maps
 cover threshold rules only; over one year at low turnover the best rule sits
 at the grid's most aggressive level. $U$ is a mean. On medians the three-year
 win holds only where resistance is nearly free, and the sparing rules always
@@ -391,7 +413,7 @@ carry a larger tumour burden, which our metastasis proxy counts against them.
 On this task, a memoryless burden threshold is a hard baseline, and continuous
 time did not beat it on either parameter regime. When half of the visits are
 missed, the question is no longer which architecture uses feedback best, but
-whether feedback pays at all. Over one year it did not. A reference given the
+whether feedback pays at all. Over one year, on average, it did not. A reference given the
 hidden state also lost to the burden-only threshold; given more training it
 matched the MLP on the reward but not on progression time, so the next test of
 continuous time needs a reward that pays for it. Both negatives held on models
