@@ -861,3 +861,29 @@ RSS with r̂_R differing by > 0.1 (non-identifiability, Phase 0 [L48](RESEARCH_L
 bounds, residual, restarts or the exclusion rule after seeing fits.
 **Artifacts:** `research/r2_bruchovsky_fit.py` → `research/outputs/r2_bruchovsky_fit.{json,log}`.
 **AMENDMENT 2026-09-30 (before any fit ran):** rows are sorted by day; patients 016 and 037 each have one empty-PSA row out of date order in the source file.
+
+## [2026-10-01] — P1: do the paper's two negatives hold on the 55 Bruchovsky-fitted patients?
+
+**Why.** Owner-approved real-data replay (PROJECT.md §11). R2
+([L1075](RESEARCH_LOG.md#L1075)) gives 55 fitted parameter vectors. Each is a
+model fitted to one patient's PSA, not the patient; no clinical claim.
+**Cohort.** The 55 R2 fits with r² ≥ 0.5, fixed: θ = (0.027, r̂_R·0.027, 1e4,
+d̂_T·0.027, d̂_T·0.027, 1.5), y0 from (f_R, n0). The same 55 for every seed.
+**Policies, no retraining.** S1's saved policies: Part A (MLP, LSTM, ODE-RNN,
+seeds 31–40, regular-visit trained) and Part B (+ LSTM+Δt, seeds 41–50, trained
+at 35% missed); rules MTD, AT50, thr0.8, none. Episode, PK, U and the
+seed+patient CI as S1; ITT (non-finite cells only excluded).
+**H1 (Part A, p 0):** ODE−MLP and ODE−LSTM. Neither CI lower bound > 0 ⇒ "no
+continuous-time edge replicates on fitted patients"; both > 0 ⇒ "an edge
+appears on fitted patients"; else mixed.
+**H2 (Part B, p 0.5):** each learned arm − MTD. No CI lower bound > 0 ⇒ "no
+learned arm beats MTD at 50% missed, replicated"; else name the arm.
+**Descriptive.** MLP − thr0.8 at p 0; per arm capped median TTP + IQR, censoring,
+median exposure, burden integral; one-sided Wilcoxon; H1/H2 restricted to the
+20 fits inside Strobl's sweep box.
+**Declared risks.** (1) Fits use linear drug and daily dosing; replay uses our
+PK and weekly visits. (2) 64% of fits lie outside the training box, so this
+is also a shift. (3) θ is weakly identified from PSA ([L48](RESEARCH_LOG.md#L48)).
+**Kill.** Enters the paper either way. No change to the cohort, exclusion rule,
+policy set or statistic after seeing results.
+**Artifacts:** `research/p1_replay.py` → `research/outputs/p1_replay.{json,log}`.
