@@ -205,6 +205,62 @@ inside the ICLR 2027 window.
 
 ---
 
+## Review track — V-phases (2026-10-02)
+
+Four objections a reviewer will raise against the W6 draft, each mapped to the
+cheapest item that answers it. Items are registered in
+[PREREG.md](adaptive_therapy/PREREG.md) before they run; text-only items cite
+the entry they rest on.
+
+| Objection | Already conceded in the draft | Item |
+| --- | --- | --- |
+| The reward has no TTP term, so the ablation tests a broken proxy | T1 ([L1042](adaptive_therapy/RESEARCH_LOG.md#L1042)) | V1a, V2, (V3) |
+| LV only; the other two families "failed", so the task is brittle | W5-pre ([L1004](adaptive_therapy/RESEARCH_LOG.md#L1004)) | V4 (text) |
+| "No learned arm beats MTD at 50% missed" is a one-year statement | M1b ([L932](adaptive_therapy/RESEARCH_LOG.md#L932)) | V1c |
+| U is a mean; a heavy tail may carry it | M1c ([L968](adaptive_therapy/RESEARCH_LOG.md#L968)), for rules only | V1b |
+
+### V1 — Saved-policy checks (≈ 1 h CPU; registered 2026-10-02)
+
+No retraining. (a) Training return vs U per arm: do the memory arms win the
+reward and lose U (misalignment), or lose both? (b) Median-of-paired-differences
+version of every architecture contrast in the paper. (c) S1 Part B policies and
+MTD replayed over 1085 d.
+**Kill:** none; enters the paper whatever the reading. A reversed contrast in
+(b) goes in the main text.
+
+### V2 — TTP-bearing reward: does the headroom gate open? (≈ 150 CPU-h; to register)
+
+The spec's reward is "+TTP" ([PROJECT.md §7](PROJECT.md)); the code pays its
+survival term at every visit, so no term is TTP
+([L739](adaptive_therapy/RESEARCH_LOG.md#L739)). V2 makes the survival term stop
+at progression and re-runs T1's design (MLP vs the full-information reference,
+3000 updates × 1024 patients, 10 seeds × 4 w). Budget from T1's shards: median
+6677 s per cell, 148 CPU-h for 80 cells.
+**Gate:** T1's, unchanged: reference − MLP lower bound > +10 d ⇒ headroom.
+**Kill:** no headroom ⇒ LAW L1's "the current observation is enough" gains its
+first direct support, and the paper's reward caveat becomes a finding. Still
+reward- or trainer-limited ⇒ the search ends in this paper; no third reward.
+**Open design choice, decided in the registration:** progression for the reward
+as the confirmed TTP (assigned after the rollout) or the unconfirmed 1.2 × nadir
+crossing (available online).
+
+### V3 — Architecture re-run under V2's reward (conditional)
+
+Registered only if V2 opens the gate (LAW L1: a new reward is admissible only
+with demonstrated headroom). S1 Part A design, V2's reward.
+
+### V4 — Paper text (no runs)
+
+(i) Present Hahnfeldt and Kuznetsov as models without a resistance compartment,
+or without drug control as parameterised. Do not present them as evidence that
+adaptive therapy is brittle. Point to R1 (14/14 published TTPs), two θ regimes,
+Tier 1 and the 55 fits as the within-LV robustness. (ii) Name U as restricted
+mean TTP net of exposure: bounded by the cap, so it has no unbounded tail.
+Report V1b beside it. (iii) Fold V1c into the horizon paragraph. (iv) State the
+reward deviation from the spec plainly, with V1a and, when available, V2.
+
+---
+
 ## Stage 2 — main-conference follow-up (deferred on runway, not merit)
 
 *2026-09-30:* the observation-schedule question has a first answer within LV.

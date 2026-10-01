@@ -887,3 +887,53 @@ is also a shift. (3) θ is weakly identified from PSA ([L48](RESEARCH_LOG.md#L48
 **Kill.** Enters the paper either way. No change to the cohort, exclusion rule,
 policy set or statistic after seeing results.
 **Artifacts:** `research/p1_replay.py` → `research/outputs/p1_replay.{json,log}`.
+
+## [2026-10-02] — V1: do the paper's architecture negatives survive three reviewer objections, using saved policies only?
+
+**Why.** ROADMAP V-track. Three anticipated objections to `paper/main.tex`,
+each answerable from S1's saved policies without retraining: (a) the reward has
+no TTP term ([L739](RESEARCH_LOG.md#L739), [L1042](RESEARCH_LOG.md#L1042)), so
+the memory arms may optimise it *better* and still lose U; (b) U is a mean,
+and a heavy tail could carry it; (c) "no learned arm beats MTD at 50% missed" is
+a one-year statement ([L932](RESEARCH_LOG.md#L932)). **Post hoc** on S1's
+policies and test cohorts, registered before any V1 number is computed.
+**V1a — reward vs U per arm.** S1 Part A policies (MLP, LSTM, ODE-RNN, seeds
+31–40, 4 w). Per cell, mean episode return under the cell's own reward on the
+seed's 200-patient training cohort, and U on S1's Tier-0 test cohort; eval key
+and `score` as S2's diagnostic. Statistic per contrast X − MLP (X ∈ {LSTM,
+ODE-RNN}) and ODE − LSTM: ΔR, the mean training-return difference over the 40
+cells, with a CI resampling seeds (2000 draws); cells with ΔR > 0 counted.
+Readings, per contrast whose ΔU CI (S1) excludes 0: ΔR CI upper < 0 ⇒ "loses
+the reward too: not reward misalignment"; ΔR CI lower > 0 ⇒ "misaligned: wins
+the reward, loses U"; else "ties the reward". Descriptive: Part B's four arms on
+their training cohorts at drop 0.35.
+**V1b — rank robustness.** S1 shards only, no rollouts. For every contrast the
+paper reports (Part A Tier 0/1: ODE−MLP, ODE−LSTM, LSTM−MLP; Part B p 0.5:
+each learned arm − MTD, ODE−MLP, ODE−LSTM): the median over (seed, patient) of
+the paired U difference per (w, p), averaged over w, with the same seed+patient
+bootstrap as `w4.delta_draws`. Per contrast: "agrees" if mean and median CIs
+exclude 0 on the same side or both cover 0; "weaker" if one excludes 0 and the
+other covers it; "reversed" if they exclude 0 on opposite sides. **Pass:** no
+contrast reversed, and the paper's headline readings (ODE not above MLP or LSTM
+at Tiers 0/1; no learned arm's lower bound > 0 against MTD at p 0.5) unchanged.
+Descriptive: per arm, share of test patients censored at 357 d.
+**V1c — three-year replay.** S1 Part B policies (trained on 52-visit episodes at
+35% missed) and MTD, thr0.8, rolled out unchanged for 156 visits (1085 d, M1b's
+horizon) on S1's Tier-0 test cohorts and eval keys, drops {0, 0.2, 0.5}; U with
+the 1085-d cap. Primary: each learned arm − MTD at p 0.5, seed+patient CI.
+Readings: any lower bound > 0 ⇒ "a learned arm beats MTD over three years: the
+one-year statement is horizon-bound for learned policies"; every upper bound < 0
+⇒ "learned arms stay below MTD over three years"; else "no arm above MTD".
+Descriptive: ODE−MLP and ODE−LSTM at p 0.5; the V1b median version; capped
+median TTP + IQR, censoring, exposure, burden integral per arm.
+**Declared risks.** (1) V1c runs every policy 3× past its training horizon; a
+recurrent state may drift, so a negative is weak evidence and a positive is the
+informative reading. (2) V1a's training return is on the training cohort the
+policy saw; it measures optimisation, not generalisation. (3) Medians of paired
+U differences are dominated by exposure where both arms are censored.
+**Kill.** Enters the paper (or its appendix) whatever the reading. No change to
+cohorts, keys, policies or statistics after seeing a number. A reversed V1b
+contrast is reported in the main text, not the appendix.
+**Artifacts:** `research/v1_review.py` → `research/outputs/v1_review.{json,log}`, `v1_shards/`.
+**Compute:** V1a 120 + 160 policy evaluations, V1c 160 × 3 drops at 3× length;
+one process per (part, arch) (L207); ≈ 1 h on CPU.
