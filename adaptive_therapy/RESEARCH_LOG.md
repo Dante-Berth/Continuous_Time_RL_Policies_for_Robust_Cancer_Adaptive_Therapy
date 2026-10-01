@@ -1132,3 +1132,43 @@ The paper may say both negatives replicate on models fitted to 55 real
 patients' PSA, with the caveat that MTD controls every fitted patient for a
 year there, so the replay tests drug use more than time to progression. No
 clinical claim. No further replay runs for this paper.
+
+## [2026-10-02] — V1: the memory arms lose the training reward too, so their U deficit is not reward misalignment; "no learned arm beats MTD at 50% missed" holds only for the mean over one year
+**Verdict:** FROZEN — V1a: not misalignment; V1b FAILED as registered (medians favour the learned arms at p 0.5); V1c: every learned arm beats MTD on U over 3 y, by drug saved · **Gate:** V1c, 1085 d, p 0.5, w 0.1: capped median TTP LSTM 357 [266–455], ODE 336 [252–427], MLP 259 [161–406], MTD 343 [273–434]; exposure 783 / 847 / 611 / 1085; burden integral 5.39e6 / 5.39e6 / 5.80e6 / 5.09e6 · Wilcoxon not run (registered CIs only) · 10 seeds × 4 w × 200 pts, S1's saved policies, ITT, 0 non-finite · **Artifacts:** `research/v1_review.py`, `research/outputs/v1_review.{json,log}`, `v1_shards/`
+
+### Context
+PREREG V1 (2268849), post hoc on S1's policies, registered before any number.
+Three reviewer objections: a reward with no TTP term, a mean statistic, and a
+one-year horizon. Reproduction guard passed: V1b's means equal S1's logged Δs.
+
+### Results
+**V1a — training return (own reward, own training cohort), X − MLP, seed CI.**
+LSTM −20.7 [−28.4, −12.8] (higher in 6/40 cells), ODE-RNN −23.5 [−34.7, −14.0]
+(5/40): **loses the reward too, not misalignment.** The memory arms optimise
+the MLP's reward worse; they do not win it and lose U. ODE − LSTM ties (−2.9
+[−16.3, +8.8]). Part B (drop 0.35, descriptive): every recurrent arm earns
+less reward than the MLP, yet the LSTM earns more U on its training cohort
+(+11.4 [+3.6, +19.8]): under missed visits reward and U part ways.
+**V1b — median of paired ΔU.** Part A, all six contrasts agree, about half the
+mean's size (Tier 1 ODE−MLP −29.7 [−48.2, −16.8]; ODE−LSTM +2.5 [−13.8, +17.9]).
+Part B at p 0.5 against MTD: MLP +0.1 [−15.4, +5.5], **LSTM +10.7 [+1.7, +28.0]**,
+ODE +6.9 [−9.5, +17.2], **LSTM+Δt +4.2 [+1.5, +8.5] (mean −16.3: reversed)**.
+**Failed as registered:** for the median patient the LSTM beats MTD at 50%
+missed. 43% of patients are censored under MTD and 47% under LSTM at 357 d.
+Where both arms are censored, ΔU is drug saved. The mean is pulled down by
+the minority who progress earlier.
+**V1c — 1085-d replay, arm − MTD at p 0.5 (mean U).** MLP +42.5 [+27.3, +58.1],
+LSTM +81.6 [+53.4, +108.5], ODE +49.5 [+19.7, +77.3], LSTM+Δt +32.0 [+13.0, +51.6].
+On capped TTP alone (descriptive, same CI): LSTM +9.0 [−9.4, +28.6]; MLP −57.9
+[−73.0, −43.2], ODE −43.5 [−72.9, −20.1], LSTM+Δt −48.2 [−66.4, −32.1]. Only
+the LSTM buys MTD's time; the other gains are drug. ODE−MLP +7.0 [−24.0, +39.2],
+ODE−LSTM −32.1 [−70.9, +9.1]: no continuous-time edge at 3 y.
+
+### Decision
+Objection 1 is answered for the architecture ablation: the memory arms lose on
+the reward they were trained on, so their deficit is optimisation, not a broken
+proxy. The reward still limits the headroom question, which is V2. The paper's
+MTD sentence becomes: below MTD on mean U over one year; the LSTM above it for
+the median patient; every arm above it on U over three years, mostly through
+drug saved. CLOSED #2 is untouched. Declared risk (1) applies to V1c: the
+policies run 3× past their training horizon.

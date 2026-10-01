@@ -219,7 +219,7 @@ the entry they rest on.
 | "No learned arm beats MTD at 50% missed" is a one-year statement | M1b ([L932](adaptive_therapy/RESEARCH_LOG.md#L932)) | V1c |
 | U is a mean; a heavy tail may carry it | M1c ([L968](adaptive_therapy/RESEARCH_LOG.md#L968)), for rules only | V1b |
 
-### V1 — Saved-policy checks (≈ 1 h CPU; registered 2026-10-02)
+### V1 — Saved-policy checks (≈ 1 h CPU; registered 2026-10-02) — *done:* [L1136](adaptive_therapy/RESEARCH_LOG.md#L1136)
 
 No retraining. (a) Training return vs U per arm: do the memory arms win the
 reward and lose U (misalignment), or lose both? (b) Median-of-paired-differences
@@ -228,7 +228,7 @@ MTD replayed over 1085 d.
 **Kill:** none; enters the paper whatever the reading. A reversed contrast in
 (b) goes in the main text.
 
-### V2 — TTP-bearing reward: does the headroom gate open? (≈ 150 CPU-h; to register)
+### V2 — TTP-bearing reward: does the headroom gate open? (≈ 150 CPU-h; registered 2026-10-02, running)
 
 The spec's reward is "+TTP" ([PROJECT.md §7](PROJECT.md)); the code pays its
 survival term at every visit, so no term is TTP
@@ -240,9 +240,8 @@ at progression and re-runs T1's design (MLP vs the full-information reference,
 **Kill:** no headroom ⇒ LAW L1's "the current observation is enough" gains its
 first direct support, and the paper's reward caveat becomes a finding. Still
 reward- or trainer-limited ⇒ the search ends in this paper; no third reward.
-**Open design choice, decided in the registration:** progression for the reward
-as the confirmed TTP (assigned after the rollout) or the unconfirmed 1.2 × nadir
-crossing (available online).
+**Design (PREREG V2):** the survival term stops when progression is confirmed
+*online*, i.e. the running-nadir rule with its 28-d window, so its total is TTP + 28 d.
 
 ### V3 — Architecture re-run under V2's reward (conditional)
 
@@ -258,6 +257,42 @@ Tier 1 and the 55 fits as the within-LV robustness. (ii) Name U as restricted
 mean TTP net of exposure: bounded by the cap, so it has no unbounded tail.
 Report V1b beside it. (iii) Fold V1c into the horizon paragraph. (iv) State the
 reward deviation from the spec plainly, with V1a and, when available, V2.
+
+### V5 — The W5-pre failures are our implementation; a second family with resistance
+
+**Diagnosis, from the code (2026-10-02; both sources still `2°`).** Neither
+failure in [L1004](adaptive_therapy/RESEARCH_LOG.md#L1004) is a property of the
+published model:
+
+- *Hahnfeldt.* Patients start at V = K = v₀ ∈ [50, 500] (`envs/hahnfeldt.initial_state`),
+  but the model's equilibrium is (b/d)^{3/2} ≈ 2.8e3–1.1e5 on our ranges. Every
+  patient therefore starts in explosive vascular growth (dK/K ≈ b, 3–9 /day). Our
+  Emax PK caps the drug term at e·u ≤ 1.2 × 0.67 /day, while Hahnfeldt's term acts
+  on concentration in dose units. Both choices are ours.
+- *Kuznetsov.* Kuznetsov 1994 has no treatment. The −u·T kill term is ours,
+  unscaled (≈ 0.67 /day against growth ≤ 0.03 /day), and the model has no
+  resistant cells.
+
+**(a) Hahnfeldt, done as R1 was for Strobl.** Read Hahnfeldt 1999 at `1°` (PMID
+10519381, not in PMC; the owner supplies the PDF, since the download is blocked
+here). Implement its drug term and dosing in its own units and reproduce its
+published treated-growth curves. Then re-run W5-pre as registered. That
+satisfies [CLOSED #3](CLOSED.md)'s re-open condition. Even if it passes,
+Hahnfeldt has no resistance and MTD is right there, so it hosts a Tier-2
+*transfer* test, not an adaptive-therapy comparison.
+**(b) Kuznetsov: drop.** A fix needs a drug scale from a treated-immune paper
+plus a resistant compartment: a new model, for a family that cannot host an
+adaptive-therapy question.
+**(c) The reviewer's actual ask: a second family with a resistance mechanism.**
+Zhang 2017 (PMID 29180633, PMC5703947), the model the adaptive-therapy prostate
+trial was designed on. Three cell types, producer-dependent capacities and PSA as
+the observable: a different structure from our two-population LV. Steps: `1°`
+read → reproduce its published times to progression (R1's tolerance) → replay
+S1's saved policies on it with no training, a genuine Tier-2 shift → retrain only
+if the replay is uninformative.
+**Kill:** (c)'s reproduction fails ⇒ no second-family claim, and the limitation
+stays. (a) fails ⇒ Hahnfeldt stays closed.
+**Cost:** (a) ½ d once the PDF is in hand; (c) 1–2 d, CPU-light.
 
 ---
 

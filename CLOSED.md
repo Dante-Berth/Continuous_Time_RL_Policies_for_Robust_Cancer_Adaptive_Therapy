@@ -61,8 +61,10 @@ MTD controls every fitted patient for a year, so TTP power there is low.
 
 **Confirmed 2026-09-29 on Strobl 2021's ranges** (S1 Part B,
 [L766](adaptive_therapy/RESEARCH_LOG.md#L766)): ODE−MLP −5.4 [−24.3, +9.3],
-ODE−MTD −13.5 [−33.0, +2.3]. No learned arm beats MTD at 50% missed visits in
-either regime over the 357-d horizon. Over three years, sparing threshold rules
+ODE−MTD −13.5 [−33.0, +2.3]. No learned arm beats MTD on mean U at 50% missed
+visits in either regime over the 357-d horizon; on medians the LSTM does, and
+over 1085 d every learned arm does on U, mostly through drug saved
+([L1136](adaptive_therapy/RESEARCH_LOG.md#L1136)). Over three years, sparing threshold rules
 overtake MTD at high turnover ([L932](adaptive_therapy/RESEARCH_LOG.md#L932)), for
 the median patient only where r̂_R ≥ 0.75 and only through drug saved
 ([L968](adaptive_therapy/RESEARCH_LOG.md#L968)); the
