@@ -24,6 +24,10 @@ under PPO ([L275](adaptive_therapy/RESEARCH_LOG.md#L275),
 [L312](adaptive_therapy/RESEARCH_LOG.md#L312)) and PQN. Phase 2's kill clause
 fired: the multi-mechanism curriculum (old Phase 3) is not built.
 
+**Confirmed 2026-10-01 on 55 models fitted to Bruchovsky patients' PSA** (P1,
+[L1106](adaptive_therapy/RESEARCH_LOG.md#L1106)): ODE−MTD −13.2 [−33.2, +3.3];
+MTD controls every fitted patient for a year, so TTP power there is low.
+
 **Confirmed 2026-09-29 on Strobl 2021's ranges** (S1 Part A,
 [L766](adaptive_therapy/RESEARCH_LOG.md#L766)): ODE−MLP −50.0 d [−63.5, −37.9] at
 Tier 1 on a seed+patient CI, intention-to-treat, 10 fresh seeds.
@@ -50,6 +54,10 @@ registered intention-to-treat after W4's gate proved unfit for Tier 4
 visits, the ODE-RNN ties the MLP (−6.1 d [−34.7, +12.9]) and is below a fixed
 MTD schedule (−23.7 [−47.5, −5.8]) on a seed+patient CI. With [LAW L1](LAWS.md)
 the negative covers LV Tiers 0, 1 and 4.
+
+**Confirmed 2026-10-01 on 55 models fitted to Bruchovsky patients' PSA** (P1,
+[L1106](adaptive_therapy/RESEARCH_LOG.md#L1106)): ODE−MTD −13.2 [−33.2, +3.3];
+MTD controls every fitted patient for a year, so TTP power there is low.
 
 **Confirmed 2026-09-29 on Strobl 2021's ranges** (S1 Part B,
 [L766](adaptive_therapy/RESEARCH_LOG.md#L766)): ODE−MLP −5.4 [−24.3, +9.3],

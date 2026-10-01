@@ -15,7 +15,9 @@ Run: JAX_PLATFORMS=cpu uv run python research/p1_replay.py
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -29,9 +31,10 @@ from adaptive_therapy.envs.lotka_volterra import initial_state  # noqa: E402
 from adaptive_therapy.envs.sampling import STROBL_D_D, STROBL_R_S  # noqa: E402
 from adaptive_therapy.policies.rules import RulePolicy  # noqa: E402
 
-w4, w4b, g = s1.w4, s1.w4b, s1.g
+w4, w4b, g, wf = s1.w4, s1.w4b, s1.g, s1.wf
 FITS = g.OUT / "r2_bruchovsky_fit.json"
 RESULT = g.OUT / "p1_replay.json"
+SHARDS = g.OUT / "p1_shards"
 K = 1e4  # scale only: the observation is burden / baseline
 PARTS = {"a": (s1.ARCHS_A, s1.SEEDS_A), "b": (tuple(w4.ARCHS), s1.SEEDS_B)}
 RULES = ("none", "MTD", "AT50", "thr0.8")
@@ -73,19 +76,42 @@ def score(policy, seed: int, w: float) -> dict:
     return w4.evaluate(policy, seed, w, cohort=cohort, drops=w4.DROPS)
 
 
+def worker(part: str, arch: str) -> list[dict]:
+    """Every saved policy of one (part, arch), or the rules ("rules"), on the fits."""
+    _, seeds = PARTS[part]
+    if arch == "rules":
+        return [
+            {"arch": k, "seed": s, **score(RulePolicy(k), s, 0.0)} for k in RULES for s in seeds
+        ]
+    like = w4.ARCHS[arch](jax.random.PRNGKey(0))
+    out = []
+    for w in w4.WEIGHTS:
+        for s in seeds:
+            pol = eqx.tree_deserialise_leaves(s1.POLICIES / part / f"{arch}_w{w}_s{s}.eqx", like)
+            out.append({"arch": arch, "w": w, "seed": s, **score(pol, s, w)})
+    return out
+
+
+def spawn(part: str, arch: str) -> list[dict]:
+    """One process per (part, arch). 2026-10-01: one process scoring all 280
+    policies recompiled every rollout and died of LLVM "Cannot allocate memory"
+    after two arms -- the vm.max_map_count leak of RESEARCH_LOG L207."""
+    shard = SHARDS / f"{part}_{arch}.json"
+    if not shard.exists():  # resume: a finished shard is never recomputed
+        subprocess.run(
+            [sys.executable, __file__, "--worker", part, arch],
+            check=True,
+            cwd=Path(__file__).resolve().parent.parent,
+        )
+    print(f"  done part {part}: {arch}", flush=True)
+    return json.loads(shard.read_text())
+
+
 def cells_for(part: str) -> tuple[list[dict], list[dict]]:
-    archs, seeds = PARTS[part]
-    cells = []
-    for arch in archs:
-        like = w4.ARCHS[arch](jax.random.PRNGKey(0))
-        for w in w4.WEIGHTS:
-            for s in seeds:
-                path = s1.POLICIES / part / f"{arch}_w{w}_s{s}.eqx"
-                pol = eqx.tree_deserialise_leaves(path, like)
-                cells.append({"arch": arch, "w": w, "seed": s, **score(pol, s, w)})
-        print(f"  part {part}: {arch} done", flush=True)
-    rules = [{"arch": k, "seed": s, **score(RulePolicy(k), s, 0.0)} for k in RULES for s in seeds]
-    return cells, rules
+    archs, _ = PARTS[part]
+    with ThreadPoolExecutor(wf.N_PARALLEL) as ex:
+        shards = list(ex.map(lambda a: spawn(part, a), (*archs, "rules")))
+    return [c for sh in shards[:-1] for c in sh], shards[-1]
 
 
 def subset(cells: list[dict], idx: np.ndarray) -> list[dict]:
@@ -135,6 +161,7 @@ def reading(res: dict) -> dict:
 
 
 def main() -> int:
+    SHARDS.mkdir(parents=True, exist_ok=True)
     res = {"prereg": "adaptive_therapy/PREREG.md P1 [2026-10-01]", "n_patients": int(g.N_TEST)}
     raw = {part: cells_for(part) for part in PARTS}
     res.update({part: analyse(*raw[part], part) for part in PARTS})
@@ -162,4 +189,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--worker":
+        part, arch = sys.argv[2], sys.argv[3]
+        (SHARDS / f"{part}_{arch}.json").write_text(json.dumps(worker(part, arch)))
+        raise SystemExit(0)
     raise SystemExit(main())

@@ -1102,3 +1102,33 @@ The 55 fitted patients may be used as replay patients (P1, to register next).
 The literature note's "their sum" line is corrected to name cost + turnover.
 The paper may say our fits reproduce Strobl's fit quality and ridge, and that
 the relapse separation holds in direction only, at p 0.04 post hoc.
+
+## [2026-10-01] — P1 MET as registered: both negatives replicate on the 55 Bruchovsky-fitted patients, but MTD never progresses there within a year, so the replay mostly tests drug use
+**Verdict:** FROZEN — no continuous-time edge and no learned arm above MTD at 50% missed, on fits to real patients; low TTP power · **Gate:** H1 (p 0) ODE−MLP −44.0 [−59.5, −30.5], ODE−LSTM −2.4 [−28.1, +27.7]; H2 (p 0.5) − MTD: MLP −41.4 [−58.7, −25.3], LSTM −1.0 [−12.8, +10.0], ODE −13.2 [−33.2, +3.3], LSTM+Δt −16.2 [−34.3, −2.7] · w 0.05, p 0: capped median TTP 357 [357–357] for MLP, LSTM, ODE, MTD; censoring 0.97 / 0.78 / 0.83 / 1.00; exposure 149 / 236 / 221 / 357; burden integral 1.52e6 / 0.88e6 / 0.84e6 / 0.64e6 · one-sided Wilcoxon p(ODE > MLP) = 1 at every w · 10 seeds × 4 w × 55 fits per part, ITT, 0 non-finite · **Artifacts:** `research/p1_replay.py`, `research/outputs/p1_replay.{json,log}`, `p1_shards/`
+
+### Context
+PREREG P1 (d85fa4a), committed before any replay. S1's 280 saved policies and
+the rules, no retraining, on R2's fits ([L1075](#L1075)). The first launch
+died of the L207 JIT-mapping leak (one process, 280 policies); re-run as one
+process per (part, arch), with no change to the statistic. **Met as registered.**
+
+### Results
+- **H1: no edge replicates.** ODE−MLP and ODE−LSTM match S1's Tier 0 on
+  simulated Strobl patients (−50.4 [−65.7, −36.2], −8.4 [−35.8, +25.0]).
+- **H2: no learned arm beats MTD at 50% missed.** ODE−MTD −13.2 [−33.2, +3.3]
+  vs S1's −13.5 [−33.0, +2.3]. Best is LSTM, a tie, as in S1 (+5.4). The
+  patient-level Wilcoxon favours LSTM over MTD at some w (min p 5e-31); the
+  registered seed+patient CI covers 0.
+- **In Strobl's box (20 fits):** same readings (ODE−MLP −38.0 [−49.2, −27.4],
+  LSTM−MTD +6.8 [−5.4, +18.6]). MLP ties thr0.8 (−2.3 [−6.0, +1.4]).
+- **Low TTP power.** MTD keeps all 55 fits progression-free over 357 d, and
+  every learned arm's median TTP is the cap, so U differences come mostly from
+  drug and from the 3–22% of patients who progress. AT50 progresses early
+  (median 126 d [105–175]) because our nadir rule fires on its planned regrowth.
+  This matches R2: 80% of fits meet Strobl's indefinite-control criterion.
+
+### Decision
+The paper may say both negatives replicate on models fitted to 55 real
+patients' PSA, with the caveat that MTD controls every fitted patient for a
+year there, so the replay tests drug use more than time to progression. No
+clinical claim. No further replay runs for this paper.
