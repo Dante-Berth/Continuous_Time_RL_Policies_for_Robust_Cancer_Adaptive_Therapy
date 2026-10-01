@@ -1038,3 +1038,36 @@ program's only family with a resistance mechanism, so any adaptive-therapy
 result is LV-only. No θ, PK/effect, TTP-rule or policy change is tried. Re-open
 only with 1°-read literature ranges and a drug-effect scale (new data), plus, for
 Kuznetsov, a resistance mechanism (a new model, not a re-parametrization).
+
+## [2026-10-01] — T1 reward-limited: with 10× PQN's gradient steps the full-information reference ties the MLP on training reward but still trails it by 20 d on U
+**Verdict:** OPEN — the trainer no longer binds; the reward (no TTP term) does, so headroom stays unmeasured · **Gate:** Tier 0 Δ U O_full−MLP −19.6 [−25.2, −14.7] (all 10 seeds < 0), Tier 1 −53.7 [−66.7, −42.4]; R +2.07, higher in 19/40 cells · w 0.05, Tier 0: capped median TTP MLP 357 [336–357], O_full 357 [252–357]; exposure 217 / 184; burden integral 1.42e6 / 1.61e6 · one-sided Wilcoxon p(O_full > MLP) 0.99–1.0 at w ≤ 0.2, 0.28 at w 0.4 · 10 seeds × 4 w × 200 test pts, ITT, 0 non-finite · **Artifacts:** `research/t1_steps.py`, `research/outputs/t1_steps.{json,log}`, `t1_shards/`, `t1_policies/`
+
+### Context
+PREREG T1 (191e1e3), committed before any cell ran; a follow-up program to S3
+([L840](#L840)), which named "more gradient steps" as a new registration. The
+one change: 3000 updates instead of 300 at 1024 patients per update. **Failed
+as registered** (the gate did not open); reading "reward-limited"; no amendment.
+
+### Results
+In the registered order: the CI lower bound is not > +10 d; R is > 0, so not
+"still trainer-limited"; the CI upper bound is < 0 ⇒ **reward-limited**.
+- **Steps help the reference only.** O_full +22.0 [+9.7, +34.1] vs its S3
+  cells, MLP +0.2 [−0.7, +1.2]. The gap halves (S3 −41.4 → −19.6) and the
+  training-return deficit turns positive (S3 −2.80 → +2.07).
+- **R is a tie, not a win:** higher in 19/40 cells. What holds firmly is that
+  the reference now optimises the reward about as well as the MLP and still
+  loses on U, at every w (−24.3 at w 0.05 to −12.0 at w 0.4) and at Tier 1.
+- It doses less (184 vs 217) and carries more burden (1.61e6 vs 1.42e6) with a
+  wider TTP spread (IQR 252–357 vs 336–357). The reward penalises burden above
+  1.2 × nadir and dose, never TTP ([L739](#L739)), so a policy can trade TTP
+  for drug at no reward cost.
+- Descriptive: MLP mean U at Tier 0 316.8 / 306.8 / 286.5 / 247.5 over w vs
+  thr0.8 315.0 / 303.3 / 279.9 / 233.0; at w 0.05 the MLP again only ties the rule.
+
+### Decision
+PQN is not retired: the kill fires only on "still trainer-limited". The
+binding constraint is now the reward. The next admissible step is a reward with
+a TTP term, under the same gate (the reference must beat the MLP by > +10 d),
+as a new registration. No continuous-time re-run until then. LAW L1's mechanism
+stays untested; its paragraph and the paper's trainer caveat are updated to say
+the trainer, given steps, is no longer the limit and the reward is.

@@ -59,12 +59,15 @@ at this budget, extra state lowers U whether it is remembered or given, so
 "nothing to integrate" and "the trainer cannot integrate it" are not yet told
 apart. At PQN's published parallelism (1024 patients per update, S3) the
 reference is still 41 d below the MLP
-([L840](adaptive_therapy/RESEARCH_LOG.md#L840)). (L461's "≥ 0.94 of doses explained" is 1 by construction for a
+([L840](adaptive_therapy/RESEARCH_LOG.md#L840)). With 10× the gradient steps (T1) it ties the MLP on
+training reward yet trails it by 20 d on U
+([L1042](adaptive_therapy/RESEARCH_LOG.md#L1042)): the trainer no longer binds,
+the reward does (it has no TTP term). (L461's "≥ 0.94 of doses explained" is 1 by construction for a
 memoryless arm; the finding is the threshold shape.)
 
 **Rejects without further work:** any Tier-0/1 re-run on LV proposing a
 different continuous-time cell (LTC, Neural CDE), width or curriculum. Each is a
-re-parametrization. **A different trainer or budget** is admissible only with
+re-parametrization. **A different trainer, budget or reward** is admissible only with
 demonstrated headroom: under it, S2's full-information reference must beat the
 burden-only MLP on a seed+patient CI. Without that, it is a re-parametrization
 too ([L804](adaptive_therapy/RESEARCH_LOG.md#L804)).
