@@ -1071,3 +1071,34 @@ a TTP term, under the same gate (the reference must beat the MLP by > +10 d),
 as a new registration. No continuous-time re-run until then. LAW L1's mechanism
 stays untested; its paragraph and the paper's trainer caveat are updated to say
 the trainer, given steps, is no longer the limit and the reward is.
+
+## [2026-10-01] — R2: Strobl 2021's Bruchovsky fits reproduce on fit quality and the cost–turnover ridge; the relapse separation only in direction (p 0.04, post hoc)
+**Verdict:** OPEN — fitted patients usable for replay (kill did not fire); Strobl's relapse claim is weaker here · **Gate:** n/a (fit reproduction, no policy): F1 excluded 12 (want 10–20; Strobl 15) PASS; F2 Pearson(r̂_R, d̂_T) 0.73 (≥ 0.5; Strobl 0.77) PASS; F3 as registered (r̂_R + d̂_T) Mann-Whitney U 223, p 0.70 FAIL · post hoc, Strobl's cost + turnover: U 144, p 0.040 (Strobl U 82, p < 1%) · 67 patients, 25 restarts, deterministic · **Artifacts:** `research/r2_bruchovsky_fit.py`, `research/outputs/r2_bruchovsky_fit.{json,log}`; data gitignored
+
+### Context
+PREREG R2 (581e2f8; amendment 459bc42, before any fit: rows sorted by day).
+Strobl p.6 protocol on the 67 non-metastatic Bruchovsky IADT patients with our
+own `vector_field`. R1 ([L871](#L871)) verified Strobl's simulations, not its fits.
+**Failed as registered** on F3. The kill (> 25 excluded) did not fire.
+
+### Results
+- **Fit quality and ridge reproduce.** 55 of 67 kept (median r² 0.77). Cost
+  and turnover are anticorrelated (Pearson(cost, d̂_T) −0.73; Strobl "strong
+  negative correlation … 0.77", p.10).
+- **F3 was mis-registered, and that is my error.** p.10 tests the sum of
+  *cost* (1 − r̂_R) and turnover; the registration wrote r̂_R + d̂_T, from an
+  ambiguous line in our literature note. I read p.10 only after F3 failed, so
+  the corrected test is **post hoc, with selection risk**: U 144, p 0.040, in
+  Strobl's direction (median 0.78 relapse vs 0.88 non-relapse; 11 vs 44
+  patients). Neither variable alone separates (p 0.92, 0.20), as in Strobl
+  (p.10). The direction reproduces; the strength (p < 1%) does not.
+- Descriptive: medians r̂_R 0.46, d̂_T 0.31, n0 0.63, f_R 0.013; 36% inside
+  Strobl's sweep box (r̂_R ≥ 0.5, d̂_T ≤ 0.5), so 64% lie outside M1's bins;
+  80% meet Strobl's indefinite-control criterion (p.9); r̂_R spread > 0.1 among
+  near-best restarts in 3.6%. That is optimiser agreement, not identifiability.
+
+### Decision
+The 55 fitted patients may be used as replay patients (P1, to register next).
+The literature note's "their sum" line is corrected to name cost + turnover.
+The paper may say our fits reproduce Strobl's fit quality and ridge, and that
+the relapse separation holds in direction only, at p 0.04 post hoc.
