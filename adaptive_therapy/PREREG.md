@@ -1125,3 +1125,26 @@ cohort or margin after a run.
 **Compute.** Measured: 0.67 s per 1000 rollouts under V2's load; ≈ 26M rollouts
 ≈ 5 h CPU.
 **Artifacts:** `research/o1_oracle.py` → `research/outputs/o1_oracle.{json,log}`, `o1_shards/`.
+
+## [2026-10-02] — O1b: is O1's headroom full information, or one fixed threshold the MLP did not learn?
+
+**Why.** O1 read "headroom" (oracle − MLP +23.1 d [+20.3, +25.8]); its tuned
+thresholds cluster at 1.15 × baseline (IQR 1.05–1.20), far from the MLP's
+learned ~0.8 (seen in O1's descriptive output, **so this split is registered
+after seeing O1**). If one fixed, burden-only level captures most of the
+gain, the headroom is not about information. It is a memoryless rule that PQN's
+reward did not lead to.
+**Design.** O1's cohorts, levels (0.30–1.50 by 0.05) and noise-free rule
+rollouts (re-run; deterministic). *Global rule*: per w, the level maximising
+mean U on the other nine seeds' cohorts, scored on the held-out seed (leave
+one seed out); burden-only, memoryless, no information about the test patient.
+Statistics, seed+patient CI (`w4.delta_ci`): Δ_G = U(global) − U(MLP), the
+**learnable-without-memory** part; Δ_I = U(tuned) − U(global), the **value of
+patient-specific information**. The global rule here is noise-free; its score
+with S1's 5% observation noise is reported beside it (descriptive).
+**Readings.** Δ_I hi < +10 d and Δ_G lo > +10 d ⇒ "the headroom is a fixed
+threshold PQN's reward did not reach, not information". Δ_I lo > +10 d ⇒
+"patient-specific information is worth > 10 d: memory has something to
+recover". Else mixed, report both.
+**No-move.** No other policy class, level grid or selection rule after a run.
+**Artifacts:** `research/o1b_split.py` → `research/outputs/o1b_split.{json,log}`.
