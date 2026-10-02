@@ -1028,3 +1028,40 @@ policies on Zhang patients may be registered. Otherwise no second-family
 claim. No change to parameters, initial-state rule, tolerances or progression
 readings after a run.
 **Artifacts:** `research/v5_repro.py` → `research/outputs/v5_repro.{json,log}`.
+
+## [2026-10-02] — V5d: with Zhang 2017's Supplementary Information, does one declared reading of the unstated details reproduce Supplementary Table 3?
+
+**Why.** V5c failed from the main text ([L1176](RESEARCH_LOG.md#L1176)); its
+re-open condition was the SI (new data), now on disk as
+`literature/pdf/url-zhang-2017-mcrpc-at-SI.pdf` (3 pp.). The SI adds targets
+(Supp. Tables 1 and 3, all 22 competition orderings; Patient #1 = row 7,
+Patient #2 = row 5, p.3), but **not** the time unit, the integration scheme or
+the seeding of T−. So V5d declares a small reading space up front and asks
+whether exactly one reading fits many independent numbers.
+**Part 1 — structure, no time axis.** (S1) Assign {0.4, …, 0.9} to the six
+off-diagonal α_ij (row i, column j) under the six inequalities of p.7; exactly
+22 assignments ⇒ our reading of the inequalities is the paper's. (S2) The
+untreated equilibrium frequencies of the 22 (V5's integration, k = [1.5 TP,
+10,000, 10,000]) match Supp. Table 1's second column as a multiset, by optimal
+assignment, within ±2 percentage points per cell (the table is rounded to
+integers). Table 3's two matrices must land on rows 7 and 5. Fails ⇒ the model
+as transcribed is not the paper's, and Part 2 is not run.
+**Part 2 — time readings, declared now.** R-a: ODE, r = 0.1 × cell-line rates
+(V5's reading). R-b: ODE, r = 0.01 ×. R-c: discrete-time map, one step per unit,
+x ← x + r x (1 − Σα x/K) and PSA ← PSA + Σx − 0.5 PSA ("50% of the PSA decays
+out of the serum each time step", p.8), r = 0.1 ×. R-d: R-c with r = 0.01 ×.
+**R-b and R-d were suggested by V5's 7–10× gap; that is declared selection.**
+Initial state and treatment start as V5 (p.8); adaptive: off below 50% of the
+start PSA, on at or above it; horizon 10,000 units. Targets: every
+row of Supp. Table 3 whose Supp. Table 1 equilibrium has T− > 0 (rows 12, 5, 2,
+6, 18, 1, 4, 3, 11, 17), MTD and adaptive, 5% and 90% T−: 40 cells, where "---"
+means not reached by 10,000. Rows are matched to our orderings by Part 1's
+assignment. Rows with T− = 0 are excluded: the SI gives no seeding rule.
+A cell is hit if within max(3%, 3 units), or "---" on both sides.
+**Pass.** A reading passes at ≥ 36 of 40 cells (90%). Exactly one passes ⇒ it
+becomes the Zhang simulator, and a replay of S1's policies may be registered.
+None ⇒ Zhang 2017 is closed as not reproducible from paper + SI. More than one
+⇒ ambiguous: no simulator is adopted.
+**Kill / no-move.** No reading outside R-a–R-d, no change to tolerance, rows or
+horizon after a run. Metronomic is skipped (schedule durations not given).
+**Artifacts:** `research/v5d_zhang_si.py` → `research/outputs/v5d_zhang_si.{json,log}`.
