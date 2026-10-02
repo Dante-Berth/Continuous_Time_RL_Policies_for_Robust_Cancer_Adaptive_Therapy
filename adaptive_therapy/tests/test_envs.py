@@ -5,10 +5,12 @@ later refactor must not break, and several of them encode a specific trap named
 in PROJECT.md rather than a generic sanity check.
 """
 
+import diffrax
 import jax.numpy as jnp
+import numpy as np
 import pytest
 
-from adaptive_therapy.envs import hahnfeldt, kuznetsov, lotka_volterra
+from adaptive_therapy.envs import hahnfeldt, kuznetsov, lotka_volterra, zhang2017
 from adaptive_therapy.envs.base import SolverConfig, observe
 from adaptive_therapy.envs.cohort import solve_cohort, solve_one_patient
 
@@ -205,3 +207,29 @@ def test_default_ranges_are_the_provisional_box_so_logged_runs_reproduce():
     assert (a.thetas == b.thetas).all() and (a.y0s == b.y0s).all()
     with pytest.raises(ValueError):
         sample_cohort("hahnfeldt", 5, ranges="strobl2021")
+
+
+# --- Zhang 2017 ---------------------------------------------------------------
+
+
+def _zhang_settle(drug: float, y0, days: float = 20_000.0):
+    theta = zhang2017.theta_for(zhang2017.PATIENT_2)
+    sol = diffrax.diffeqsolve(
+        diffrax.ODETerm(zhang2017.vector_field), diffrax.Tsit5(), 0.0, days, 0.1,
+        jnp.asarray(y0), args=(theta, drug),
+        stepsize_controller=diffrax.PIDController(rtol=1e-7, atol=1e-7), max_steps=200_000,
+    )  # fmt: skip
+    return np.asarray(sol.ys[-1])
+
+
+def test_zhang_psa_settles_at_twice_the_cell_total():
+    """Eq. 2 (p.8): PSA' = sum x - 0.5 PSA, so at rest PSA = 2 sum x."""
+    y = _zhang_settle(0.0, [1000.0, 1000.0, 1000.0, 0.0])
+    assert y[3] == pytest.approx(2.0 * y[:3].sum(), rel=1e-4)
+
+
+def test_continuous_abiraterone_hands_the_tumour_to_androgen_independent_cells():
+    """Competitive release, the mechanism the paper's MTD arm shows (p.3)."""
+    off = _zhang_settle(0.0, [1000.0, 1000.0, 1000.0, 0.0])
+    on = _zhang_settle(1.0, off)
+    assert on[2] / on[:3].sum() > 0.9 > off[2] / off[:3].sum()

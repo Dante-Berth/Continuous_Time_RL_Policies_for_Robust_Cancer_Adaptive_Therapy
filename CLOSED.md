@@ -94,6 +94,13 @@ and every sparing rule progresses at 28–42 d. With no resistant compartment,
 MTD is optimal by construction. LV is the program's only family with a
 resistance mechanism, so every adaptive-therapy result is LV-only.
 
+**Diagnosed 2026-10-02** (V5, [L1176](adaptive_therapy/RESEARCH_LOG.md#L1176)): with
+Hahnfeldt 1999 read `1°`, our vector field in the paper's own drug units
+regresses tumours under endostatin 20 mg/kg/day. The Hahnfeldt failure was our
+normalised drug scale, not the model. The registered reproduction still missed
+2 of 5 targets narrowly, and the model has no resistance, so this item stays
+closed for dosing.
+
 **Do not re-propose:** widening or shifting the provisional θ ranges, rescaling
 the PK/effect map, another TTP rule, visit interval or policy set on these two
 families. Each is a re-parametrization chosen after seeing this result.

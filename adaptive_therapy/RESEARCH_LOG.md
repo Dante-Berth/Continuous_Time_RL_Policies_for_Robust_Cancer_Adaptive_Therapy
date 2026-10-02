@@ -1172,3 +1172,43 @@ MTD sentence becomes: below MTD on mean U over one year; the LSTM above it for
 the median patient; every arm above it on U over three years, mostly through
 drug saved. CLOSED #2 is untouched. Declared risk (1) applies to V1c: the
 policies run 3× past their training horizon.
+
+## [2026-10-02] — V5 FAILED as registered: Hahnfeldt 1999 reproduces in its own drug units to within 3–10%, so W5-pre's "drug cannot outpace growth" was our scaling; Zhang 2017 does not reproduce from its main text
+**Verdict:** CLOSED — V5a misses 2 of 5 targets narrowly (Hahnfeldt stays closed for dosing); V5c misses by ~7× (no second-family claim) · **Gate:** n/a (model reproduction, no policy; deterministic): V5a H1 17,347 vs 17,400 mm³, H2 11,918 vs 12,300 (−3.1%, tol 3%), H3 236 vs 240, H4 2033/1431 vs 1840/1300 (+10.5%, tol 10%), H5 endostatin 20 → 100 mm³, 4 → 2414, TNP-470 → 2657 at day 15 (pass) · V5c Patient #2: 5% T− day 27 vs 323, 90% T− under MTD day 104 vs 784, adaptive reaches 90% at 116 vs never · **Artifacts:** `research/v5_repro.py`, `research/outputs/v5_repro.{json,log}`, `adaptive_therapy/envs/zhang2017.py`
+
+### Context
+PREREG V5 (cd55e4d), before any simulation. Both PDFs read `1°` today.
+Hahnfeldt: our `vector_field` unchanged, its drug term driven by the paper's
+bolus PK in mg/kg (Eq. C3, p.4773; Table 1, p.4771). Zhang: Eq. 1–2, Table 3
+(p.7–8), new `envs/zhang2017.py`.
+
+### Results
+**V5a — failed as registered, narrowly.** Three targets pass: the untreated set
+point (analytic (b/d)^1.5 = 17,347), angiostatin 14 mg/kg/day (overshoot to 301,
+then 236), and the dose response of H5. H2 misses by 3.1%, but is the same
+from V0 = 170, 12,300 and 17,300, as p.4774 states. Post hoc, descriptive:
+sampling 200 points per interval leaves it at 11,916, so the miss is real and
+small. H4's bolus/continuous ratio is 1.42 vs the paper's 1.415. Post hoc: from
+V0 = 170 (the TNP-470 start of Fig. 4 II, p.4774) day 13 is 1833/1289, within
+1%. The registered V0 was p.4772's "≈200".
+**What it settles anyway.** In the paper's units endostatin 20 mg/kg/day gives
+e·g ≈ 0.66 × 12 ≈ 8 /day and regresses the tumour (H5). W5-pre capped the
+drug term at e·u ≤ 0.8 /day through our normalised Emax PK ([L1004](#L1004)).
+Its "the drug cannot outpace vascular growth" was our scaling, not the model.
+The model is a mouse one: days, daily boli, set points in weeks.
+**V5c — failed.** Patient #2's equilibrium has 2.4% T− (330 of 13,861 cells),
+which reaches 5% by day 27, before treatment starts (day 97). Under MTD, T−
+is at 90% by day 104: growing at r = 0.0665 /day it needs about ln(110)/r ≈ 70 d,
+and the paper's 461 d is about 7× slower. Patient #1 (T− = 1.7e-128 at
+equilibrium, a numerical seed; declared not reproducible) lands near Table 1
+by accident of that seed: MTD 90% at 4641 vs 4621, adaptive 5% at 8592 vs 8557.
+The main text does not fix the time unit, the seeding of T−, or how MTD
+starts. The Supplementary Information, not obtained, may.
+
+### Decision
+Hahnfeldt stays closed for dosing (CLOSED #3), but the paper may now say the
+W5-pre failure traced to our drug scaling, with H5 as evidence. Zhang 2017
+gives no second-family claim from its main text. Re-open only with its
+Supplementary Information (new data), under a fresh registration; V5's
+tolerances and targets do not move. `envs/zhang2017.py` stays as the
+main-text transcription.

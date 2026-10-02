@@ -12,9 +12,12 @@ VASCULATURE, not competition for a fixed capacity. An LV-tuned burden threshold
 has no mechanistic reason to transfer here, which is what makes the Tier-2
 structural shift a real test rather than a re-parametrisation.
 
-Equations: PROJECT.md 6.2 / Hahnfeldt et al. Cancer Research 1999. Ranges:
-PLOS One 2015 (doi-10.1371-journal.pone.0120007). Both `2` -- unread -- so
-neither may be cited in a design argument yet.
+Equations: Hahnfeldt et al. Cancer Research 1999, Eqs. C1/C4 (read 1 deg
+2026-10-02; lambda2 = 0 as fitted there). Ranges: PLOS One 2015
+(doi-10.1371-journal.pone.0120007), still 2 deg. The paper's drug term is
+e*K*g(t) with g in mg/kg, not a dose clipped to [0, 1]: through this function,
+pass dose = 1 and e*g in theta (research/v5_repro.py). W5-pre's normalised
+dose made the drug ~10x too weak (RESEARCH_LOG L1176).
 """
 
 from __future__ import annotations

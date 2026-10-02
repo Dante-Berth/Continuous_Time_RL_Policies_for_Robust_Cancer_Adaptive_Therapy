@@ -258,7 +258,7 @@ mean TTP net of exposure: bounded by the cap, so it has no unbounded tail.
 Report V1b beside it. (iii) Fold V1c into the horizon paragraph. (iv) State the
 reward deviation from the spec plainly, with V1a and, when available, V2.
 
-### V5 — The W5-pre failures are our implementation; a second family with resistance
+### V5 — The W5-pre failures are our implementation; a second family with resistance — *(a), (c) FAILED as registered:* [L1176](adaptive_therapy/RESEARCH_LOG.md#L1176); (c) re-opens only with Zhang 2017's Supplementary Information
 
 **Diagnosis, from the code (2026-10-02; both sources still `2°`).** Neither
 failure in [L1004](adaptive_therapy/RESEARCH_LOG.md#L1004) is a property of the

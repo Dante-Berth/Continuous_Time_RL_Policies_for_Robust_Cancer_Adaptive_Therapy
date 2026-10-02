@@ -2,59 +2,71 @@
 id: url-zhang-2017-mcrpc-at
 title: "Integrating evolutionary dynamics into treatment of metastatic castrate-resistant prostate cancer"
 authors: "Zhang J, Cunningham JJ, Brown JS, Gatenby RA"
-venue: "Nature Communications 2017 (referenced by Strobl 2021)"
+venue: "Nature Communications 2017;8:1816, doi 10.1038/s41467-017-01968-5 (PMID 29180633, PMC5703947)"
 peer_reviewed: yes
 date_published: 2017
-date_reviewed: "?"
+date_reviewed: 2026-10-02
 pdf_url: https://doi.org/10.1038/s41467-017-01968-5
-provenance: 2
-status: queued
+provenance: 1
+status: reviewed
 relevance_tier: 2
 
-object: policy
-model_family: lotka-volterra
+object: model
+model_family: other
 observability: burden-only
 endpoint: TTP
-seeds: "?"
+seeds: "n/a: two representative competition matrices (Table 3, p.8); trial n = 11 (p.4)"
 identifiability_contact: no
 
 route: threshold
 law_contact: none
-headline: "The clinical adaptive-therapy algorithm: dose on PSA rise, withdraw on PSA fall past a fraction of baseline"
-verdict_line: "The AT algorithm itself -- the burden-threshold rule Gallagher's learned policy collapsed to. The interpretable structure Q1-alt asks whether a policy can preserve."
+headline: "Three-type LV (T+, TP, T−) with producer-dependent capacities: abiraterone cuts K_TP 10,000 → 100 and K_T+ 1.5 → 0.5 x_TP (Eq. 1, p.7); PSA′ = Σx − 0.5 PSA (Eq. 2, p.8); AT stops at 50% of baseline PSA, resumes at baseline (p.8)"
+verdict_line: "The candidate second family with resistance. Its Table 1 does NOT reproduce from the main text (Patient #2: 90% T− under MTD at day 104 vs 784; V5, RESEARCH_LOG L1176). Re-open needs the Supplementary Information."
 ---
 
 # Integrating evolutionary dynamics into treatment of mCRPC
 
-> **Provenance: `2°` — NOT READ.** Seeded from the verified reference list in
-> [PROJECT.md](../../PROJECT.md) §12-REF. The citation resolves; the paper has
-> not been read from the PDF. **No cell in this file may be cited in a design
-> argument** until it is promoted to `1°` (REVIEW_PROTOCOL.md §0.3).
+> **Provenance: `1°`.** Read from `literature/pdf/url-zhang-2017-mcrpc-at.pdf`
+> (9 pp.). Locators are article pages. The Supplementary Information was not
+> obtained; it holds Supplementary Tables 1–3 (cited p.4).
 
 ## Screen (§1)
 
 | # | Field | Value |
 |---|---|---|
-| S1 | Object | `policy` — a clinical protocol, not a learned one |
-| S2 | Model family | `lotka-volterra` |
-| S3 | Observability | `burden-only` (PSA) |
-| S4 | Endpoint | `TTP` |
-| S5 | Seeds | `?` — clinical trial, not a simulation study |
+| S1 | Object | `model` plus a pilot trial of its rule (n = 11, p.4) |
+| S2 | Model family | `other`: three-type LV competition with drug-dependent capacities (p.7) |
+| S3 | Observability | `burden-only`: the protocol reads PSA (p.8) |
+| S4 | Endpoint | TTP: radiographic progression; in the model, T− takes over with PSA above 50% of pre-treatment (p.8) |
+| S5 | Seeds | n/a: deterministic; two representative matrices (Table 3, p.8) |
 
 ## What it does
 
-*(pending — requires reading the PDF)*
+dx_i/dt = r_i x_i (1 − Σ_j α_ij x_j / K_i) for T+ (androgen-dependent), TP
+(testosterone-producing) and T− (androgen-independent) cells (Eq. 1, p.7).
+r = 0.1 × (0.278, 0.355, 0.665) /day, scaled from cell-line doubling times
+(p.7). K_T+ = 1.5 x_TP off drug, 0.5 x_TP on; K_TP = 10,000 off, 100 on; K_T− =
+10,000 (p.7). α_ij: row i, column j; α_ii = 1 and 0 < α_ij < 1, with six
+ordering rules (p.7); 22 orderings, valued 0.4–0.9 (p.7). Representative
+patients in Table 3 (p.8). PSA′ = Σx − 0.5 PSA (Eq. 2, p.8). Start: equilibrium
+frequencies at 25% of the untreated total; treat once PSA reaches 80% of
+equilibrium (p.8). Table 1 (p.7): times to 5% and 90% T−; Patient #2 323 for
+every regimen, MTD 784, adaptive "indefinite". Trial: median TTP ≥ 27 months on
+47% of the standard cumulative dose (p.4).
 
 ## What transfers
 
-*(pending — no locators until `1°`)*
+A resistance mechanism structurally different from our two-type LV: the drug
+acts on producer-dependent capacities, not on a growth term. PSA is a burden
+observable with its own dynamics.
 
 ## What does not
 
-*(pending)*
+The main text does not fix the time unit, how T− arises when absent at
+equilibrium (Patient #1), or the metronomic schedule's durations (p.3, p.8).
+From the main text alone, Patient #2's Table 1 times are off by ~7× (V5, L1176).
 
 ## Contact with our design
 
-The human-designed threshold rule that any learned policy is implicitly compared
-against. PROJECT.md Q1-alt asks whether that interpretable structure survives
-when the driving mechanism is unknown — this is the structure in question.
+The AT50-style trial rule this program's thresholds descend from. As a second
+simulator it needs the Supplementary Information and a fresh registration.
