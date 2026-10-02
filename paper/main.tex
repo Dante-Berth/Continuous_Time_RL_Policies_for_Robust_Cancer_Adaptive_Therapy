@@ -35,12 +35,12 @@ policy at regular visits. The MLP learns a burden-threshold rule close to a
 one-line clinical rule. Over one year with half of the visits missed, no
 learned policy beats a fixed maximum-dose schedule on average, and the arm that
 degrades most gracefully is a plain LSTM. The negative replicates on a second parameter
-regime, and on models fitted to 55 patients' PSA. A reference policy that also
-sees the hidden state scores lower still; with ten times the gradient steps it
-matches the MLP on the training reward but not on progression time, so the
-reward, which has no progression term, limits what the comparison can show. The
-reward does not explain the architecture gap itself: the recurrent arms earn
-less of it than the MLP.
+regime, and on models fitted to 55 patients' PSA. The task is not saturated: a
+per-patient search on the true simulator, with no trainer, beats the MLP by
+about 25 days. A third of that is a fixed threshold the MLP could have learned.
+The rest comes from observing the burden exactly and from knowing the patient,
+which bounds what memory could add at about 15 days. Recurrent training cost 40--50.
+The negative is a learning cost larger than the available benefit.
 Across cost of resistance and turnover, the share of missed visits at which
 feedback stops beating the fixed schedule is 10--50\% over one year. It is
 highest where resistance is cheap and turnover high, and it depends on the
@@ -69,9 +69,9 @@ evaluation, with only the Q-network swapped; the recurrent arms are matched at
 ${\sim}3{,}100$ Q-path parameters.
 \item \textbf{Negative results with seed+patient CIs}: no continuous-time edge
 in range (Tier~0), under a parameter shift (Tier~1), or under missed visits
-(Tier~4), on two parameter regimes. A full-information reference locates the
-limit in the training setup (first the trainer, then the reward) rather than in
-the task.
+(Tier~4), on two parameter regimes. A trainer-free full-information bound
+shows the task has headroom and splits it: at most ${\sim}15$ days were
+available to memory, while recurrent training cost 40--50.
 \item \textbf{A task finding.} At regular visits the best learned policy is a
 burden threshold. Over one year with half of the visits missed, no learned
 policy beats dosing at the maximum tolerated dose, on either parameter regime.
@@ -176,35 +176,51 @@ Tier~1, and \SAUMlpZero\ vs \SAUThrZero\ at Tier~0. With PQN's published
 parallelism (below) the MLP edges past the rule, \SThreeUMlpZero\ vs
 \SThreeUThrZero\ at Tier~0, by dosing less.
 
-\paragraph{Why memory does not help is not established.} A natural reading is
-that the current observation already carries what dosing needs, leaving memory
-nothing to recover. We tested it with a reference that is trained identically
-but also sees the hidden populations $S, R$ and the patient's parameters
-$\theta$. This is an owner-approved exception to burden-only observation, never
-an arm. Its $\Delta U$ against the burden-only MLP is \HFullZero\ at Tier~0
-($S, R$ only: \HStateZero), negative on every seed. It also earns less of the
-training reward, even on its own training patients, so the cause is neither
-reward misalignment nor overfitting. Under this trainer and budget, extra state
-lowers $U$ whether it is remembered (LSTM, ODE-RNN) or given (the reference).
-``Nothing to integrate'' and ``the trainer cannot integrate it'' are therefore
-not yet told apart. % S2, L804
-Our PQN collects 32 patients per update; the published setting is 1024. With
-1024, from a 2048-patient training cohort, the reference gains \SThreeBudgetFull\
-and the MLP \SThreeBudgetMlp, so a third of the gap closes. The reference still
-trails, at \SThreeFull, and still earns less training reward (\SThreeR, higher
-in \SThreeRPos\ cells). As pre-registered, the budget search ends there. % S3, L840
-A separately registered follow-up gives ten times the gradient steps. The
-reference gains \TOneStepFull\ more and the MLP \TOneStepMlp. The reference
-now earns as much training reward as the MLP (\TOneR, higher in \TOneRPos\
-cells) yet still trails, at \TOneFull: it doses less and lets more patients
-progress. The reward charges for burden above the nadir and for drug, but has
-no progression term, so it can be optimised without buying time to progression.
-The trainer no longer binds; the reward does. % T1, L1042
-The reward does not explain the gap between the architectures, though. On
-their own training patients the LSTM and the ODE-RNN earn less of the training
-reward than the MLP: $-20.7$ [$-28.4$, $-12.8$] and $-23.5$ [$-34.7$, $-14.0$]
-per episode, lower in 34 and 35 of 40 cells. They do not exploit the reward;
-they optimise it worse. % V1a, L1136
+\paragraph{What memory could have bought.} At regular visits the simulator is
+deterministic given the doses. The best policy with full information is
+therefore the best dose sequence for each patient, and no trainer is needed to
+bound it. A search on the true simulator, per test patient, beats the MLP by
+$+23.1$ [$+20.3$, $+25.8$] days of $U$. A threshold rule whose level is tuned to
+each patient does better still, $+26.0$ [$+23.5$, $+28.5$]: 14--19 more days to
+progression on 46--60 fewer days of drug. So the task has room the MLP does not
+reach. % O1, L1279
+That room splits into three near-equal parts (Table~\ref{tab:split}). About a
+third is a fixed, memoryless threshold near baseline, which the MLP could
+represent but did not learn: the training reward charges for burden between the
+nadir line and baseline. A second third is the value of observing the burden
+exactly rather than with 5\% noise. That bounds what filtering the observation
+history could recover. The last third is knowing each patient's best level,
+which bounds what inferring the patient from history could add. Memory could
+therefore have bought at most ${\sim}15$ days. Recurrent training cost 40--50.
+The negative result is a learning cost larger than the available benefit, not
+an absence of benefit. % O1b, L1310
+The recurrent arms also earn less of the training reward than the MLP on their
+own training patients ($-20.7$ [$-28.4$, $-12.8$] and $-23.5$ [$-34.7$, $-14.0$]),
+so they optimise the reward worse rather than exploiting it. % V1a, L1136
+A reference trained like the arms but also shown $S$, $R$ and $\theta$ never
+reached this headroom. It sat \HFullZero\ below the MLP, then \SThreeFull\ at
+PQN's published parallelism, and \TOneFull\ with ten times the gradient steps,
+where it ties the MLP on training reward. That reward has no progression term,
+so it can be optimised without buying time to progression. % S2 L804, S3 L840, T1 L1042
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{Where the full-information headroom comes from (Tier~0, days of $U$,
+mean over the four exposure prices, CIs over seeds and patients). Rows 1 and 2
+are post hoc. Fixed levels are chosen on the other nine seeds' patients.}
+\label{tab:split}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Component & $\Delta U$ & Needs \\
+\midrule
+Best fixed threshold under noise ($\approx 1.0\times$) $-$ MLP & $+10.8$ [$+8.1$, $+13.3$] & nothing the MLP lacks \\
+Exact vs noisy observation, fixed threshold & $+8.6$ [$+7.2$, $+10.5$] & filtering (memory) \\
+Patient-tuned vs fixed threshold & $+6.6$ [$+6.0$, $+7.2$] & inferring the patient (memory) \\
+\midrule
+Patient-tuned threshold $-$ MLP (total) & $+26.0$ [$+23.5$, $+28.5$] & \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[t]
 \centering
@@ -348,7 +364,7 @@ every comparison here.
 invalid ones. ``Valid'' means both arms passed the validity rule registered
 for that run.}
 \label{tab:runs}
-\begin{tabular}{@{}llll@{}}
+\resizebox{\linewidth}{!}{\begin{tabular}{@{}llll@{}}
 \toprule
 Run & Change & Outcome & Log \\
 \midrule
@@ -362,7 +378,7 @@ W3c & per-cell gate, $U$ primary & valid; no memory or CT edge & L565, L596 \\
 W4 & Tier 4, trained at 35\% missed & invalid: gate removed better cells & L632 \\
 W4b & intention-to-treat, MTD reference & FAIL: no CT edge & L668 \\
 S1 & Strobl ranges, W3c + W4b designs & FAIL: no CT edge, Tiers 0/1/4 & L766 \\
-S2 & reference that also sees $S$, $R$, $\theta$ & below the MLP: no headroom claim & L804 \\
+S2 & reference also sees $S$, $R$, $\theta$ & below the MLP & L804 \\
 S3 & S2 at PQN's published parallelism & still trainer-limited & L840 \\
 M1 & threshold rules vs MTD, cost $\times$ turnover bins & met: $p^*$ 0.10--0.50 & L896 \\
 M1b & M1 over three years & met; crossover moves later & L932 \\
@@ -371,11 +387,13 @@ W5-pre & rules on Hahnfeldt, Kuznetsov & FAIL: no TTP range; Tier 2 cut & L1004 
 T1 & S3 with $10\times$ gradient steps & reward-limited & L1042 \\
 R2 & Strobl's fits to the Bruchovsky cohort & 2/3 reproduce; relapse weaker & L1075 \\
 P1 & saved policies on the 55 fits & met: both negatives replicate & L1106 \\
-V5 & reproduce Hahnfeldt 1999, Zhang 2017 & FAIL: 3/5 and 0/4 targets & L1176 \\
-V5d/e & Zhang 2017 with its SI & structure 22/22; times $\le$15/40 & L1216, L1248 \\
-V1 & reward, medians, 3 years (post hoc) & not misalignment; LSTM $>$ MTD on medians & L1136 \\
+V5 & reproduce Hahnfeldt, Zhang & FAIL: 3/5, 0/4 targets & L1176 \\
+V5d/e & Zhang 2017 + SI & structure ok; times $\le$15/40 & L1216--48 \\
+O1 & full-information search, no trainer & headroom $+23$\,d & L1279 \\
+O1b & split of O1's headroom & $\le$15\,d reachable by memory & L1310 \\
+V1 & reward, medians, 3 y (post hoc) & no misalignment; LSTM $>$ MTD (medians) & L1136 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \section{Limitations}
