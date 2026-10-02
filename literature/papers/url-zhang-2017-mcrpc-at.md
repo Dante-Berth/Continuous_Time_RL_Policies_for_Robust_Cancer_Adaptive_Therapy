@@ -21,14 +21,14 @@ identifiability_contact: no
 route: threshold
 law_contact: none
 headline: "Three-type LV (T+, TP, T−) with producer-dependent capacities: abiraterone cuts K_TP 10,000 → 100 and K_T+ 1.5 → 0.5 x_TP (Eq. 1, p.7); PSA′ = Σx − 0.5 PSA (Eq. 2, p.8); AT stops at 50% of baseline PSA, resumes at baseline (p.8)"
-verdict_line: "The candidate second family with resistance. Its Table 1 does NOT reproduce from the main text (Patient #2: 90% T− under MTD at day 104 vs 784; V5, RESEARCH_LOG L1176). Re-open needs the Supplementary Information."
+verdict_line: "The candidate second family with resistance. Structure reproduces (22/22 SI equilibria within 1.9 pp); times do not from the main text (V5, L1176), and Table 3 Patient #1 contradicts the SI (V5d, L1216). No simulator adopted yet."
 ---
 
 # Integrating evolutionary dynamics into treatment of mCRPC
 
 > **Provenance: `1°`.** Read from `literature/pdf/url-zhang-2017-mcrpc-at.pdf`
-> (9 pp.). Locators are article pages. The Supplementary Information was not
-> obtained; it holds Supplementary Tables 1–3 (cited p.4).
+> (9 pp.). Locators are article pages; `SI p.N` are pages of
+> `url-zhang-2017-mcrpc-at-SI.pdf` (3 pp.: Supp. Tables 1–3, all 22 orderings).
 
 ## Screen (§1)
 
@@ -65,6 +65,10 @@ observable with its own dynamics.
 The main text does not fix the time unit, how T− arises when absent at
 equilibrium (Patient #1), or the metronomic schedule's durations (p.3, p.8).
 From the main text alone, Patient #2's Table 1 times are off by ~7× (V5, L1176).
+The SI fixes the structure but not the time unit, the integration scheme or the
+T− seeding. Our equilibria match all 22 rows of Supp. Table 1 (SI p.1) within
+1.9 pp, but Table 3's Patient #1 matrix (p.8) is SI row 22, not row 7 (SI p.3):
+the paper contradicts itself there (V5d, L1216).
 
 ## Contact with our design
 

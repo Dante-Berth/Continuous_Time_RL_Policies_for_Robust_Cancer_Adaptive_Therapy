@@ -1212,3 +1212,35 @@ gives no second-family claim from its main text. Re-open only with its
 Supplementary Information (new data), under a fresh registration; V5's
 tolerances and targets do not move. `envs/zhang2017.py` stays as the
 main-text transcription.
+
+## [2026-10-02] — V5d FAILED as registered at its last structural check: our Zhang model reproduces all 22 SI equilibria within 1.9 pp, but the paper's own Table 3 Patient #1 matrix is SI row 22, not row 7
+**Verdict:** OPEN — Part 2 (time readings) not run, as registered; the failing check exposes a paper-internal inconsistency, not a transcription error · **Gate:** n/a (model reproduction, deterministic): S1 22 orderings under p.7's inequalities (want 22) PASS; S2 all 22 equilibria vs Supp. Table 1 within 1.9 pp (tol 2) PASS; Table 3 matrices → rows {Patient #1: 22, Patient #2: 5} (want 7, 5) FAIL · **Artifacts:** `research/v5d_zhang_si.py`, `research/outputs/v5d_zhang_si.{json,log}`
+
+### Context
+PREREG V5d (92dffce), registered after the SI arrived and before any V5d run.
+SI on disk as `literature/pdf/url-zhang-2017-mcrpc-at-SI.pdf`.
+
+### Results
+- **S1.** Assigning {0.4, …, 0.9} to the six α under the six inequalities of
+  p.7 gives exactly 22 matrices, the paper's count (p.7). Row i, column j is
+  the paper's reading.
+- **S2, multiset.** Our untreated equilibria match Supp. Table 1's
+  k = [1.5 TP, 1e4, 1e4] column row by row (optimal assignment). Worst cell
+  1.9 pp (row 12: 49.9/50.0/0.1 vs 48/50/2); rows with T− > 0 match within
+  0.6 pp. The transcribed model is the paper's model.
+- **S2, Table 3.** Patient #2's matrix (Table 3, p.8) gives 45.2/52.4/2.4 →
+  row 5, as the SI states (p.3). Patient #1's printed matrix gives 44.4/55.6/0
+  → row 22, which never progresses in Supp. Table 3. Row 7 (52/48/0), whose
+  times Table 1 reports for Patient #1, needs α(T+, TP) ≈ 0.4: K_T+ = 1.5 x_TP
+  gives T+/TP = 1.5 − α_12, and 52/48 means 1.1. Patient #1's printed α_12 is 0.7.
+  Either Table 3's Patient #1 matrix or the SI's "row 7" label is wrong. We
+  cannot tell which.
+
+### Decision
+As registered: the check failed, so Part 2 is not run under V5d, and no
+Zhang simulator is adopted. The check was meant to catch a wrong transcription,
+and the multiset match shows the transcription is right. Running Part 2 with
+rows assigned by the SI equilibria (Patient #1 is not among Part 2's rows
+anyway) would change the gate after seeing Part 1. That is the owner's call, as
+a fresh registration that declares this. LV stays the only family with
+resistance.
