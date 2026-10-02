@@ -10,8 +10,12 @@ Supp. Table 1 (equilibrium mix per ordering) and Supp. Table 3 (times to 5% and
   Part 2  readings R-a..R-d (ODE / discrete map x r-scale 0.1 / 0.01) on 40
           cells of Supp. Table 3; pass at >= 36.
 
-Run: JAX_PLATFORMS=cpu uv run python research/v5d_zhang_si.py
-     -> research/outputs/v5d_zhang_si.{json,log}
+  --v5e   PREREG V5e (7668890): the same Part 2, gated on S1 and the 22-row
+          equilibrium match only. Decided after V5d exposed that the paper's
+          Table 3 Patient #1 matrix is SI row 22, not row 7 (RESEARCH_LOG L1216).
+
+Run: JAX_PLATFORMS=cpu uv run python research/v5d_zhang_si.py [--v5e]
+     -> research/outputs/v5d_zhang_si.{json,log} | v5e_zhang_times.{json,log}
 """
 
 from __future__ import annotations
@@ -173,7 +177,7 @@ def part2(p1: dict) -> dict:
     return res
 
 
-def main() -> int:
+def main(v5e: bool = False) -> int:
     p1 = part1()
     print(
         f"== Part 1 == orderings {p1['n_orderings']} (S1 {p1['S1']}); worst match {p1['worst_pp']:.1f} pp (S2 {p1['S2_multiset']})"
@@ -183,9 +187,10 @@ def main() -> int:
     )
     for r, v in sorted(p1["per_row"].items()):
         print(f"  row {r:2d} ours {v['ours']}  theirs {list(v['theirs'])}  a={v['alphas']}")
-    res = {"prereg": "adaptive_therapy/PREREG.md V5d [2026-10-02]"}
+    tag = "V5e" if v5e else "V5d"
+    res = {"prereg": f"adaptive_therapy/PREREG.md {tag} [2026-10-02]"}
     res["part1"] = {k: v for k, v in p1.items() if not k.startswith("_")}
-    if p1["S1"] and p1["S2_multiset"] and p1["S2_table3"]:
+    if p1["S1"] and p1["S2_multiset"] and (v5e or p1["S2_table3"]):
         p2 = part2(p1)
         res["part2"] = p2
         print("== Part 2 ==")
@@ -199,9 +204,10 @@ def main() -> int:
         print(f"READING: {p2['reading']}")
     else:
         print("Part 1 failed: Part 2 not run, as registered")
-    RESULT.write_text(json.dumps(res, indent=2, default=str))
+    out = v5.OUT / "v5e_zhang_times.json" if v5e else RESULT
+    out.write_text(json.dumps(res, indent=2, default=str))
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(v5e="--v5e" in sys.argv))

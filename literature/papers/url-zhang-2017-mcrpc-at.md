@@ -21,7 +21,7 @@ identifiability_contact: no
 route: threshold
 law_contact: none
 headline: "Three-type LV (T+, TP, T−) with producer-dependent capacities: abiraterone cuts K_TP 10,000 → 100 and K_T+ 1.5 → 0.5 x_TP (Eq. 1, p.7); PSA′ = Σx − 0.5 PSA (Eq. 2, p.8); AT stops at 50% of baseline PSA, resumes at baseline (p.8)"
-verdict_line: "The candidate second family with resistance. Structure reproduces (22/22 SI equilibria within 1.9 pp); times do not from the main text (V5, L1176), and Table 3 Patient #1 contradicts the SI (V5d, L1216). No simulator adopted yet."
+verdict_line: "Structure reproduces (22/22 SI equilibria within 1.9 pp); published times do not under any of four declared readings (best 15/40, V5e, RESEARCH_LOG L1248), and Table 3 Patient #1 contradicts the SI (L1216). Closed as a simulator (CLOSED #4)."
 ---
 
 # Integrating evolutionary dynamics into treatment of mCRPC

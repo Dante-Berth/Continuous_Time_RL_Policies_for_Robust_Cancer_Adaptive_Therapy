@@ -1244,3 +1244,34 @@ rows assigned by the SI equilibria (Patient #1 is not among Part 2's rows
 anyway) would change the gate after seeing Part 1. That is the owner's call, as
 a fresh registration that declares this. LV stays the only family with
 resistance.
+
+## [2026-10-02] — V5e CLOSED: no declared reading reproduces Zhang 2017's progression times (best 15/40); the structure reproduces, the times do not, so LV stays the only family with resistance
+**Verdict:** CLOSED — "not reproducible from paper + SI", as registered; no second-family claim · **Gate:** n/a (model reproduction, deterministic): hits within max(3%, 3) of Supp. Table 3, 40 cells, pass ≥ 36: R-a (ODE, 0.1×) 14, R-b (ODE, 0.01×) 15, R-c (map, 0.1×) 14, R-d (map, 0.01×) 15 · **Artifacts:** `research/v5d_zhang_si.py --v5e`, `research/outputs/v5e_zhang_times.{json,log}`
+
+### Context
+PREREG V5e (7668890): V5d's Part 2, gated on S1 and the 22-row equilibrium
+match only. That gate was decided after V5d ([L1216](#L1216)) found the paper's
+Table 3 / SI inconsistency; owner-approved.
+
+### Results
+- **Every reading fails.** 10 of the 14–15 hits per reading are the trivial
+  cells where T− is already ≥ 5% at the start (the paper's "1", our 0). Under the
+  0.1× readings (R-a, R-c), MTD reaches 90% T− 6–8× sooner than the paper
+  (row 5: 104 / 99 vs 784). R-b and R-d each also hit row 6's adaptive 90% T−
+  (1584 / 1573 vs 1596).
+- **No single rescaling would fit (descriptive, no fifth reading run).** Under
+  R-b, MTD's 90% times are a steady 1.27–1.39× the paper's on all ten rows. The
+  5% times go the other way on some rows (row 12: 818 vs 673, ×1.22; rows 5
+  and 2: 261 vs 323 and 124 vs 161, ×0.8). Adaptive 90% runs short or long by row
+  (row 12: 2119 vs 4126). The paper's simulator differs from Eq. 1–2 in some
+  unstated way beyond the time unit.
+- Row 5 (Patient #2), adaptive: the paper says T− never reaches 90%; every
+  reading reaches it (R-b at 2529).
+
+### Decision
+Zhang 2017 is closed as a simulator for this program. Its structure
+reproduces (22/22 equilibria, [L1216](#L1216)), its published times do not under
+any declared reading. Re-open only with the authors' code or a statement of the
+integration scheme, the time unit and the T− seeding (new data). The paper's
+"LV-only" limitation stands. It may now say that a second resistance model was
+attempted, and why it could not be used.

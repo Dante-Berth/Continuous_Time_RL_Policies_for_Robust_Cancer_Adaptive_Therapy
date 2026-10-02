@@ -113,6 +113,25 @@ resistance mechanism (a new model).
 
 ---
 
+## 4. No second simulator with a resistance mechanism: Zhang 2017 does not reproduce
+
+**Closed 2026-10-02** by V5e ([L1248](adaptive_therapy/RESEARCH_LOG.md#L1248)).
+With the paper and its SI read `1°`, our transcription of its three-type model
+reproduces its structure: 22 orderings, and all 22 equilibria within 1.9 pp
+(V5d, [L1216](adaptive_therapy/RESEARCH_LOG.md#L1216)). None of four declared
+readings of its unstated time unit and integration scheme reproduces more than
+15 of 40 published progression times. Its Table 3 Patient #1 matrix also
+contradicts its own SI. Every result in this program is LV-only.
+
+**Do not re-propose:** a fifth time reading, a fitted time rescaling, another
+tolerance or another row set on this paper. Each is a re-parametrization
+chosen after seeing V5e.
+
+**Re-open condition:** the authors' code, or a statement of the integration
+scheme, time unit and T− seeding (new data).
+
+---
+
 The scope exclusions the spec declares up front are **not** closures — they were
 never opened, and they live in [PROJECT.md §2](PROJECT.md) ("explicit
 non-questions"): no clinical-outcome claims, minimal PK only, no real-patient RL
