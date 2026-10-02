@@ -1275,3 +1275,68 @@ any declared reading. Re-open only with the authors' code or a statement of the
 integration scheme, the time unit and the T− seeding (new data). The paper's
 "LV-only" limitation stands. It may now say that a second resistance model was
 attempted, and why it could not be used.
+
+## [2026-10-02] — O1 headroom: a full-information search beats the burden-only MLP by 23 d with no trainer involved, so the task has room the MLP does not reach
+**Verdict:** FROZEN — met as registered, reading "headroom" · **Gate:** Tier 0, Strobl ranges, Δ_O = U(oracle) − U(MLP) +23.1 d [+20.3, +25.8] (per w 8.6 / 16.1 / 23.2 / 44.5); tuned threshold − MLP +26.0 [+23.5, +28.5] · w 0.05: capped median TTP oracle 336 [336–357], tuned 357 [357–357], MLP 357 [315–357]; censored 24% / 65% / 67%; exposure 122 / 161 / 220; burden integral 1.98e6 / 1.95e6 / 1.34e6 · Wilcoxon not run (registered CIs only) · 10 seeds × 200 pts × 4 w, deterministic search · **Artifacts:** `research/o1_oracle.py`, `research/outputs/o1_oracle.{json,log}`, `o1_shards/`
+
+### Context
+PREREG O1 (afa0aa7). At regular visits the simulator is deterministic given the
+doses, so a per-patient dose-sequence search on the true model bounds the
+full-information optimum from below, with no RL trainer.
+
+### Results
+- **Headroom, as registered.** The oracle beats S1's MLP on the same patients
+  by +23.1 d, lower bound well above the +10 d margin. 51% of patient-cells
+  gain more than 10 d.
+- **The search lost to its own warm start.** oracle − tuned −2.9 [−3.7, −2.0];
+  in 54.5% of cells the returned sequence scores lower on U than (i). Declared
+  risk (2) fired: the online objective cannot see progression in the last 28 d.
+  61% of oracle patients progress there (median TTP 336), and the search
+  traded that for drug. The tuned threshold (i) is the tighter bound.
+- **Tuned threshold vs MLP (descriptive).** +14 to +19 d of capped TTP *and*
+  46–60 d less drug per w. Time is bought, not only drug saved. The chosen
+  levels cluster at 1.15 × baseline (IQR 1.05–1.20, every w), against the MLP's
+  learned switch near 0.8 ([L739](#L739)). They carry a larger burden integral
+  (1.95e6 vs 1.34e6), which the training reward charges for.
+- The search had converged: +8.7 mean objective over the warm start, +0.01 over
+  its last 5 iterations.
+
+### Decision
+The MLP's limit is not the task. Whether the room needs patient-specific
+information (something memory could recover) or only a higher fixed threshold
+is O1b, registered after seeing the level cluster. LAW L1's mechanism
+paragraph is amended. No continuous-time re-run follows from this entry.
+
+## [2026-10-02] — O1b: O1's 26 d of headroom splits into thirds — a better fixed threshold the MLP could have learned (11 d), exact observation (9 d), patient-specific information (7 d); at most ~15 d was ever available to memory
+**Verdict:** FROZEN — registered reading fired ("fixed threshold, not information") but its premise was flawed; the post-hoc noisy split is the account · **Gate:** Tier 0, seed+patient CI: Δ_G (noise-free level 1.05, LOSO) − MLP +19.4 d [+17.0, +21.9]; Δ_I tuned − global +6.6 [+6.0, +7.2]; same level under S1's 5% noise − MLP +2.6 [−2.1, +7.0] · w 0.05: capped median TTP 357 for all; censored global 82% / noisy 73% / MLP 67%; exposure 191 / 192 / 220; burden integral 1.79e6 / 1.81e6 / 1.34e6 · Wilcoxon not run · 10 seeds × 200 pts × 4 w · **Artifacts:** `research/o1b_split.py`, `research/outputs/o1b_split.{json,log}`, `o1b_shards/`
+
+### Context
+PREREG O1b (11be513), registered after O1's level cluster ([L1279](#L1279)) was
+seen. Leave-one-seed-out global threshold vs O1's tuned rule and S1's MLP.
+
+### Results
+- **As registered:** Δ_I's upper bound < 10 and Δ_G's lower bound > 10 ⇒ "the
+  headroom is a fixed threshold PQN's reward did not reach". Level 1.05 at
+  every w.
+- **The premise was wrong, and that is my error.** I called the noise-free
+  global rule "burden-only, memoryless, no information". It is memoryless, but it
+  sees the burden without the 5% noise every arm faces. Under S1's noise the
+  same level is only +2.6 [−2.1, +7.0] above the MLP (descriptive, as
+  registered).
+- **Post hoc, descriptive:** the best *noisy* fixed level (1.0; 0.95–1.0 at w
+  0.05), chosen leave-one-seed-out on noisy scores: − MLP **+10.8 [+8.1, +13.3]**.
+  Clean global − noisy best **+8.6 [+7.2, +10.5]**. With Δ_I +6.6, the three
+  parts sum to O1's tuned − MLP (+26.0).
+- **Reading of the split.** 11 d is a memoryless threshold near 1.0× baseline
+  that the MLP could represent but PQN's reward does not lead to: its burden
+  term charges for burden between the nadir line and baseline. 9 d is the value
+  of exact observation, an upper bound on what filtering (memory) could recover
+  from 5% noise. 7 d is patient-specific information, an upper bound on what
+  inferring the patient from history could add.
+
+### Decision
+Memory had at most ~15 d to gain (9 + 7, both upper bounds); recurrent training
+cost 40–50 d against the MLP (S1, [L766](#L766)). The negative is a learning
+cost that exceeds the available benefit, not "nothing to integrate". LAW L1's
+mechanism paragraph is rewritten. The paper's "why memory does not help"
+paragraph is rewritten with this split, post hoc parts labelled.

@@ -47,8 +47,17 @@ is not distinguishable from the LSTM ([L596](adaptive_therapy/RESEARCH_LOG.md#L5
 Its deficit against the MLP is a memory/training effect that the LSTM shares,
 not something continuous time adds.
 
-**Mechanism — a hypothesis, untested (amended 2026-09-29).** Dosing may be
-near-sufficiently a function of the *current* observation. The MLP learns a
+**Mechanism — measured without a trainer (amended 2026-10-02).** "The current
+observation is enough" is **wrong as stated**. A per-patient full-information
+search beats the MLP by 23–26 d (O1, [L1279](adaptive_therapy/RESEARCH_LOG.md#L1279)).
+That splits into thirds (O1b, [L1310](adaptive_therapy/RESEARCH_LOG.md#L1310),
+partly post hoc): ~11 d a memoryless threshold near 1.0 × baseline that the
+MLP could represent, ~9 d exact observation, ~7 d patient-specific
+information. Memory's ceiling is the last two, at most ~15 d. Recurrent
+training costs 40–50 d. L1's deficit is a learning cost larger than the
+available benefit, not an absence of benefit. History of the question:
+dosing was hypothesised to be near-sufficiently a function of the *current*
+observation. The MLP learns a
 burden-threshold switch ([L461](adaptive_therapy/RESEARCH_LOG.md#L461)) and
 only ties the one-line 0.8 × baseline rule
 ([L565](adaptive_therapy/RESEARCH_LOG.md#L565), [L766](adaptive_therapy/RESEARCH_LOG.md#L766)).
