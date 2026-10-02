@@ -1082,3 +1082,46 @@ the Zhang simulator; none ⇒ closed as not reproducible from paper + SI; more
 than one ⇒ ambiguous, none adopted.
 **No-move.** As V5d. No fifth reading, whatever the scores.
 **Artifacts:** `research/v5d_zhang_si.py --v5e` → `research/outputs/v5e_zhang_times.{json,log}`.
+
+## [2026-10-02] — O1: how much U is there to gain with full information, measured without any trainer?
+
+**Why.** LAW L1's mechanism ("the current observation is enough") is untested
+because every full-information reference so far was trained by PQN, which
+could not use extra state (S2 [L804](RESEARCH_LOG.md#L804), S3, T1
+[L1042](RESEARCH_LOG.md#L1042)). At regular visits the simulator is
+deterministic given the doses. The full-information optimum is therefore the
+best 52-visit dose sequence for each patient, and any sequence a search finds
+bounds that optimum from below. Owner-approved 2026-10-02 (workshop-paper
+priority 1).
+**Oracle.** Per test patient and per w, search dose sequences in {0, ½, 1}^52
+on the true simulator (true θ and state, no observation noise; PK, visits and
+horizon as S1). (i) *Tuned threshold*: the best of ThresholdPolicy levels
+0.30–1.50 by 0.05, plus none and MTD, chosen on that patient. (ii) *Sequence
+search*: cross-entropy over per-visit dose distributions, warm-started at
+(i)'s sequence (probability 0.8 on its dose), population 128, 25 iterations,
+elite 10%, smoothing 0.7, seed 0. Search objective: V2's online survival
+(RewardConfig(survival_until="progression"), burden term 0) − w·dose. The
+returned sequence is the best evaluated, and is **scored with the official U**
+(`ttp_running_nadir`, `cumulative_exposure`).
+**Cohort.** S1 Part A's Tier-0 test cohorts, seeds 31–40 (2000 patients), w
+{0.05, 0.10, 0.20, 0.40}.
+**Primary.** Δ_O = U(oracle) − U(MLP), against S1 Part A's saved MLP shards
+(same patients), mean over w, seed+patient CI (`w4.delta_ci`). lo > +10 d ⇒
+**headroom**: full information is worth more than 10 d, and the MLP's limit is
+learning, not the task. hi < +10 d ⇒ **no headroom found**: a full-information
+search gains less than 10 d over the burden-only MLP, LAW L1's mechanism gets
+its first direct support (a lower bound: the search is not proven optimal).
+Else inconclusive. +10 d is L1's margin.
+**Secondary.** Δ_T = U(tuned threshold) − U(MLP): how much of any gain is
+patient-specific threshold tuning alone.
+**Descriptive.** Per-w Δ_O; share of patients gaining > 10 d; oracle median
+exposure, capped median TTP + IQR, burden integral; search gain over (i); mean
+improvement over the last 5 iterations (a large value means the bound is loose).
+**Declared risks.** (1) Lower bound only: "no headroom found" is weaker than "no
+headroom". (2) The search objective is TTP + 28 d − w·exposure, not U exactly;
+the scoring is exact. (3) Tier 0 only; Tier 1 and missed visits are not covered.
+**Kill.** Enters the paper either way. No change to search settings, grid,
+cohort or margin after a run.
+**Compute.** Measured: 0.67 s per 1000 rollouts under V2's load; ≈ 26M rollouts
+≈ 5 h CPU.
+**Artifacts:** `research/o1_oracle.py` → `research/outputs/o1_oracle.{json,log}`, `o1_shards/`.
