@@ -58,3 +58,15 @@ def test_rules_are_finite_in_a_real_rollout():
             greedy=True,
         )
         assert np.isfinite(np.asarray(tr["burden"])).all()
+
+
+def test_sequence_policy_plays_its_sequence_whatever_it_observes():
+    from adaptive_therapy.policies.rules import SequencePolicy
+
+    seq = [2, 0, 1, 1, 0]
+    p, h, out = SequencePolicy(seq), None, []
+    h = p.initial_state()
+    for b in [0.1, 5.0, 1.0, 0.01, 2.0]:
+        q, h = p(jnp.log(jnp.asarray(b)), h, 7.0)
+        out.append(int(jnp.argmax(q)))
+    assert out == seq

@@ -75,3 +75,28 @@ class ThresholdPolicy(eqx.Module):
 
     def value(self, obs, state) -> jnp.ndarray:
         return jnp.array(0.0)
+
+
+class SequencePolicy(eqx.Module):
+    """Plays a fixed dose-action sequence, one entry per visit, ignoring `obs`.
+
+    PREREG O1's full-information oracle: at regular visits the simulator is
+    deterministic given the doses, so the best policy with full information is
+    the best sequence per patient. `actions` is an array leaf, so one compiled
+    rollout serves every sequence. Never an arm.
+    """
+
+    actions: jnp.ndarray
+
+    def __init__(self, actions):
+        self.actions = jnp.asarray(actions, dtype=jnp.int32)
+
+    def initial_state(self) -> jnp.ndarray:
+        return jnp.zeros((1,), dtype=jnp.int32)
+
+    def __call__(self, obs, state, dt, key=None):
+        i = jnp.minimum(state[0], self.actions.shape[0] - 1)
+        return jax.nn.one_hot(self.actions[i], N_ACTIONS) * 10.0, state + 1
+
+    def value(self, obs, state) -> jnp.ndarray:
+        return jnp.array(0.0)
