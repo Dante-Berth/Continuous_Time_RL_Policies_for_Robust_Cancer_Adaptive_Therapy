@@ -372,6 +372,7 @@ T1 & S3 with $10\times$ gradient steps & reward-limited & L1042 \\
 R2 & Strobl's fits to the Bruchovsky cohort & 2/3 reproduce; relapse weaker & L1075 \\
 P1 & saved policies on the 55 fits & met: both negatives replicate & L1106 \\
 V5 & reproduce Hahnfeldt 1999, Zhang 2017 & FAIL: 3/5 and 0/4 targets & L1176 \\
+V5d/e & Zhang 2017 with its SI & structure 22/22; times $\le$15/40 & L1216, L1248 \\
 V1 & reward, medians, 3 years (post hoc) & not misalignment; LSTM $>$ MTD on medians & L1136 \\
 \bottomrule
 \end{tabular}
@@ -400,7 +401,12 @@ their effective endostatin dose and reproduces their published set points to
 within 3\%, with two narrow misses of a pre-registered gate (3.1\% and 10.5\%).
 It is a mouse model on a timescale of days, with no resistant population. These
 are properties of the two models as we first ran them, not evidence about
-adaptive therapy. % V5, L1176 LV is the only family here with a resistance mechanism, so
+adaptive therapy. % V5, L1176
+We also tried the three-population model on which a clinical adaptive-therapy
+trial was designed \cite{zhang2017}, with its supplementary material. Our
+implementation reproduces all 22 of its published equilibria, but none of four
+pre-registered readings of its unstated time scale reproduces more than 15 of
+its 40 published progression times. % V5d L1216, V5e L1248 LV is the only family here with a resistance mechanism, so
 every result is LV-only. Within LV, the negatives hold on two parameter regimes,
 under a parameter shift, and on models fitted to 55 patients, and our
 implementation reproduces Strobl et al.'s published times to progression.
@@ -446,6 +452,10 @@ under partial observability. arXiv:2605.02552, 2026.
 Tumor development under angiogenic signaling: a dynamical theory of tumor
 growth, treatment response, and postvascular dormancy. \emph{Cancer Research}
 59(19):4770--4775, 1999.
+\bibitem{zhang2017} J.~Zhang, J.~J. Cunningham, J.~S. Brown, R.~A. Gatenby.
+Integrating evolutionary dynamics into treatment of metastatic
+castrate-resistant prostate cancer. \emph{Nature Communications} 8:1816, 2017.
+doi:10.1038/s41467-017-01968-5.
 \bibitem{rubanova2019} Y.~Rubanova, R.~T.~Q. Chen, D.~Duvenaud. Latent ODEs
 for irregularly-sampled time series. \emph{NeurIPS}, 2019.
 \bibitem{gallici2024} M.~Gallici, M.~Fellows, B.~Ellis, B.~Pou, I.~Masmitja,
