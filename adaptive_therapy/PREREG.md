@@ -981,3 +981,50 @@ parallel ≈ 25–30 h.
 **Honest prior:** the reference's T1 deficit came with less drug and more
 burden, which the TTP term now charges for, so the gap should narrow. Whether
 it clears +10 d is open.
+
+## [2026-10-02] — V5: do our simulators reproduce Hahnfeldt 1999 and Zhang 2017 from their own pages?
+
+**Why.** ROADMAP V5. W5-pre ([L1004](RESEARCH_LOG.md#L1004)) failed on a
+Hahnfeldt whose drug scale and initial state were ours; a reviewer reads it as a
+brittle task. Zhang 2017 is the candidate second family with a resistance
+mechanism. Both PDFs now read `1°` (2026-10-02). As R1 did for Strobl
+([L871](RESEARCH_LOG.md#L871)): reproduce published numbers before any policy
+touches the model. Rules and fixed schedules only; no learning.
+**V5a — Hahnfeldt 1999** (Cancer Res 59:4770). `envs/hahnfeldt.vector_field`
+unchanged, driven with u = 1 and e replaced by e·g(t). g is the paper's C3 with
+boli: g jumps by D at each injection and decays at clr (p.4773). Table 1
+(p.4771): λ1 0.192, λ2 0, b 5.85, d 0.00873, K0 625; (e, clr) TNP-470 (1.3, 10.1),
+endostatin (0.66, 1.7), angiostatin (0.15, 0.38). Targets:
+(H1) untreated set point ≈ 17,400 mm³ (p.4774); (H2) TNP-470 30 mg/kg q.o.d. set
+point ≈ 12,300 mm³, the same from V0 = 170, 12,300 and 17,300 (p.4774, Fig. 4 II
+B–D); (H3) angiostatin 14 mg/kg/day from 177 mm³: overshoot, then set point
+≈ 240 mm³ (p.4774); (H4) TNP-470 from V0 = 200, K0 = 625: day-13 volume 1840 mm³
+under q.o.d. boli vs 1300 mm³ at the same continuous dose (p.4773); (H5)
+endostatin 20 mg/kg/day regresses, while endostatin 4 mg/kg/day and TNP-470
+30 mg/kg q.o.d. do not control (p.4773), read at day 15 against V0 = 200.
+Set point = mean V over the last 100 d of a 2000-d run. Tolerance: 3% for H1–H3
+and 10% for H4 (its V0 is "≈200", p.4772).
+**V5c — Zhang 2017** (Nat Commun 8:1816). dx_i/dt = r_i x_i (1 − Σ_j α_ij x_j / K_i)
+(Eq. 1, p.7); r = 0.1 × (0.278, 0.355, 0.665) /day (p.7); K_T+ = 1.5 x_TP off drug
+and 0.5 x_TP on; K_TP = 10,000 off and 100 on; K_T− = 10,000 (p.7). α from Table 3
+(p.8), row i, column j, consistent with all six inequalities on p.7.
+dPSA/dt = Σ x_i − 0.5 PSA (Eq. 2, p.8). Initial state: equilibrium frequencies,
+total cells and PSA at 25% of the untreated equilibrium. Run untreated until PSA
+reaches 80% of equilibrium, then treat (p.8). Adaptive: stop below 50% of that
+PSA, resume at or above it (p.8). Targets (Table 1, p.7), **Representative
+Patient #2**: 5% T− at 323 under every regimen; 90% T− at 784 under MTD; under
+adaptive, 90% T− never reached ("indefinite"; checked to 10,000).
+Tolerance: R1's max(3%, 3 d).
+**Declared gaps, not failures.** Patient #1 starts with no T− at equilibrium,
+and the main text gives no rule for how T− arises (p.7, Table 1 note). If its
+equilibrium T− is exactly 0, its rows are reported as not reproducible from the
+main text. The metronomic schedule's durations are not given (p.3, p.8), so it
+is skipped. The Supplementary Information was not obtained.
+**Pass/kill.** V5a: all of H1–H5 ⇒ reproduces; a W5-pre re-run in Hahnfeldt's
+units and daily dosing may then be registered (a mouse timescale of days, so
+not on our weekly-visit episode). Any fails ⇒ Hahnfeldt stays closed, and the
+paper says why. V5c: Patient #2's three targets ⇒ reproduces; a replay of S1's
+policies on Zhang patients may be registered. Otherwise no second-family
+claim. No change to parameters, initial-state rule, tolerances or progression
+readings after a run.
+**Artifacts:** `research/v5_repro.py` → `research/outputs/v5_repro.{json,log}`.
