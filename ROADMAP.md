@@ -294,6 +294,29 @@ if the replay is uninformative.
 stays. (a) fails ⇒ Hahnfeldt stays closed.
 **Cost:** (a) ½ d once the PDF is in hand; (c) 1–2 d, CPU-light.
 
+
+### V6 — A second resistance mechanism validated on data we hold (owner-approved 2026-10-02)
+
+V5 closed Zhang 2017 because its published times rest on unstated details
+([L1248](adaptive_therapy/RESEARCH_LOG.md#L1248)). V6 picks a model whose check
+needs no such details. The Bruchovsky files we already fit in R2 record
+testosterone as well as PSA (median 64% of visits, 72 patients). Phan et al. 2019
+(`doi-10.3934-mbe.2019010`) fits Droop cell-quota models of intermittent
+androgen suppression to that kind of data. Growth is set by an androgen quota,
+not by logistic competition, and resistance arises by an irreversible
+transformation rather than from a pre-existing clone.
+1. **Read `1°`** (the owner supplies the PDF).
+2. **Register a data-based reproduction gate** before any fit: our
+   implementation, fitted to our Bruchovsky patients with the paper's protocol,
+   reaches the fit quality the paper reports, by its own metric and patient set
+   where stated. No policy touches the model before this passes.
+3. **If it passes: a P1-style replay.** S1's saved policies, no retraining, PSA as
+   the observation: a genuine mechanism shift (Tier 2).
+
+**Kill:** step 2 fails ⇒ no second family from this paper; candidates 2–4 in
+`literature/` (Meade 2022; Greene 2019, drug-induced resistance; Viossat &
+Noble 2021, growth laws) are the fallbacks, each with its own gate.
+
 ---
 
 ## Stage 2 — main-conference follow-up (deferred on runway, not merit)
