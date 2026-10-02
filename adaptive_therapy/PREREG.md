@@ -1065,3 +1065,20 @@ None ⇒ Zhang 2017 is closed as not reproducible from paper + SI. More than one
 **Kill / no-move.** No reading outside R-a–R-d, no change to tolerance, rows or
 horizon after a run. Metronomic is skipped (schedule durations not given).
 **Artifacts:** `research/v5d_zhang_si.py` → `research/outputs/v5d_zhang_si.{json,log}`.
+
+## [2026-10-02] — V5e: V5d's Part 2, gated on the structure checks that test our transcription
+
+**Why.** V5d ([L1216](RESEARCH_LOG.md#L1216)) failed its Table-3 check because
+the paper contradicts itself: Patient #1's printed matrix is SI row 22, not
+row 7. S1 (22 orderings) and the 22-row equilibrium match passed, so the
+transcription is the paper's. **This gate change was decided after seeing V5d's
+Part 1**; owner-approved 2026-10-02. Patient #1 (row 7, T− = 0) is not among
+Part 2's rows, so the failing check touches none of its targets.
+**Design.** V5d's Part 2 exactly: readings R-a–R-d, the 40 cells of Supp.
+Table 3 (rows 12, 5, 2, 6, 18, 1, 4, 3, 11, 17 × MTD/adaptive × 5%/90%), rows
+mapped to orderings by V5d's equilibrium assignment, hit within max(3%, 3
+units) or "---" on both sides, pass at ≥ 36/40. Exactly one passing reading ⇒
+the Zhang simulator; none ⇒ closed as not reproducible from paper + SI; more
+than one ⇒ ambiguous, none adopted.
+**No-move.** As V5d. No fifth reading, whatever the scores.
+**Artifacts:** `research/v5d_zhang_si.py --v5e` → `research/outputs/v5e_zhang_times.{json,log}`.
