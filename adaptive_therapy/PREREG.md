@@ -1148,3 +1148,36 @@ threshold PQN's reward did not reach, not information". Δ_I lo > +10 d ⇒
 recover". Else mixed, report both.
 **No-move.** No other policy class, level grid or selection rule after a run.
 **Artifacts:** `research/o1b_split.py` → `research/outputs/o1b_split.{json,log}`.
+
+## [2026-10-04] — V6-gate: does our Baez–Kuang/Phan 2-population Droop model fit our Bruchovsky patients as well as Phan 2019 reports?
+
+**Why.** ROADMAP V6 step 2. Phan et al. 2019 (`doi-10.3934-mbe.2019010`, read `1°`
+2026-10-04) fit the 2- and 3-population cell-quota models to the Vancouver IAS
+data. Their recommended model is the 2-population model (A1, p.200): eqs.
+2.1–2.6 (p.189), with AD → AI by irreversible transformation λ(Q). We hold 72 of the
+109 IDs (`data/bruchovsky/dataTanaka/`), including all four of their example patients.
+**Model and fit (Phan p.193).** x1, x2, Q, P. γ1 = 20 is fixed. u comes from the on/off column (u = 0 on).
+Free parameters within Table 1 (p.192), restricted to the 2-population parameters: μ, q1, q2, b, σ, ε,
+d1, d2, δ1, δ2, R1, R2, c, K, γ2 and Qm, plus x1(0), x2(0) in [1e-2, 1e4] mm³ (Fig. 4, p.200, shows up to ~4000;
+log-uniform). Q(0) and P(0) are the first observed values. The objective is
+MSE_PSA + MSE_androgen over the first 1.5 cycles (on, off, on). **Declared deviation:**
+Phan chose initial guesses by hand; we use 30 seeded log-uniform restarts and
+`scipy.optimize.least_squares` with the bounds. The best restart is kept.
+**Cohort.** The stated rule (≥ 20 PSA and ≥ 20 androgen points in 1.5 cycles,
+p.189) admits 43/72 patients, not 62. Of these, 27 have the further full cycle
+needed to forecast; Phan's "26" is the primary cohort. Phan's set is not
+recoverable from the text: example patient 100 fails the rule (16 PSA and 11 androgen
+points). The 43-patient set is reported descriptively.
+**Pass (both):** on the 27 patients, median fit RMSE PSA ≤ 1.43 µg/L (1.25 × 1.14,
+Table 2) **and** androgen ≤ 3.35 nM (1.25 × 2.68). A lower RMSE passes, since
+the gate is one-sided. **Secondary (also required):** median forecast RMSE over
+the next cycle, with u from the data: PSA ≤ 6.78 (1.5 × 4.52, Table 3) and androgen ≤ 6.29
+(1.5 × 4.19).
+**Kill.** Any of the four fails ⇒ there is no second family from this paper (ROADMAP V6
+kill), and we fall back to Meade 2022 / Greene 2019 / Viossat–Noble 2021, each with its own
+gate. No new tolerance, restart count, cohort or objective after a run.
+**Descriptive (W5-pre lesson, precondition for step 3, not the gate).** For each fitted patient, the
+day on which PSA under continuous suppression from day 0 rises above its nadir ×1.25
+(confirmed 28 d later), capped at 1095 d. With no dynamic range, step 3's replay is cut.
+**Artifacts:** `adaptive_therapy/envs/droop.py` (+ test),
+`research/v6_phan_fit.py` → `research/outputs/v6_phan_fit.{json,log}`.

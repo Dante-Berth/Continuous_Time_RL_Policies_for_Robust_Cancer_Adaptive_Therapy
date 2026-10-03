@@ -10,7 +10,7 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 
-from adaptive_therapy.envs import hahnfeldt, kuznetsov, lotka_volterra, zhang2017
+from adaptive_therapy.envs import droop, hahnfeldt, kuznetsov, lotka_volterra, zhang2017
 from adaptive_therapy.envs.base import SolverConfig, observe
 from adaptive_therapy.envs.cohort import solve_cohort, solve_one_patient
 
@@ -233,3 +233,46 @@ def test_continuous_abiraterone_hands_the_tumour_to_androgen_independent_cells()
     off = _zhang_settle(0.0, [1000.0, 1000.0, 1000.0, 0.0])
     on = _zhang_settle(1.0, off)
     assert on[2] / on[:3].sum() > 0.9 > off[2] / off[:3].sum()
+
+
+# --- Droop / Baez-Kuang (Phan 2019) -----------------------------------------
+
+# Table 1 values (p.192) in the relapse regime of Phan Sec. 3.1 (p.194): under
+# suppression Q settles near (gamma2 Qm + mu q1)/(gamma2 + mu) ~ 0.78, where AD
+# growth (0.018/day) is below its death D1 (0.071) but AI growth (0.037) is not.
+DROOP_THETA = jnp.array(
+    [0.05, 0.5, 0.2, 1e-3, 0.1, 0.005, 0.09, 5e-4, 5e-5, 2e-4, 3.0, 1.0, 5e-5, 0.5, 0.001, 15.0]
+)
+
+
+def _droop(dose: float, y0, days: float, theta=DROOP_THETA):
+    sol = diffrax.diffeqsolve(
+        diffrax.ODETerm(droop.vector_field), diffrax.Tsit5(), 0.0, days, 0.05,
+        jnp.asarray(y0), args=(theta, dose), saveat=diffrax.SaveAt(ts=jnp.linspace(0, days, 200)),
+        stepsize_controller=diffrax.PIDController(rtol=1e-7, atol=1e-9), max_steps=500_000,
+    )  # fmt: skip
+    return np.asarray(sol.ys)
+
+
+@pytest.mark.parametrize("dose", [0.0, 1.0])
+def test_droop_quota_stays_between_min_ai_quota_and_max_androgen(dose):
+    """Proposition 1 (p.195), two-population case: q2 <= Q <= Qm."""
+    ys = _droop(dose, [100.0, 1.0, 10.0, 5.0], 1500.0)
+    assert np.isfinite(ys).all() and (ys[:, :2] >= -1e-6).all()  # solver undershoot at extinction
+    assert (ys[:, 2] >= 0.2 - 1e-6).all() and (ys[:, 2] <= 15.0 + 1e-6).all()
+
+
+def test_droop_resistance_cannot_arise_without_transformation():
+    """x2 has no source but lam(Q) x1: with c = 0 an absent AI clone stays absent."""
+    ys = _droop(1.0, [100.0, 0.0, 10.0, 5.0], 1500.0, DROOP_THETA.at[12].set(0.0))
+    assert np.abs(ys[:, 1]).max() == 0.0
+
+
+def test_continuous_suppression_relapses_through_transformed_ai_cells():
+    """The absorbing-state relapse of Sec. 3.1 (p.194): under CAS, x1 regresses
+    and the tumour regrows as x2, created from x1 rather than pre-existing."""
+    ys = _droop(1.0, [100.0, 0.0, 15.0, 5.0], 3000.0)
+    total = ys[:, 0] + ys[:, 1]
+    nadir = total.argmin()
+    assert 0 < nadir < len(total) - 1 and total[-1] > 2 * total[nadir]
+    assert ys[-1, 1] / total[-1] > 0.99
