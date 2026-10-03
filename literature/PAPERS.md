@@ -11,7 +11,7 @@ index; the judgment lives in `papers/<id>.md`.
 > uv run python research/lit_table.py --check   # exit 1 if stale
 > ```
 
-**Provenance status: 6/21 read from the PDF (`1°`); 15 are `2°` (71%).**
+**Provenance status: 7/21 read from the PDF (`1°`); 14 are `2°` (67%).**
 
 A `2°` row is seeded from PROJECT.md §12-REF — the citation resolves, but
 the paper has not been read. **A `2°` cell may not be cited in a design**
@@ -38,7 +38,7 @@ to our design", and it is the only section most readers need.
 | `control` | [url-iclr-2024-metaphysica](papers/url-iclr-2024-metaphysica.md) | 2° | A strong baseline we should be willing to lose a tier to. PROJECT.md 13 names beating only weak baselines as a reviewer reflex. |
 | `mechanism` | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | 2° | Superseded by doi-10.1158-0008-5472.CAN-23-2040. Kept, never deleted, per REVIEW_PROTOCOL §0.2. |
 | `mechanism` | [doi-10.1158-0008-5472.CAN-23-2040](papers/doi-10.1158-0008-5472.CAN-23-2040.md) | 1° | Our setting, pre-occupied: LV, burden-only, TTP = +20%. Its threshold rule is the one our MLP learned (W1, ~0.80x baseline). Fig. 3C predicts W4's direction for any policy trained weekly and evaluated with dropped visits. |
-| `mechanism` | [doi-10.3934-mbe.2019010](papers/doi-10.3934-mbe.2019010.md) | 2° | ROADMAP V6's first candidate: a cell-quota (Droop) model with resistance by irreversible transformation, fitted to the kind of PSA + androgen data we hold (Bruchovsky). Read 1° before any use. |
+| `mechanism` | [doi-10.3934-mbe.2019010](papers/doi-10.3934-mbe.2019010.md) | 1° | ROADMAP V6 candidate, read 1°; gated by PREREG V6-gate [2026-10-04] before any policy use |
 | `mechanism` | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | 2° | The third family. Produces dynamics LV and Hahnfeldt cannot, and the Hopf bifurcations that break a naive TTP rule (PROJECT.md 6.3). |
 | `mechanism` | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | 1° | Our vector field is this one; our drug scale was not. In its own units it reproduces 3 of 5 published targets, and the other 2 within 3.1–10.5% (V5, RESEARCH_LOG L1176). A mouse model with no resistant population: hosts a transfer test at most, never an adaptive-therapy comparison. |
 | `mechanism` | [doi-10.1038-s41559-021-01428-w](papers/doi-10.1038-s41559-021-01428-w.md) | 2° | ROADMAP V6 option: closed-form containment-vs-MTD targets under other growth laws, to answer 'over-indexed on logistic LV'. |
@@ -57,7 +57,6 @@ what promotes a row to `1°` and makes it citable in a design argument.
 |---|---|---|
 | 1 | [arxiv-2608.18387](papers/arxiv-2608.18387.md) | r_R is weakly identifiable under adaptive therapy; parameters fit under one schedule do not transport to another; TTP and metastasis risk pull against each other |
 | 1 | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | REJECTED: mis-seeded stub. Wrong DOI and title for Gallagher 2024; the PDF's own DOI is 10.1158/0008-5472.CAN-23-2040 (p.1929) |
-| 1 | [doi-10.3934-mbe.2019010](papers/doi-10.3934-mbe.2019010.md) | Abstract only (PubMed, 2026-10-02): PSA and androgen data from intermittent androgen suppression patients; abstract: a two-population structure linked by an irreversible transformation fits best |
 | 2 | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | TD3 vs DQN under parametric tumour heterogeneity, full observation, 100-patient generalization |
 | 2 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Effector-tumour predation dynamics with immunostimulation, sneaking-through, and a dormant state; BCL1 lymphoma parameters |
 | 2 | [doi-10.1038-s41559-021-01428-w](papers/doi-10.1038-s41559-021-01428-w.md) | Abstract only (PubMed, 2026-10-02): general conditions and formulas for when containment beats MTD, beyond logistic growth (abstract) |
@@ -79,7 +78,7 @@ what promotes a row to `1°` and makes it citable in a design argument.
 | [arxiv-2608.18387](papers/arxiv-2608.18387.md) | arXiv:2608.18387 | theory | lotka-volterra | burden-only | metastasis | yes | 2° | queued |
 | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 2° | rejected |
 | [doi-10.1158-0008-5472.CAN-23-2040](papers/doi-10.1158-0008-5472.CAN-23-2040.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 1° | reviewed |
-| [doi-10.3934-mbe.2019010](papers/doi-10.3934-mbe.2019010.md) | Mathematical Biosciences and Engineering 2019;16(1):187-204 (PMID 30674116) | model | other | burden-only | ? | no | 2° | queued |
+| [doi-10.3934-mbe.2019010](papers/doi-10.3934-mbe.2019010.md) | Mathematical Biosciences and Engineering 2019;16(1):187-204 (PMID 30674116) | model | other | burden-only | fit and forecast RMSE, PSA and androgen (no TTP) | no | 1° | reviewed |
 | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | arXiv:2609.12264 | policy | other | full-state | survival-proxy | no | 2° | queued |
 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Bulletin of Mathematical Biology 1994;56(2):295-321 | model | kuznetsov | full-state | none | no | 2° | queued |
 | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | Cancer Research 1999;59(19):4770-4775 | model | hahnfeldt | full-state | none | no | 1° | reviewed |
@@ -103,4 +102,4 @@ what promotes a row to `1°` and makes it citable in a design argument.
 - **Observability:** `burden-only` 8, `full-state` 6, `n/a` 7
 - **Bearing on identifiability (PROJECT.md §5):** 2
 
-*Generated 2026-10-02 by `research/lit_table.py`.*
+*Generated 2026-10-04 by `research/lit_table.py`.*
