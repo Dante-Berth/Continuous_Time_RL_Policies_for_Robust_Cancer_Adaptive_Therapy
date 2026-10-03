@@ -1340,3 +1340,36 @@ cost 40–50 d against the MLP (S1, [L766](#L766)). The negative is a learning
 cost that exceeds the available benefit, not "nothing to integrate". LAW L1's
 mechanism paragraph is rewritten. The paper's "why memory does not help"
 paragraph is rewritten with this split, post hoc parts labelled.
+
+## [2026-10-03] — V2 still trainer-limited: a survival term that stops at progression closes the reference's gap to the MLP (−19.6 → −1.4 d) but not past it, and the reference earns less of the new reward
+**Verdict:** CLOSED — no headroom over the MLP from PQN under a TTP-bearing reward; the reward search ends, as registered · **Gate:** Tier 0 Δ U O_full−MLP −1.4 [−4.1, +1.2] (patients-only [−2.6, −0.2]; 6/10 seeds < 0), Tier 1 −39.8 [−49.9, −30.5]; R −5.02, higher in 11/40 cells · w 0.05, Tier 0: capped median TTP MLP 357 [322–357], O_full 357 [287–357]; exposure 225 / 187; burden integral 1.37e6 / 1.60e6 · one-sided Wilcoxon p(O_full > MLP) ≤ 1e-16 every w (descriptive; per-w mean Δ −7.7, −5.6, −1.2, +9.0) · 10 seeds × 4 w × 200 test pts, ITT, 0 non-finite · **Artifacts:** `research/v2_ttp_reward.py`, `research/outputs/v2_ttp_reward.{json,log}`, `v2_shards/`, `v2_policies/`
+
+### Context
+PREREG V2 (9858026), committed before any cell ran. The one change from T1
+([L1042](#L1042)): `RewardConfig(survival_until="progression")`, the survival
+term paid until online-confirmed progression. Readings in registered order.
+
+### Results
+- Primary: lo −4.1 < +10 ⇒ no headroom gate; R < 0 ⇒ **trainer-limited**
+  (reading 2 fires before "no headroom", as registered).
+- Reward effect vs each arm's own T1 cell (same seeds, patients): O_full
+  **+15.4 [+10.2, +20.8]**, MLP −2.9 [−3.9, −2.0]. The TTP term helps the
+  reference only, as the prior said; it still doses less (187 vs 225 d) and
+  carries more burden.
+- Per w the sign turns: O_full ahead at w 0.4 (+9.0), behind at w ≤ 0.2.
+- Tier 1 unchanged in kind: reference −40 d, the T1 −54 d narrowed.
+- MLP vs thr0.8 at w 0.05: 314.1 vs 315.0 mean U, less drug (225 vs 238).
+- **Mean and median disagree** (post hoc, pooled paired U): O_full beats the
+  MLP on 62–69% of patients, median Δ +1.7 / +2.6 / +7.0 / +15.4 d by w, mostly
+  less drug; a tail of earlier progressions (p10 ≈ −30 d) makes the mean
+  negative. The registered primary is mean U, so the verdict stands.
+
+### Decision
+Failed as registered (gate did not open). Per the kill clause: no third reward
+and no reweighting of burden or exposure terms in this paper; V3 is not
+registered. Read with O1/O1b ([L1279](#L1279), [L1310](#L1310)): the true-state
+optimum is 23–26 d above the MLP, yet PQN with the true state sits at the MLP
+under both rewards. The gap between what the state is worth and what PQN extracts
+from it is the learning cost L1 names; V2 adds that a TTP-bearing reward does
+not remove it. LAW L1's mechanism paragraph gets one sentence; the paper's
+`\pending{V2}` is replaced with this result.

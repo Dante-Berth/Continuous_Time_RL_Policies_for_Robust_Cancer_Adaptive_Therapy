@@ -71,7 +71,7 @@ reference is still 41 d below the MLP
 ([L840](adaptive_therapy/RESEARCH_LOG.md#L840)). With 10× the gradient steps (T1) it ties the MLP on
 training reward yet trails it by 20 d on U
 ([L1042](adaptive_therapy/RESEARCH_LOG.md#L1042)): the trainer no longer binds,
-the reward does (it has no TTP term). The memory arms
+the reward does (it has no TTP term). With a TTP-bearing reward (V2) the reference reaches the MLP on mean U (−1.4 d [−4.1, +1.2]) and beats it on most patients, but not by the 10 d gate, and earns less training reward ([L1344](adaptive_therapy/RESEARCH_LOG.md#L1344)): the reward was part of the gap, the trainer the rest. The memory arms
 (not the reference) earn less of that reward than the MLP
 ([L1136](adaptive_therapy/RESEARCH_LOG.md#L1136)), so the L1 deficit itself is
 optimisation, not misalignment. (L461's "≥ 0.94 of doses explained" is 1 by construction for a
