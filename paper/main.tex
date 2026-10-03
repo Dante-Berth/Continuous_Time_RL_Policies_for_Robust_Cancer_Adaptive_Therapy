@@ -200,8 +200,14 @@ so they optimise the reward worse rather than exploiting it. % V1a, L1136
 A reference trained like the arms but also shown $S$, $R$ and $\theta$ never
 reached this headroom. It sat \HFullZero\ below the MLP, then \SThreeFull\ at
 PQN's published parallelism, and \TOneFull\ with ten times the gradient steps,
-where it ties the MLP on training reward. That reward has no progression term,
-so it can be optimised without buying time to progression. % S2 L804, S3 L840, T1 L1042
+where it ties the MLP on training reward. That reward has no progression term.
+Adding one (a survival term paid until confirmed progression) lifts the
+reference by $+15.4$ [$+10.2$, $+20.8$] days and brings it level with the MLP
+($-1.4$ [$-4.1$, $+1.2$]). It now wins on 62--69\% of patients (median $+2$ to
+$+15$ days, mostly less drug) and loses the mean to a tail of earlier
+progressions, and on the mean it recovers none of O1's $+23$ days. The reward
+was part of the gap; PQN's extraction of the true state is the rest.
+% S2 L804, S3 L840, T1 L1042, V2 L1344
 
 \begin{table}[t]
 \centering\footnotesize
@@ -385,6 +391,7 @@ M1b & M1 over three years & met; crossover moves later & L932 \\
 M1c & M1, M1b on medians (post hoc) & mixed: holds only if $\hat r_R \ge 0.75$ & L968 \\
 W5-pre & rules on Hahnfeldt, Kuznetsov & FAIL: no TTP range; Tier 2 cut & L1004 \\
 T1 & S3 with $10\times$ gradient steps & reward-limited & L1042 \\
+V2 & T1 + survival until progression & trainer-limited; ties MLP & L1344 \\
 R2 & Strobl's fits to the Bruchovsky cohort & 2/3 reproduce; relapse weaker & L1075 \\
 P1 & saved policies on the 55 fits & met: both negatives replicate & L1106 \\
 V5 & reproduce Hahnfeldt, Zhang & FAIL: 3/5, 0/4 targets & L1176 \\
@@ -403,10 +410,9 @@ per update, not 1024) and untuned, and the recurrent arms are chaotic in
 training; we treat that as part of their cost rather than tuning it away. Given
 the true hidden state, PQN at the registered budgets scores below the
 burden-only MLP. With ten times the gradient steps it matches the MLP on the
-training reward and still trails on $U$, so the binding limit is now the reward,
-which has no progression term. Before any continuous-time re-run is worth
-registering, a reward with that term must let the full-information reference
-beat the burden-only MLP. \pending{V2: that reward, registered and running}
+training reward and still trails on $U$, and with a progression term in the reward it
+ties the MLP on mean $U$. Neither change opened the registered 10-day gate, so
+we stopped the reward and budget search there rather than tune toward it.
 Missed visits are i.i.d., so the next gap is unknown when the policy doses;
 scheduled gaps, where continuous time has more to use, are untested. Before
 testing mechanism shift (Tier~2) we checked two other tumour models, and neither
