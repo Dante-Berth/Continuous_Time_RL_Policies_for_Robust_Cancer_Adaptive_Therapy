@@ -1181,3 +1181,11 @@ day on which PSA under continuous suppression from day 0 rises above its nadir �
 (confirmed 28 d later), capped at 1095 d. With no dynamic range, step 3's replay is cut.
 **Artifacts:** `adaptive_therapy/envs/droop.py` (+ test),
 `research/v6_phan_fit.py` → `research/outputs/v6_phan_fit.{json,log}`.
+
+## [2026-10-04] — V7: positional-MLP baseline (POPGym's standard arm) on S1's design
+**Hypothesis:** a memoryless MLP that also sees elapsed time (clock = summed dt, /357 d) can learn a time-varying threshold. POPGym (arxiv-2303.01859 p.9, 1°) found it often beats the plain MLP and calls it a standard baseline. No mechanism here argues for the clock at regular visits; under missed visits it reveals how long since the last decision. So a clock gain at Tier 4 alone would be timing, not memory.
+**Arm:** `MLPPolicy(width=386, layer_norm=True, clock=True)`, Q-path 3091 vs 3090 (test). Everything else is S1's, unchanged: PQN config, Strobl ranges, w ∈ {0.05, 0.1, 0.2, 0.4}; Part A seeds 31–40, trained at p = 0, tested on Tiers 0 and 1; Part B seeds 41–50, trained at p = 0.35, tested at p ∈ {0, 0.2, 0.5}. Same seeds ⇒ same cohorts, paired against S1's saved shards. Intention-to-treat; an arm is invalid above 5% non-finite cells.
+**Primary (two-sided, reported whatever the sign):** Δ(Pos, MLP) on U with seed+patient bootstrap CI: (A) Tier 1; (B) Tier 4, mean over p ∈ {0.2, 0.5}. "Clock helps" iff lower CI > 0; "hurts" iff upper < 0; else "ties".
+**Secondary:** Δ(Pos, X) for X ∈ {LSTM, ODE-RNN} in A (Tiers 0, 1) and X ∈ {LSTM, LSTM+Δt, ODE-RNN} in B. Also Pos − MTD at p = 0.5. Median of paired differences beside each.
+**Kill / consequence:** no kill; it is a baseline and enters the paper whatever the reading. If Pos beats the MLP in A, "the best learned policy is a memoryless threshold" becomes "a time-varying threshold". If Pos ≥ ODE-RNN at Tier 4, the continuous-time arm loses to a clock. No width, budget, seed or w changes after the run.
+**Artifacts:** `adaptive_therapy/policies/mlp.py` (clock), tests; `research/v7_posmlp.py` → `research/outputs/v7_posmlp.json`, `v7_shards/`, `v7_policies/`.

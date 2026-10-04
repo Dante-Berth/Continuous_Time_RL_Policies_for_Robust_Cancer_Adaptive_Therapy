@@ -68,6 +68,30 @@ def test_mlp_is_memoryless_by_construction():
     assert jnp.allclose(a, b)  # dt cannot influence a memoryless policy
 
 
+def test_positional_mlp_sees_elapsed_time_but_not_past_observations():
+    """PREREG V7: the clock is its only state. Same obs at a later time may
+    differ; a different past observation at the same time may not."""
+    p = MLPPolicy(KEY, width=386, layer_norm=True, clock=True)
+    s0 = p.initial_state()
+    _, s1 = p(jnp.array(0.9), s0, 7.0)
+    _, s1b = p(jnp.array(-0.4), s0, 7.0)
+    assert jnp.allclose(s1, s1b) and float(s1[0]) == 7.0
+    a, _ = p(jnp.array(0.2), s1, 7.0)
+    b, _ = p(jnp.array(0.2), s1 + 200.0, 7.0)
+    assert not jnp.allclose(a, b)
+
+
+def test_positional_mlp_q_path_matches_the_other_arms():
+    """V7 width 386 keeps the Q-path within 1% of the MLP's 3090."""
+
+    def q_path(p):
+        return n_params((p.layers, p.norm))
+
+    mlp = q_path(MLPPolicy(KEY, width=441, layer_norm=True))
+    pos = q_path(MLPPolicy(KEY, width=386, layer_norm=True, clock=True))
+    assert mlp == 3090 and abs(pos / mlp - 1) < 0.01
+
+
 def test_normalised_observation_is_scale_free():
     """A Tier-1 shift moves K; the policy must not break on scale alone."""
     assert float(normalise_obs(jnp.array(200.0), jnp.array(100.0))) == pytest.approx(
