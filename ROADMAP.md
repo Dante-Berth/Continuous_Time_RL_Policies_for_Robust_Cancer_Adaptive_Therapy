@@ -295,7 +295,9 @@ stays. (a) fails ⇒ Hahnfeldt stays closed.
 **Cost:** (a) ½ d once the PDF is in hand; (c) 1–2 d, CPU-light.
 
 
-### V6 — A second resistance mechanism validated on data we hold (owner-approved 2026-10-02)
+### ~~V6 — A second resistance mechanism validated on data we hold (owner-approved 2026-10-02)~~
+
+**Killed 2026-10-04** at step 2: the reproduction gate failed 4/4 → [L1377](adaptive_therapy/RESEARCH_LOG.md#L1377). The fallbacks below await the owner's go-ahead.
 
 V5 closed Zhang 2017 because its published times rest on unstated details
 ([L1248](adaptive_therapy/RESEARCH_LOG.md#L1248)). V6 picks a model whose check

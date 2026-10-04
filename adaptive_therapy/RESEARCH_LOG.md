@@ -1373,3 +1373,40 @@ under both rewards. The gap between what the state is worth and what PQN extract
 from it is the learning cost L1 names; V2 adds that a TTP-bearing reward does
 not remove it. LAW L1's mechanism paragraph gets one sentence; the paper's
 `\pending{V2}` is replaced with this result.
+
+## [2026-10-04] — V6-gate FAILED: within Phan 2019's Table 1 ranges our two-population Droop model fits our Bruchovsky patients 3× worse than reported, with most parameters pinned to a bound
+**Verdict:** CLOSED — no second family from Phan 2019; every result stays LV-only · **Gate:** 27 pts, median [Q1, Q3] RMSE: fit PSA 3.67 [3.16, 5.25] (≤ 1.43; Phan 1.14), fit androgen 5.07 [4.51, 5.64] (≤ 3.35; 2.68), forecast PSA 19.0 [15.9, 22.1] (≤ 6.78; 4.52), forecast androgen 6.87 [5.88, 7.96] (≤ 6.29; 4.19); 4/4 fail · deterministic fit, 30 restarts × 43 pts, 30/30 finite each · no Wilcoxon (no policy comparison) · **Artifacts:** `research/v6_phan_fit.py`, `research/v6b_optimizer_check.py`, `research/outputs/v6_phan_fit.{json,log}`, `v6b_optimizer_check.{json,log}`
+
+### Context
+PREREG V6-gate (7792568), committed before any fit. Phan 2019 read `1°`
+(fd3976c). Model `adaptive_therapy/envs/droop.py`, eqs. 2.1–2.6; objective
+MSE_PSA + MSE_androgen over on/off/on; cohort = Phan's rule (43/72) ∩ a
+further full cycle (27). Declared deviations: seeded restarts instead of
+hand-chosen guesses; lower bounds 0 → 1e-3 on R1, R2, K.
+
+### Results
+- All four criteria fail, by 1.5–4× the threshold. The 43-patient rule cohort
+  is no better (fit PSA 3.47, androgen 5.69).
+- **Not the optimiser (V6b, post hoc, not pre-registered).** Six patients
+  (Phan's 28, 29, 77; 17, 25, 101) re-started from the V6 optimum with 10× the
+  evaluation budget and tolerance 1e-12: every run converged (ftol) to the V6
+  objective within 0.002%.
+- **The optimum sits on the box:** 13–15 of 18 parameters at a Table 1 bound
+  in all six. The data push past Phan's ranges, or our transcription of the
+  ranges/units differs from what they fitted with. The PDF cannot separate
+  the two; the invariant tests (Prop. 1 bound, no AI without λ, CAS relapse) pass.
+- Patient 28, Phan's best-looking example (Fig. 2): fit PSA 10.6 here.
+- Descriptive: every fitted patient relapses under continuous suppression
+  (median TTP 717 d [633, 789], 0 censored). So the family would have had
+  dynamic range; the gate, not W5-pre's failure mode, kills it.
+
+### Decision
+Failed as registered. Per the kill clause: no wider box, no new objective,
+restart count, cohort or tolerance on this paper. That would be a
+re-parametrization chosen after seeing the result. CLOSED #4 is extended to
+Phan 2019. A pattern note, **not a law**: two published validations (Zhang
+2017, Phan 2019) failed to reproduce from the paper alone, for different stated
+reasons. A LAW needs the same mechanism twice, and here it is unproven.
+ROADMAP V6 struck. The fallbacks (Meade 2022; Greene 2019; Viossat & Noble
+2021) need the owner's go-ahead, each with its own gate. The paper's
+LV-only scope sentence stands.

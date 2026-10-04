@@ -113,7 +113,7 @@ resistance mechanism (a new model).
 
 ---
 
-## 4. No second simulator with a resistance mechanism: Zhang 2017 does not reproduce
+## 4. No second simulator with a resistance mechanism: Zhang 2017 and Phan 2019 do not reproduce
 
 **Closed 2026-10-02** by V5e ([L1248](adaptive_therapy/RESEARCH_LOG.md#L1248)).
 With the paper and its SI read `1°`, our transcription of its three-type model
@@ -129,6 +129,15 @@ chosen after seeing V5e.
 
 **Re-open condition:** the authors' code, or a statement of the integration
 scheme, time unit and T− seeding (new data).
+
+**Extended 2026-10-04 to Phan 2019** (Droop cell-quota, ROADMAP V6) by V6-gate
+([L1377](adaptive_therapy/RESEARCH_LOG.md#L1377)). It was fitted to our own Bruchovsky patients with the paper's
+objective and Table 1 ranges. Median fit RMSE is 3× the reported value
+(PSA 3.67 vs 1.14), and 4/4 criteria fail. The optimiser converges, and the
+optimum sits on the parameter box. **Do not re-propose:** a wider box, another
+objective, cohort or tolerance for this paper. **Re-open condition:** the
+authors' fitted parameters or code (new data). The fallbacks (Meade 2022, Greene 2019,
+Viossat & Noble 2021) are not closed. Each needs its own gate.
 
 ---
 
