@@ -176,7 +176,8 @@ a control deficit present without any shift, not a robustness effect. The
 deficit is not specific to memory. A positional MLP, memoryless but given the
 elapsed time, trails the MLP by as much ($-56.8$ [$-64.2$, $-48.3$] at Tier~1)
 and ties the LSTM and ODE-RNN. The share of its doses explained by the current
-observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23: any input beyond the
+observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23. A plausible reading,
+not tested here, is that any input beyond the
 current burden lets the trainer fit a time-indexed schedule instead of
 feedback. Under missed visits it ties the MLP ($+2.2$ [$-13.2$, $+16.4$]). % V7 L1414 The
 provisional regime gives the same ordering: LSTM$-$MLP \WCMemOne, ODE$-$LSTM
