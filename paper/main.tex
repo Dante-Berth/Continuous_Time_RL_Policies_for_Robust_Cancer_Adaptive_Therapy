@@ -69,6 +69,28 @@ publishable-looking wrong answer on the way (\S\ref{sec:pitfalls}), and a record
 of every registered run (Appendix, Table~\ref{tab:runs}).
 \end{itemize}
 
+\section{Related work}
+\paragraph{RL for adaptive therapy.} Learned dosing policies on tumour ODEs
+have been reported to approach a clinical threshold rule from burden alone
+\cite{gallagher2024}, to approach an optimal-control benchmark when every
+subpopulation is observed \cite{kidane2026}, and to benefit from recurrence
+when part of the state is hidden \cite{kiram2026}. None compares memory with
+continuous time under one trainer, with seed-level uncertainty.
+\paragraph{Memory in partially observed RL.} Carefully implemented recurrent
+model-free RL is a strong POMDP baseline; there, as here, an oracle given the
+hidden state under shared hyperparameters often scored below it
+\cite{ni2022}. Across 13 memory models, classical RNNs beat modern ones and
+a memoryless MLP is often not beaten at all \cite{morad2023}. Our MLP winning
+is that pattern at its extreme; our headroom split (\S\ref{sec:results})
+measures how little there was for memory to buy.
+\paragraph{Continuous-time networks.} ODE-RNNs \cite{rubanova2019}, neural
+CDEs \cite{kidger2020} and liquid time-constant networks \cite{hasani2021}
+outperform discrete RNNs on irregularly sampled \emph{prediction}. Their
+advantage is largest when the observation pattern itself is informative
+\cite{rubanova2019,kidger2020}, and control is named as untested future work
+\cite{hasani2021}. We test the control case, with gaps that carry no
+information.
+
 \section{Setup}
 \paragraph{Virtual patients.} Sensitive cells $S$ and resistant cells $R$
 compete for a shared capacity $K$:
@@ -126,7 +148,7 @@ and the burden integral as a metastasis proxy. Reference rules: no treatment;
 MTD, full dose throughout; AT50, the adaptive-therapy trial rule; thr0.8, full
 dose above $0.8\times$ baseline.
 
-\section{Results}
+\section{Results}\label{sec:results}
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_forest.pdf}
@@ -317,7 +339,9 @@ burden-only MLP. With ten times the gradient steps it matches the MLP on the
 training reward and still trails on $U$, and with a progression term in the reward it
 ties the MLP on mean $U$. Neither change opened the registered 10-day gate, so
 we stopped the reward and budget search there rather than tune toward it.
-Missed visits are i.i.d., so the next gap is unknown when the policy doses;
+We test one continuous-time design, the ODE-RNN; liquid time-constant
+\cite{hasani2021} and neural-CDE \cite{kidger2020} arms, and a positional MLP
+that sees the clock \cite{morad2023}, are untested. Missed visits are i.i.d., so the next gap is unknown when the policy doses;
 scheduled gaps, where continuous time has more to use, are untested. Before
 testing mechanism shift (Tier~2) we checked two other tumour models, and neither
 is an adaptive-therapy model as simulated. Kuznetsov has no resistant
@@ -362,7 +386,7 @@ A continuous-time policy needs a setting where the gap itself carries
 information, such as scheduled rather than random visits, and a trainer that
 can first beat the threshold with the true state.
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 \bibitem{gallagher2024} K.~Gallagher, M.~A.~R. Strobl, D.~S. Park,
 F.~C. Spoendlin, R.~A. Gatenby, P.~K. Maini, A.~R.~A. Anderson. Mathematical
 model-driven deep learning enables personalized adaptive therapy. \emph{Cancer
@@ -387,6 +411,19 @@ for irregularly-sampled time series. \emph{NeurIPS}, 2019.
 \bibitem{gallici2024} M.~Gallici, M.~Fellows, B.~Ellis, B.~Pou, I.~Masmitja,
 J.~N. Foerster, M.~Martin. Simplifying deep temporal difference learning.
 arXiv:2407.04811, 2024.
+\bibitem{kidane2026} B.~S. Kidane, M.~S.~H. Motayed, S.~Wang. Adaptive
+chemotherapy control under tumor heterogeneity via reinforcement learning.
+arXiv:2609.12264, 2026.
+\bibitem{ni2022} T.~Ni, B.~Eysenbach, R.~Salakhutdinov. Recurrent model-free RL
+can be a strong baseline for many POMDPs. \emph{ICML}, PMLR 162, 2022.
+\bibitem{morad2023} S.~Morad, R.~Kortvelesy, M.~Bettini, S.~Liwicki,
+A.~Prorok. POPGym: benchmarking partially observable reinforcement learning.
+\emph{ICLR}, 2023.
+\bibitem{kidger2020} P.~Kidger, J.~Morrill, J.~Foster, T.~Lyons. Neural
+controlled differential equations for irregular time series. \emph{NeurIPS},
+2020.
+\bibitem{hasani2021} R.~Hasani, M.~Lechner, A.~Amini, D.~Rus, R.~Grosu. Liquid
+time-constant networks. \emph{AAAI} 35(9), 2021.
 \end{thebibliography}
 
 \appendix

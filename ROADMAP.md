@@ -324,7 +324,7 @@ Noble 2021, growth laws) are the fallbacks, each with its own gate.
 The clarity pass is done (abstract, tier numbering, appendix split; commit
 135c4f2). What a reviewer will still mark down, in order of cost to the score:
 
-1. **Related work (missing; 7 references).** One section of three short
+1. **Related work** — *done 2026-10-04:* six papers read 1°, section in `paper/main.tex`. One section of three short
    paragraphs, each ending on how our result differs, never a survey:
    - *RL for adaptive therapy* — Gallagher 2024 (1°), Kiram 2026 (1°),
      `doi-10.1158-0008-5472.CAN-23-0713` and `arxiv-2609.12264` (both 2°,
