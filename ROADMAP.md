@@ -343,14 +343,14 @@ The clarity pass is done (abstract, tier numbering, appendix split; commit
    Every cited paper is read 1° from its PDF first (REVIEW_PROTOCOL §0.3),
    with a `literature/papers/` entry and `make lit-check`; a paper that
    cannot be read is not cited.
-2. **Pre-empt "undertrained recurrent nets" in the introduction** with the
+2. *done 2026-10-04.* **Pre-empt "undertrained recurrent nets" in the introduction** with the
    headroom split ([L1310](adaptive_therapy/RESEARCH_LOG.md#L1310)): memory's
    ceiling is ≤ ~15 d whatever the budget.
-3. **Reproducibility appendix**: hyperparameter table (PQN, arm sizes, PK,
+3. *done 2026-10-04.* **Reproducibility appendix**: hyperparameter table (PQN, arm sizes, PK,
    cohorts), compute, code and research-log availability.
-4. **Untested continuous-time variants** (LTC / CfC / neural CDE arms):
+4. *conceded 2026-10-04.* **Untested continuous-time variants** (LTC / CfC / neural CDE arms):
    conceded in Limitations. A run would need its own registration.
-5. **Page budget**: shrink the Limitations' Hahnfeldt/Zhang paragraph to ~4
+5. *done 2026-10-04 (Limitations trimmed; style file still pending).* **Page budget**: shrink the Limitations' Hahnfeldt/Zhang paragraph to ~4
    lines once the workshop and its style file are known.
 
 **Kill:** none; text only. No sentence may claim more than its log entry.
