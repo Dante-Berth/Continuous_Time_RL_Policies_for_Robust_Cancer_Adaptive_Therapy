@@ -319,6 +319,42 @@ transformation rather than from a pre-existing clone.
 `literature/` (Meade 2022; Greene 2019, drug-induced resistance; Viossat &
 Noble 2021, growth laws) are the fallbacks, each with its own gate.
 
+### W7 — Workshop polish (text only, no runs; planned 2026-10-04)
+
+The clarity pass is done (abstract, tier numbering, appendix split; commit
+135c4f2). What a reviewer will still mark down, in order of cost to the score:
+
+1. **Related work (missing; 7 references).** One section of three short
+   paragraphs, each ending on how our result differs, never a survey:
+   - *RL for adaptive therapy* — Gallagher 2024 (1°), Kiram 2026 (1°),
+     `doi-10.1158-0008-5472.CAN-23-0713` and `arxiv-2609.12264` (both 2°,
+     upgrade). Point: they report learned policies near the clinical rule;
+     nobody ablates memory or continuous time under one trainer.
+   - *Memory in partially observed RL* — Ni et al. 2022 (ICML, arXiv
+     2110.05038), POPGym (Morad et al., ICLR 2023, arXiv 2303.01859). Point:
+     recurrent model-free RL is a strong baseline, but simple memory often
+     matches complex memory; our memoryless MLP winning is the extreme case,
+     and our headroom split says why (little left for memory to buy).
+   - *Continuous-time networks for irregular data* — latent ODE / ODE-RNN
+     (Rubanova 2019, 2° → 1°), neural CDE (Kidger et al., NeurIPS 2020, arXiv
+     2005.08926), LTC (Hasani et al., AAAI 2021, arXiv 2006.04439). Point: the
+     benefit is shown for prediction on irregular series; we test it in
+     control, where i.i.d. gaps carry no information about the patient.
+   Every cited paper is read 1° from its PDF first (REVIEW_PROTOCOL §0.3),
+   with a `literature/papers/` entry and `make lit-check`; a paper that
+   cannot be read is not cited.
+2. **Pre-empt "undertrained recurrent nets" in the introduction** with the
+   headroom split ([L1310](adaptive_therapy/RESEARCH_LOG.md#L1310)): memory's
+   ceiling is ≤ ~15 d whatever the budget.
+3. **Reproducibility appendix**: hyperparameter table (PQN, arm sizes, PK,
+   cohorts), compute, code and research-log availability.
+4. **Untested continuous-time variants** (LTC / CfC / neural CDE arms):
+   conceded in Limitations. A run would need its own registration.
+5. **Page budget**: shrink the Limitations' Hahnfeldt/Zhang paragraph to ~4
+   lines once the workshop and its style file are known.
+
+**Kill:** none; text only. No sentence may claim more than its log entry.
+
 ---
 
 ## Stage 2 — main-conference follow-up (deferred on runway, not merit)
