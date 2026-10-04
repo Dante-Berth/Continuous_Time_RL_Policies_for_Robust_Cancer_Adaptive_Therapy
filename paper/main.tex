@@ -29,7 +29,8 @@ visit gap, and an ODE-RNN. We compare them on paired virtual patients, with
 confidence intervals over both training seeds and patients. The ODE-RNN never
 beats the best discrete arm: not in distribution, not under a parameter
 shift, and not with up to half of the visits missed. The best learned policy is
-the memoryless MLP, which learns a one-line burden threshold. The task is not
+the memoryless MLP, which learns a one-line burden threshold; giving it only a
+clock costs as much as giving it memory. The task is not
 saturated: a per-patient search on the true simulator beats the MLP by about
 25 days, but at most ${\sim}15$ of those are reachable by memory, while
 recurrent training costs 40--50. The negative is a learning cost larger than
@@ -132,7 +133,9 @@ by 1.5 and $K$ by 0.6, outside the training box. Tier~4 misses each visit with
 probability $p$, i.i.d.; a missed visit gives no observation and no decision,
 and the last dose continues (``hold'').
 \paragraph{Arms.} MLP (width 441), LSTM (26 units), LSTM+$\Delta t$ (gap as a
-second input, the standard discrete baseline for irregular series), and ODE-RNN
+second input, the standard discrete baseline for irregular series), a
+positional MLP (width 386; memoryless, but also sees elapsed time, a standard
+memory baseline \cite{morad2023}), and ODE-RNN
 \cite{rubanova2019}. The ODE-RNN is a GRU jump at each observation, with a
 tanh-bounded latent flow between observations in fixed $7/8$\,d steps, so gaps
 of whole weeks compose exactly. All use a LayerNorm Q-readout, trained by PQN
@@ -170,6 +173,12 @@ Strobl's ranges (Fig.~\ref{fig:forest}), ODE$-$MLP is \SAOdeMlpOne\ at Tier~1
 and \SAOdeMlpZero\ at Tier~0, with all ten seeds negative. ODE$-$LSTM is
 \SAOdeLstmOne, and LSTM$-$MLP \SAMemOne. Tier~0 and Tier~1 agree, so the gap is
 a control deficit present without any shift, not a robustness effect. The
+deficit is not specific to memory. A positional MLP, memoryless but given the
+elapsed time, trails the MLP by as much ($-56.8$ [$-64.2$, $-48.3$] at Tier~1)
+and ties the LSTM and ODE-RNN. The share of its doses explained by the current
+observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23: any input beyond the
+current burden lets the trainer fit a time-indexed schedule instead of
+feedback. Under missed visits it ties the MLP ($+2.2$ [$-13.2$, $+16.4$]). % V7 L1414 The
 provisional regime gives the same ordering: LSTM$-$MLP \WCMemOne, ODE$-$LSTM
 \WCOdeLstmOne\ (L596).
 
@@ -345,8 +354,7 @@ training reward and still trails on $U$, and with a progression term in the rewa
 ties the MLP on mean $U$. Neither change opened the registered 10-day gate, so
 we stopped the reward and budget search there rather than tune toward it.
 We test one continuous-time design, the ODE-RNN; liquid time-constant
-\cite{hasani2021} and neural-CDE \cite{kidger2020} arms, and a positional MLP
-that sees the clock \cite{morad2023}, are untested. Missed visits are i.i.d., so the next gap is unknown when the policy doses;
+\cite{hasani2021} and neural-CDE \cite{kidger2020} arms are untested. Missed visits are i.i.d., so the next gap is unknown when the policy doses;
 scheduled gaps, where continuous time has more to use, are untested. Before
 testing mechanism shift (Tier~2) we checked three other tumour models.
 Kuznetsov has no resistant population, so MTD is optimal by construction;
@@ -556,6 +564,7 @@ V5 & reproduce Hahnfeldt, Zhang & FAIL: 3/5, 0/4 targets & L1176 \\
 V5d/e & Zhang 2017 + SI & structure ok; times $\le$15/40 & L1216--48 \\
 O1 & full-information search, no trainer & headroom $+23$\,d & L1279 \\
 O1b & split of O1's headroom & $\le$15\,d reachable by memory & L1310 \\
+V7 & positional MLP on S1's design & hurts at Tier 1; ties at Tier 4 & L1414 \\
 V1 & reward, medians, 3 y (post hoc) & no misalignment; LSTM $>$ MTD (medians) & L1136 \\
 \bottomrule
 \end{tabular}}

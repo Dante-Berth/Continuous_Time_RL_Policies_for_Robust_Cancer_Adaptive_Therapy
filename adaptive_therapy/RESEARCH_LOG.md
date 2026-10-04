@@ -1410,3 +1410,26 @@ reasons. A LAW needs the same mechanism twice, and here it is unproven.
 ROADMAP V6 struck. The fallbacks (Meade 2022; Greene 2019; Viossat & Noble
 2021) need the owner's go-ahead, each with its own gate. The paper's
 LV-only scope sentence stands.
+
+## [2026-10-04] — V7: a clock alone costs as much as memory: the positional MLP trails the MLP by 57 d at Tier 1 and ties it at Tier 4
+**Verdict:** OPEN — the recurrent arms' deficit is not specific to memory: one clock input costs the MLP −56.8 d, as much as an LSTM's state (−44.1, S1) · **Gate:** Tier-1 median capped TTP Pos 175 [126, 259] vs MLP 273 [182, 357]; median exposure 212 vs 245 d; burden integral not computed; Wilcoxon not run (CI rule as registered); 10 seeds × 4 w × 200 patients per part · **Artifacts:** `research/v7_posmlp.py`, `research/outputs/v7_posmlp.{json,log}`, `v7_shards/`, `v7_policies/`
+### Context
+PREREG V7 [2026-10-04]. POPGym (1°, p.9) calls the positional MLP (memoryless + elapsed time) a standard memory baseline. Same seeds, cohorts, trainer and w grid as S1 ([L766](RESEARCH_LOG.md#L766)), paired against S1's shards. Width 386, Q-path 3091 vs 3090. One smoke-test cell (A, w 0.1, s31) ran before launch, with registered settings, and is kept.
+### Results (Δ U, d, mean over w; 95% CI over seeds + patients; median of paired differences after)
+| Part | vs | mean Δ | median Δ |
+|---|---|---|---|
+| A Tier 1 | MLP | **−56.8 [−64.2, −48.3]** | −44.6 [−55.4, −32.3] |
+| A Tier 1 | LSTM / ODE-RNN | −12.7 [−30.0, +10.3] / −6.8 [−24.2, +12.7] | −7.2 / −6.1 (CIs cover 0) |
+| A Tier 0 | MLP | −53.0 [−65.4, −40.9] | −33.5 [−53.7, −20.3] |
+| B p∈{.2,.5} | MLP | **+2.2 [−13.2, +16.4]** | −7.2 [−17.9, +3.1] |
+| B p∈{.2,.5} | LSTM / LSTM+Δt / ODE | −8.5 / +5.9 / +7.6 (all CIs cover 0) | −5.2 / +9.7 / +0.3 |
+| B p=0.5 | MTD | −6.0 [−18.9, +4.8] | **+12.7 [+7.0, +19.9]** |
+| B p=0 | MLP | −45.0 [−59.7, −32.6] | −27.6 |
+Valid: 0/80 non-finite. Registered readings: **A hurts, B ties.**
+Descriptive, Tier 1: share of dose explained by the current observation (closed-loop) is Pos 0.26, MLP 0.48, LSTM 0.34, ODE 0.23 (median over 40 cells).
+### Reading
+- The clock arm sits with the recurrent arms, not with the MLP: at Tiers 0/1 it ties LSTM and ODE-RNN and trails the MLP by about as much as they do. Any input beyond the current burden lets PQN fit a time-indexed schedule. Its closed-loop share halves, to the ODE-RNN's. That is a mechanism shared by all three, offered post hoc, untested.
+- Under missed visits the clock neither helps nor hurts on the mean. Like the LSTM ([L1136](RESEARCH_LOG.md#L1136)), it beats MTD for the median patient at p = 0.5 and not on the mean.
+- So "memory hurts" in the paper is better stated as "any state beyond the current observation hurt at this budget". The ≤ 15-d headroom bound ([L1310](RESEARCH_LOG.md#L1310)) is unaffected.
+### Decision
+Paper: positional MLP added as an arm; the regular-visit sentence is revised to the narrower claim. No follow-up registered; a test of the shortcut mechanism (e.g. clock-dropout) would be a new registration.
