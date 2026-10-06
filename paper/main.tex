@@ -20,42 +20,46 @@ for Learned Adaptive-Therapy Policies under Burden-Only Observation}
 \maketitle
 
 \begin{abstract}
-Continuous-time recurrent policies are often proposed for control problems
-whose dynamics are differential equations and whose observations are
-irregular. We test this claim, pre-registered, on adaptive cancer therapy: a
-policy doses a virtual tumour from noisy total burden alone. One RL algorithm
+Continuous-time recurrent networks are proposed for control problems whose
+dynamics are differential equations and whose observations are irregular, but
+they are mostly tested on prediction, not on control. We test them with a
+pre-registered comparison on adaptive cancer therapy: a policy chooses doses
+for a virtual tumour from noisy total burden alone. One RL algorithm
 (PQN) trains a memoryless MLP, a parameter-matched LSTM, an LSTM given the
 visit gap, and an ODE-RNN. We compare them on paired virtual patients, with
 confidence intervals over both training seeds and patients. The ODE-RNN never
 beats the best discrete arm: not in distribution, not under a parameter
-shift, and not with up to half of the visits missed. The best learned policy is
+shift, and not when up to half of the visits are missed. The best learned policy is
 the memoryless MLP, which learns a one-line burden threshold; giving it only a
 clock costs as much as giving it memory. The task is not
-saturated: a per-patient search on the true simulator beats the MLP by about
+solved: a per-patient search on the true simulator beats the MLP by about
 25 days, but at most ${\sim}15$ of those are reachable by memory, while
-recurrent training costs 40--50. The negative is a learning cost larger than
-the available benefit. It replicates on a second parameter regime and on
-models fitted to 55 patients. We also report four evaluation traps, each of
-which produced a publishable-looking wrong answer on the way.
+recurrent training costs 40--50. The negative result is a learning cost larger
+than the available benefit. It is the same on a second parameter regime and on
+models fitted to 55 patients. We also report four evaluation errors, each of
+which gave a wrong result that looked publishable, and we give a short list of
+controls that found them.
 \end{abstract}
 
 \section{Introduction}
-Adaptive therapy doses a tumour to keep drug-sensitive cells alive as
-competitors of resistant ones, rather than to eradicate it. Reinforcement
-learning has been used to schedule it. On a Lotka--Volterra (LV) model with
+Adaptive therapy doses a tumour so that drug-sensitive cells stay alive and
+compete with resistant cells, instead of trying to eradicate it. Reinforcement
+learning (RL) has been used to schedule it. On a Lotka--Volterra (LV) model with
 burden-only observation, A3C learns a treat-above-threshold rule close to the
 clinical algorithm \cite{gallagher2024}, and recurrence has been reported to
 help chemotherapy control when part of the state is hidden \cite{kiram2026}. A
 natural next claim is that a policy whose hidden state is itself an ODE
 \cite{rubanova2019} carries the right inductive bias. That bias should matter
-most when the biology shifts or when visits are irregular.
+most when the biology shifts or when visits are irregular. This is a general
+question for RL under partial observation, and adaptive therapy is a small
+test bed where we can check it against the true simulator.
 
-We test that claim as a pre-registered comparison, and it fails. The obvious
-objection is that the recurrent arms were undertrained. We answer it without
+We test that claim in a pre-registered comparison, and it is not supported. The
+main objection is that the recurrent arms were undertrained. We answer it without
 any trainer: a per-patient search on the true simulator bounds what any policy
 could gain, and splits that headroom by the information each part needs. At
 most ${\sim}15$ days of it require memory, less than recurrent training cost,
-whatever the budget. Contributions:
+for any budget. Contributions:
 \begin{itemize}
 \item \textbf{A strict ablation.} One trainer, one environment and one
 evaluation, with only the Q-network swapped; the recurrent arms are matched at
@@ -70,9 +74,10 @@ burden threshold. Over one year with half of the visits missed, no learned
 policy beats dosing at the maximum tolerated dose, on either parameter regime.
 Pre-registered maps over cost of resistance, turnover and horizon show where
 that crossover falls, and that it moves with the horizon (\S\ref{sec:monitoring}).
-\item \textbf{Four evaluation traps}, each of which produced a
-publishable-looking wrong answer on the way (\S\ref{sec:pitfalls}), and a record
-of every registered run (Appendix, Table~\ref{tab:runs}).
+\item \textbf{Four evaluation errors}, each of which gave a wrong result that
+looked publishable (\S\ref{sec:pitfalls}), and a record of every registered run
+(Appendix, Table~\ref{tab:runs}). Together they form a checklist of controls
+for claims about memory or continuous time in RL (\S\ref{sec:conclusion}).
 \end{itemize}
 
 \section{Related work}
@@ -86,8 +91,8 @@ continuous time under one trainer, with seed-level uncertainty.
 model-free RL is a strong POMDP baseline; there, as here, an oracle given the
 hidden state under shared hyperparameters often scored below it
 \cite{ni2022}. Across 13 memory models, classical RNNs beat modern ones and
-a memoryless MLP is often not beaten at all \cite{morad2023}. Our MLP winning
-is that pattern at its extreme; our headroom split (\S\ref{sec:results})
+a memoryless MLP is often not beaten at all \cite{morad2023}. Our MLP result
+is this pattern in its extreme form; our headroom split (\S\ref{sec:results})
 measures how little there was for memory to buy.
 \paragraph{Continuous-time networks.} ODE-RNNs \cite{rubanova2019}, neural
 CDEs \cite{kidger2020} and liquid time-constant networks \cite{hasani2021}
@@ -145,7 +150,7 @@ where the paper uses 1024 environments (we test 1024 in \S3).
 \paragraph{Statistic.} Per patient, $U=\min(\mathrm{TTP},357)-w\cdot\text{exposure}$:
 the TTP endpoint net of the exposure price the policy was trained with. Its
 mean over patients is a restricted mean TTP net of exposure. The 357-d cap
-bounds it, so no single patient can carry it. Where the median of the paired
+bounds it, so no single patient can dominate it. Where the median of the paired
 differences changes a reading, we say so.
 $\Delta(A,B)$ is the mean over $w$ (and over $p\in\{0.2,0.5\}$ at Tier~4) of
 the paired mean $U_A-U_B$ on 200 test patients. The 95\% CI comes from 2000
@@ -200,7 +205,7 @@ function's shape (Fig.~\ref{fig:rule}). On Strobl's ranges the mean dose crosses
 one half at $\RuleHalfStrobl\times$ baseline and is full by $0.8\times$. The
 one-line thr0.8 rule matches the MLP: mean $U$ \SAUMlpOne\ vs \SAUThrOne\ at
 Tier~1, and \SAUMlpZero\ vs \SAUThrZero\ at Tier~0. With PQN's published
-parallelism (below) the MLP edges past the rule, \SThreeUMlpZero\ vs
+parallelism (below) the MLP is slightly above the rule, \SThreeUMlpZero\ vs
 \SThreeUThrZero\ at Tier~0, by dosing less.
 
 \paragraph{What memory could have bought.} At regular visits the simulator is
@@ -221,19 +226,19 @@ which bounds what inferring the patient from history could add. Memory could
 therefore have bought at most ${\sim}15$ days. Recurrent training cost 40--50.
 The negative result is a learning cost larger than the available benefit, not
 an absence of benefit. % O1b, L1310
-The recurrent arms also earn less of the training reward than the MLP on their
+The recurrent arms also reach a lower training reward than the MLP on their
 own training patients ($-20.7$ [$-28.4$, $-12.8$] and $-23.5$ [$-34.7$, $-14.0$]),
-so they optimise the reward worse rather than exploiting it. % V1a, L1136
+so they optimise the reward less well; they do not exploit it. % V1a, L1136
 A reference trained like the arms but also shown $S$, $R$ and $\theta$ never
-reached this headroom. It sat \HFullZero\ below the MLP, then \SThreeFull\ at
+reached this headroom. It was \HFullZero\ below the MLP, then \SThreeFull\ at
 PQN's published parallelism, and \TOneFull\ with ten times the gradient steps,
 where it ties the MLP on training reward. That reward has no progression term.
 Adding one (a survival term paid until confirmed progression) lifts the
 reference by $+15.4$ [$+10.2$, $+20.8$] days and brings it level with the MLP
 ($-1.4$ [$-4.1$, $+1.2$]). It now wins on 62--69\% of patients (median $+2$ to
-$+15$ days, mostly less drug) and loses the mean to a tail of earlier
-progressions, and on the mean it recovers none of O1's $+23$ days. The reward
-was part of the gap; PQN's extraction of the true state is the rest.
+$+15$ days, mostly less drug) but its mean is lower because of a tail of earlier
+progressions, so on the mean it recovers none of O1's $+23$ days. The reward
+was part of the gap; the rest is PQN's difficulty in using the true state.
 % S2 L804, S3 L840, T1 L1042, V2 L1344
 
 \begin{table}[t]
@@ -270,20 +275,20 @@ visits missed, the ODE-RNN is above none of its comparators on Strobl's ranges
 $-$LSTM+$\Delta t$ \SBOdeLstmDt, $-$MTD \SBOdeMtd. It degrades more gracefully
 than the MLP (\SBGraceMlp\ on $U(p)-U(0)$) but less than the LSTM
 (\SBGraceLstm), so graceful degradation comes from recurrence, not from
-continuous time. Where the ODE-RNN does beat the MLP at $p=0.5$, it doses more:
+continuous time. Where the ODE-RNN is better than the MLP at $p=0.5$, it uses more drug:
 median exposure 326 vs 194 at $w=0.1$. % L766
 The provisional regime agrees: ODE$-$MLP \WBOdeMlp, ODE$-$MTD \WBOdeMtd.
 One Tier-4 effect is unstable: adding $\Delta t$ to the LSTM changed $U$ by
 $+38.8$, $+3.5$ and $-14.4$ in three independent runs, so we read LSTM+$\Delta t$
 differences as seed noise.
 
-\paragraph{Missed visits erase the value of feedback.} The MLP, best at regular
+\paragraph{Missed visits remove the value of feedback.} The MLP, best at regular
 visits, loses most as visits go missing (Fig.~\ref{fig:missed}; mean $U$
 \SBUMlpZero$\to$\SBUMlpHalf\ on Strobl's ranges, thr0.8
 \SBUThrZero$\to$\SBUThrHalf). Under hold, a threshold policy that has switched
 off keeps the drug off through the gap while the tumour regrows. At 20\% missed
-the MLP still beats MTD (\SBUMlpFifth\ vs \SBUMtdFifth). At 50\%, no learned
-policy beats MTD in either regime over our one-year horizon (but see
+the MLP is still above MTD (\SBUMlpFifth\ vs \SBUMtdFifth). At 50\%, no learned
+policy is above MTD in either regime over our one-year horizon (but see
 \S\ref{sec:monitoring} for three years). On Strobl's ranges the best arm (LSTM) ties it
 (\SBFb); the MLP (\SBFbMlp) and LSTM+$\Delta t$ (\SBFbLstmDt) are below it,
 and the ODE-RNN is at or below it (\SBFbOde). On the provisional ranges all four
@@ -310,7 +315,7 @@ visits missed, no learned arm beats MTD (ODE-RNN \POneOdeMtd, LSTM
 this replay tests drug use more than progression time. These are models fitted
 to patients, not patients. % R2 L1075, P1 L1106
 
-\paragraph{When does monitoring stop paying?} Whether feedback survives missed
+\paragraph{When does monitoring stop being useful?} Whether feedback survives missed
 visits need not depend on architecture at all. With threshold rules only, no
 learning, and patients binned by cost of resistance and turnover, feedback
 beats MTD in every bin with reliable monitoring, and stops doing so at
@@ -319,11 +324,11 @@ turnover high. Over three years the crossover moves later, but for the median
 patient sparing wins only where resistance is nearly free, and on drug saved
 rather than time to progression (Appendix~\ref{sec:monitoring}). % M1 L896, M1b L932, M1c L968
 
-\section{Four ways the comparison misled us}\label{sec:pitfalls}
+\section{Four evaluation errors}\label{sec:pitfalls}
 \begin{enumerate}
 \item \textbf{Open-loop collapse.} Under PPO, the ODE-RNN gave all 200 patients
 one identical exposure in 4 of 6 cells. Our first ``architecture'' result
-therefore compared feedback with a fixed schedule (L312). The cause was
+thus compared feedback with a fixed schedule (L312). The cause was
 initialisation: each 7-day flow drove the hidden state to a saturated fixed
 point, and an untrained policy's entropy fell from 1.07 to 0 within one
 episode (L353).
@@ -331,16 +336,16 @@ episode (L353).
 observations were unreliable, near-fixed schedules scored \emph{higher} than
 closed-loop cells, so excluding them biased the comparison (L632). We moved to
 intention-to-treat, with MTD as a reference arm to beat.
-\item \textbf{Training chaos masquerades as architecture.} A
-$2\times10^{-7}$ float perturbation moved one ODE-RNN cell's mean $U$ from 132
-to 256\,d. Patient-only CIs ($[-20,-11]$) called the ODE-RNN worse than the
+\item \textbf{Training instability looks like an architecture effect.} A
+$2\times10^{-7}$ change in a float moved one ODE-RNN cell's mean $U$ from 132
+to 256\,d. Patient-only CIs ($[-20,-11]$) showed the ODE-RNN worse than the
 LSTM; resampling seeds widened them to $[-43,+22]$ (L596).
 \item \textbf{A mis-built shifted cohort.} Shifting $K$ after computing $y_0$
 put 43--50\% of Tier-1 patients above capacity. Under full dose 14--18\% of
 them diverged to NaN, and these were scored as censored, i.e.\ as successes
 (L242). A progressor-only TTP median and TTP bought with extra drug misled us
-in similar ways. Hence the censoring-aware estimator and the exposure term in
-every comparison here.
+in similar ways. This is why every comparison here uses the censoring-aware estimator and the
+exposure term.
 \end{enumerate}
 
 
@@ -348,20 +353,20 @@ every comparison here.
 \section{Limitations}\label{sec:limits}
 One ODE family (LV), virtual patients only, and no claim about clinical
 outcomes. PQN's settings are the published ones except parallelism (32 patients
-per update, not 1024) and untuned, and the recurrent arms are chaotic in
+per update, not 1024) and untuned, and the recurrent arms are unstable in
 training; we treat that as part of their cost rather than tuning it away. Given
 the true hidden state, PQN at the registered budgets scores below the
 burden-only MLP. With ten times the gradient steps it matches the MLP on the
 training reward and still trails on $U$, and with a progression term in the reward it
 ties the MLP on mean $U$. Neither change opened the registered 10-day gate, so
-we stopped the reward and budget search there rather than tune toward it.
+we stopped the reward and budget search there, instead of tuning until it passed.
 We test one continuous-time design, the ODE-RNN; liquid time-constant
 \cite{hasani2021} and neural-CDE \cite{kidger2020} arms are untested. Missed visits are i.i.d., so the next gap is unknown when the policy doses;
 scheduled gaps, where continuous time has more to use, are untested. Before
 testing mechanism shift (Tier~2) we checked three other tumour models.
 Kuznetsov has no resistant population, so MTD is optimal by construction;
 Hahnfeldt is a mouse model with no resistant population, which our
-implementation reproduces in its own units bar two narrow misses
+implementation reproduces in its own units except for two narrow misses
 \cite{hahnfeldt1999}; and the
 three-population model behind the clinical adaptive-therapy trial
 \cite{zhang2017} reproduces structurally (22/22 equilibria) but not in its
@@ -380,8 +385,8 @@ at the grid's most aggressive level. $U$ is a mean. On medians the three-year
 win holds only where resistance is nearly free, and the sparing rules always
 carry a larger tumour burden, which our metastasis proxy counts against them.
 
-\section{Conclusion}
-On this task a memoryless burden threshold is a hard baseline, and neither
+\section{Conclusion}\label{sec:conclusion}
+On this task a memoryless burden threshold is a strong baseline, and neither
 memory nor continuous time beat it, on two parameter regimes and on models
 fitted to 55 patients' PSA. The task has headroom, but most of it is a better
 threshold or better measurement, not something a recurrent state could infer;
@@ -389,10 +394,18 @@ what memory could add (${\sim}15$ days) is smaller than what recurrent training
 cost (40--50). Even given the hidden state, and with a reward that pays until
 progression, the same trainer only ties the burden-only MLP. When half of the
 visits are missed, the question is no longer which architecture uses feedback
-best but whether feedback pays at all; over one year, on average, it did not.
+best but whether feedback has any value; over one year, on average, it had none.
 A continuous-time policy needs a setting where the gap itself carries
 information, such as scheduled rather than random visits, and a trainer that
 can first beat the threshold with the true state.
+
+\paragraph{Controls for similar claims.} Before reporting an architecture
+effect in partially observed RL, we suggest: (i) a memoryless and a clock-only
+baseline; (ii) a trainer-free bound on the headroom, split by the information
+each part needs; (iii) confidence intervals over training seeds as well as test
+cases; (iv) the cost of the policy (here, drug exposure) next to its score; and
+(v) a rule that keeps failed runs in the count, so that a validity filter cannot
+select the better cells.
 
 \begin{thebibliography}{99}
 \bibitem{gallagher2024} K.~Gallagher, M.~A.~R. Strobl, D.~S. Park,
@@ -438,7 +451,7 @@ time-constant networks. \emph{AAAI} 35(9), 2021.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_monitoring.pdf}
-\caption{Where monitoring stops paying. The best threshold rule minus MTD in
+\caption{Where monitoring stops being useful. The best threshold rule minus MTD in
 $U$ (mean over the four exposure prices) on held-out test patients, against the
 share of visits missed. The threshold is chosen on a separate selection cohort.
 Lines are bins of $r_R/r_S$; darker means a costlier resistance, and the dashed
@@ -448,7 +461,7 @@ note the different $y$-scales. 10 seeds $\times$ 200 test patients per bin.}
 \label{fig:monitoring}
 \end{figure}
 
-\section{When does monitoring stop paying?}\label{sec:monitoring}
+\section{When does monitoring stop being useful?}\label{sec:monitoring}
 Whether feedback survives missed visits need not depend on architecture at all.
 We binned patients by cost of resistance ($r_R/r_S$) and turnover ($d_T/r_S$).
 In each bin we compared the best burden-threshold rule with MTD, with rules
@@ -461,7 +474,7 @@ doing so rises as resistance becomes cheaper: from \MOnePStarLowMin\ to
 \MOnePStarHighMax\ at high turnover. At 50\% missed, the costliest bin inside
 Strobl's sweep trails the no-cost end by \MOneCostLow\ days at low turnover
 and \MOneCostHigh\ at high turnover. Feedback thus tolerates unreliable
-monitoring best where adaptive therapy pays most \cite{strobl2021}. % M1, L896
+monitoring best where adaptive therapy helps most \cite{strobl2021}. % M1, L896
 
 \paragraph{The horizon changes the answer.} Over one year, MTD reaches the end of
 the horizon for most patients in the costliest bins, so we followed the same
