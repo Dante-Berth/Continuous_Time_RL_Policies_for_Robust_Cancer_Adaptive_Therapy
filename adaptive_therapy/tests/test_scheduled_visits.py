@@ -91,3 +91,53 @@ def test_lookahead_arms_are_parameter_matched_within_two_point_one_percent():
     n_ode = q(ode, lambda p: (p.vf, p.cell, p.head, p.norm))
     assert n_mlp == 3091
     assert all(abs(n / n_mlp - 1) < 0.021 for n in (n_lstm, n_ode))
+
+
+def test_a_schedule_pool_gives_each_patient_one_of_its_schedules():
+    """PREREG W9: the draw comes from the episode key, so patients differ, and the
+    lookahead each one is shown matches the schedule it was given."""
+    pool = ((1, 3), (2, 2), (1, 1, 2))
+    th, y0 = _patient()
+    ep = EpisodeConfig(schedule_pool=pool, lookahead=True)
+    pol = MLPPolicy(KEY, width=386, layer_norm=True, in_dim=2)
+    allowed = [schedule_mask(52, s) for s in pool]
+    picked = set()
+    for k in jax.random.split(KEY, 24):
+        traj = rollout(pol, th, y0, k, ep, RewardConfig())
+        seen = np.asarray(traj["seen"])
+        which = [i for i, m in enumerate(allowed) if (m == seen).all()]
+        assert len(which) == 1
+        assert np.allclose(np.asarray(traj["obs"])[:, 1] * LOOKAHEAD_SCALE, slots_to_next_visit(seen))
+        picked.add(which[0])
+    assert picked == {0, 1, 2}
+    with pytest.raises(ValueError):
+        rollout(pol, th, y0, KEY, EpisodeConfig(schedule=(1,), schedule_pool=pool), RewardConfig())
+
+
+def test_clock_dropout_hides_the_clock_in_about_half_the_episodes_and_can_be_forced():
+    """PREREG V9: the clock is hidden when the first observation is positive,
+    carried in the state; `hide` and `show` pin it at test."""
+    p = MLPPolicy(KEY, width=386, layer_norm=True, clock_dropout=True)
+    assert p.initial_state().shape == (3,)
+    s0 = p.initial_state()
+    _, up = p(jnp.array(0.02), s0, 7.0)
+    _, down = p(jnp.array(-0.02), s0, 7.0)
+    assert float(up[1]) == 1.0 and float(down[1]) == 0.0 and float(up[2]) == 1.0
+    _, later = p(jnp.array(-0.9), up, 7.0)  # the flag is fixed after visit 0
+    assert float(later[1]) == 1.0 and float(later[0]) == 14.0
+    hide, show = p.forced("hide"), p.forced("show")
+    far = up.at[0].set(300.0)
+    a, _ = hide(jnp.array(0.1), far, 7.0)
+    b, _ = hide(jnp.array(0.1), up, 7.0)
+    c, _ = show(jnp.array(0.1), far, 7.0)
+    d, _ = show(jnp.array(0.1), up, 7.0)
+    assert jnp.allclose(a, b) and not jnp.allclose(c, d)
+
+
+def test_clock_dropout_arm_matches_the_positional_mlp_parameter_count():
+    def q(p):
+        return sum(x.size for x in jax.tree_util.tree_leaves((p.layers, p.norm)) if hasattr(x, "size"))
+
+    pos = MLPPolicy(KEY, width=386, layer_norm=True, clock=True)
+    cd = MLPPolicy(KEY, width=386, layer_norm=True, clock_dropout=True)
+    assert q(pos) == q(cd) == 3091

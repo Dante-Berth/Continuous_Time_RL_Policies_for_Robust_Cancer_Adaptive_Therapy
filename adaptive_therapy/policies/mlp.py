@@ -17,6 +17,8 @@ plain MLP and calls it standard for memory comparisons.
 
 from __future__ import annotations
 
+import copy
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -32,9 +34,17 @@ class MLPPolicy(eqx.Module):
     norm: eqx.nn.LayerNorm | None
     width: int = eqx.field(static=True)
     clock: bool = eqx.field(static=True)
+    clock_dropout: bool = eqx.field(static=True)
+    clock_force: str = eqx.field(static=True)
 
     def __init__(
-        self, key, width: int = 384, layer_norm: bool = False, in_dim: int = 1, clock: bool = False
+        self,
+        key,
+        width: int = 384,
+        layer_norm: bool = False,
+        in_dim: int = 1,
+        clock: bool = False,
+        clock_dropout: bool = False,
     ):
         # 384, not 64: it is what makes this arm parameter-matched to the
         # ODE-RNN (3076 each, ratio 1.00). See the PREREG amendment
@@ -42,8 +52,15 @@ class MLPPolicy(eqx.Module):
         # 3076, and a win for the bigger network would be uninterpretable.
         k1, k2, k3, k4 = jax.random.split(key, 4)
         self.width = width
-        self.clock = clock
-        in_dim += int(clock)
+        # clock_dropout (PREREG V9): in half of the episodes the clock input is
+        # replaced by its mid-episode value. Which half is decided by the sign of
+        # the first observation (pure noise at visit 0), carried in the state, so
+        # rollout and replay agree without plumbing a key. `clock_force` pins it
+        # at test: "hide" (clock never shown) or "show" (always shown).
+        self.clock = clock or clock_dropout
+        self.clock_dropout = clock_dropout
+        self.clock_force = ""
+        in_dim += int(self.clock)
         # in_dim > 1 only for PREREG S2's full-information reference, which
         # also sees the hidden state (rollout.oracle_features); every arm is 1.
         self.layers = [
@@ -61,21 +78,38 @@ class MLPPolicy(eqx.Module):
     def initial_state(self) -> jnp.ndarray:
         """No recurrent state. Returned as a length-0 array so the RL loop can
         carry a state for every architecture without special-casing."""
-        return jnp.zeros((1,) if self.clock else (0,))
+        return jnp.zeros((3,) if self.clock_dropout else (1,) if self.clock else (0,))
+
+    def forced(self, mode: str) -> "MLPPolicy":
+        """A copy with the clock pinned at test: "hide", "show", or "" (the dropout)."""
+        new = copy.copy(self)
+        object.__setattr__(new, "clock_force", mode)
+        return new
+
+    def _shown(self, state):
+        """The clock value the network sees: elapsed time, or mid-episode if hidden."""
+        if not self.clock_dropout:
+            return state[:1]
+        hidden = {"hide": 1.0, "show": 0.0}.get(self.clock_force, state[1])
+        return jnp.where(hidden > 0.5, CLOCK_SCALE / 2, state[:1])
 
     def _input(self, obs, t):
         x = jnp.atleast_1d(obs)
         return jnp.concatenate([x, t / CLOCK_SCALE]) if self.clock else x
 
     def __call__(self, obs, state, dt, key=None):
-        if self.clock:
+        if self.clock_dropout:
+            flag = jnp.where(state[2] > 0.5, state[1], (jnp.atleast_1d(obs)[0] > 0).astype(state.dtype))
+            state = jnp.stack([state[0] + jnp.asarray(dt, state.dtype), flag, jnp.ones_like(flag)])
+        elif self.clock:
             state = state + jnp.asarray(dt, state.dtype)
-        z = self.layers[0](self._input(obs, state))
+        z = self.layers[0](self._input(obs, self._shown(state) if self.clock_dropout else state))
         h = jax.nn.tanh(self.norm(z) if self.norm is not None else z)
         return self.layers[1](h), state
 
     def value(self, obs, state) -> jnp.ndarray:
-        h = jax.nn.tanh(self.critic[0](self._input(obs, state)))
+        t = self._shown(state) if self.clock_dropout else state
+        h = jax.nn.tanh(self.critic[0](self._input(obs, t)))
         return self.critic[1](h)[0]
 
 

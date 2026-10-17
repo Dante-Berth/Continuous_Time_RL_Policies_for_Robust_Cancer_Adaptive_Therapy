@@ -57,6 +57,11 @@ class EpisodeConfig:
     # timing known when it doses.
     schedule: tuple[int, ...] | None = None
     lookahead: bool = False
+    # PREREG W9 (2026-10-17): train on a POOL of schedules, one drawn per patient
+    # from the episode key, so the next-visit time varies between patients and
+    # the lookahead input can no longer be replaced by a fixed phase. Tests still
+    # use a single `schedule`. Mutually exclusive with `schedule`.
+    schedule_pool: tuple[tuple[int, ...], ...] | None = None
 
 
 ORACLE_DIMS = {"none": 0, "state": 2, "full": 8}
@@ -90,6 +95,7 @@ def oracle_features(y, theta, baseline, level: str) -> jnp.ndarray:
 # earlier rollout (W3c included) is reproduced exactly, and at any rate the
 # noise a patient sees is the same whichever visits are missed.
 _MASK_STREAM = 4
+_SCHEDULE_STREAM = 5  # which pool schedule a patient gets; W9
 
 
 def visit_mask(key, n_visits: int, drop_rate: float) -> jnp.ndarray:
@@ -229,7 +235,14 @@ def rollout(
         }
         return (state, y2, conc3, h2, nadir2, k, since2, action, run2, progressed2), out
 
-    if ep.schedule is not None:
+    if ep.schedule_pool is not None:
+        if ep.schedule is not None:
+            raise ValueError("schedule and schedule_pool are mutually exclusive")
+        masks = np.stack([schedule_mask(ep.n_visits, sc) for sc in ep.schedule_pool])
+        aheads = np.stack([slots_to_next_visit(m) for m in masks])
+        i = jax.random.randint(jax.random.fold_in(key, _SCHEDULE_STREAM), (), 0, len(masks))
+        seen, ahead = jnp.asarray(masks)[i], jnp.asarray(aheads)[i]
+    elif ep.schedule is not None:
         sched = schedule_mask(ep.n_visits, ep.schedule)
         seen, ahead = jnp.asarray(sched), jnp.asarray(slots_to_next_visit(sched))
     else:
