@@ -23,6 +23,7 @@ from dataclasses import dataclass
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from adaptive_therapy.envs.base import ModelId, PKConfig, SolverConfig, observe
 from adaptive_therapy.envs.cohort import solve_one_patient
@@ -47,6 +48,15 @@ class EpisodeConfig:
     # What a missed visit gives: "hold" repeats the last chosen dose (every run
     # up to S3); "full" gives full dose. 2026-09-30, PREREG M1's protocol question.
     miss_dose: str = "hold"
+    # Scheduled visits (PREREG W8, 2026-10-17): a deterministic visit pattern
+    # instead of the i.i.d. mask. `schedule` is the cyclic gaps, in visit slots,
+    # between observed visits ((1, 3): visits at slots 0, 1, 4, 5, 8, ...); it
+    # replaces `drop_rate`. `lookahead` appends the slots to the NEXT visit as a
+    # second observation component, so the policy knows how long its dose will
+    # be held. This is CLOSED #2's reserved re-open condition: the next visit's
+    # timing known when it doses.
+    schedule: tuple[int, ...] | None = None
+    lookahead: bool = False
 
 
 ORACLE_DIMS = {"none": 0, "state": 2, "full": 8}
@@ -93,6 +103,31 @@ def visit_mask(key, n_visits: int, drop_rate: float) -> jnp.ndarray:
     return (u >= drop_rate).at[0].set(True)
 
 
+LOOKAHEAD_SCALE = 4.0  # slots per unit of the lookahead input
+
+
+def schedule_mask(n_visits: int, schedule: tuple[int, ...]) -> np.ndarray:
+    """(n_visits,) bool, True at the scheduled visits: slot 0, then cyclic gaps."""
+    if not schedule or min(schedule) < 1:
+        raise ValueError(f"schedule gaps must be >= 1 slot, got {schedule!r}")
+    mask, slot, i = np.zeros(n_visits, dtype=bool), 0, 0
+    while slot < n_visits:
+        mask[slot] = True
+        slot += schedule[i % len(schedule)]
+        i += 1
+    return mask
+
+
+def slots_to_next_visit(seen: np.ndarray) -> np.ndarray:
+    """(n,) slots from each slot to the next observed one; to the episode end after the last."""
+    n, out, nxt = len(seen), np.zeros(len(seen), dtype=np.float32), len(seen)
+    for i in range(n - 1, -1, -1):
+        out[i] = nxt - i
+        if seen[i]:
+            nxt = i
+    return out
+
+
 def _visit(policy, h, since, obs, seen, interval: float):
     """One monitoring slot -> (logits, h', since'). The ONE home of missed-visit logic.
 
@@ -136,7 +171,8 @@ def rollout(
 
     baseline = observe(y0, ep.model_id)
 
-    def step(carry, seen):
+    def step(carry, xs):
+        seen, ahead = xs
         state, y, conc, h, nadir, k, since, held, run, progressed = carry
         k, k_obs, k_act = jax.random.split(k, 3)
 
@@ -145,6 +181,8 @@ def rollout(
         obs = normalise_obs(noisy, baseline)
         if ep.oracle != "none":  # S2's reference only; the burden obs stays first
             obs = jnp.concatenate([obs[None], oracle_features(y, theta, baseline, ep.oracle)])
+        if ep.lookahead:  # W8: slots to the next visit, known when this dose is chosen
+            obs = jnp.concatenate([jnp.atleast_1d(obs), (ahead / LOOKAHEAD_SCALE)[None]])
 
         logits, h2, since2 = _visit(policy, h, since, obs, seen, ep.visit_interval)
         if eps is None:
@@ -191,7 +229,12 @@ def rollout(
         }
         return (state, y2, conc3, h2, nadir2, k, since2, action, run2, progressed2), out
 
-    seen = visit_mask(jax.random.fold_in(key, _MASK_STREAM), ep.n_visits, ep.drop_rate)
+    if ep.schedule is not None:
+        sched = schedule_mask(ep.n_visits, ep.schedule)
+        seen, ahead = jnp.asarray(sched), jnp.asarray(slots_to_next_visit(sched))
+    else:
+        seen = visit_mask(jax.random.fold_in(key, _MASK_STREAM), ep.n_visits, ep.drop_rate)
+        ahead = jnp.zeros(ep.n_visits)
     init = (
         None,
         y0,
@@ -204,7 +247,7 @@ def rollout(
         jnp.array(0),  # visits in the current run above 1.2 x nadir
         jnp.array(False),  # progression confirmed online (RewardConfig.survival_until)
     )
-    _, traj = jax.lax.scan(step, init, seen)
+    _, traj = jax.lax.scan(step, init, (seen, ahead))
     return traj
 
 

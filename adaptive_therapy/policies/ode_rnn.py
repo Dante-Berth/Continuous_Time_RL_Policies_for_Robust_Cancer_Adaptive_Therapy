@@ -37,7 +37,9 @@ class ODERNNPolicy(eqx.Module):
     step_days: float = eqx.field(static=True)
     max_steps: int = eqx.field(static=True)
 
-    def __init__(self, key, width: int = 64, hidden: int = 16, layer_norm: bool = False):
+    def __init__(
+        self, key, width: int = 64, hidden: int = 16, layer_norm: bool = False, in_dim: int = 1
+    ):  # in_dim 2 only for PREREG W8's lookahead arm
         k1, k2, k3, k4, k5 = jax.random.split(key, 5)
         self.hidden = hidden
         # Fixed-step flow with a bounded step count. Phase 1 measured that an
@@ -63,7 +65,7 @@ class ODERNNPolicy(eqx.Module):
         out = eqx.nn.Linear(width, hidden, key=k2)
         out = eqx.tree_at(lambda m: (m.weight, m.bias), out, (out.weight * 0.1, out.bias * 0.1))
         self.vf = [eqx.nn.Linear(hidden, width, key=k1), out]
-        self.cell = eqx.nn.GRUCell(1, hidden, key=k3)
+        self.cell = eqx.nn.GRUCell(in_dim, hidden, key=k3)
         self.head = eqx.nn.Linear(hidden, N_ACTIONS, key=k4)
         # Optional LayerNorm between the post-observation state and the head,
         # for PQN (arxiv-2407.04811 p.6). Normalises the READOUT only; the

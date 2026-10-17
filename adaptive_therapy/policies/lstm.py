@@ -32,11 +32,14 @@ class LSTMPolicy(eqx.Module):
     hidden: int = eqx.field(static=True)
     dt_input: bool = eqx.field(static=True)
 
-    def __init__(self, key, hidden: int = 26, layer_norm: bool = False, dt_input: bool = False):
+    def __init__(
+        self, key, hidden: int = 26, layer_norm: bool = False, dt_input: bool = False,
+        in_dim: int = 1,
+    ):  # in_dim 2 only for PREREG W8's lookahead arm
         k1, k2, k3 = jax.random.split(key, 3)
         self.hidden = hidden
         self.dt_input = dt_input
-        self.cell = eqx.nn.LSTMCell(2 if dt_input else 1, hidden, key=k1)
+        self.cell = eqx.nn.LSTMCell(in_dim + int(dt_input), hidden, key=k1)
         self.head = eqx.nn.Linear(hidden, N_ACTIONS, key=k2)
         self.norm = eqx.nn.LayerNorm(hidden) if layer_norm else None
         self.critic = eqx.nn.Linear(hidden, 1, key=k3)
