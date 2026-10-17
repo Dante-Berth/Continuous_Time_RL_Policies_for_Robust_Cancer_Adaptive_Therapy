@@ -102,8 +102,8 @@ advantage is largest when the observation pattern itself is informative
 \cite{hasani2021}. We test the control case, with gaps that carry no
 information.
 
-\section{Setup}
-\paragraph{Virtual patients.} Sensitive cells $S$ and resistant cells $R$
+\section{Setup}\label{sec:setup}
+\paragraph{Virtual patients.} (Full protocol: Appendix~\ref{sec:methods}.) Sensitive cells $S$ and resistant cells $R$
 compete for a shared capacity $K$:
 \begin{align*}
 \dot S &= r_S S\,(1 - \tfrac{S+R}{K})(1 - d_D u) - d_S S, &
@@ -603,6 +603,79 @@ a shorter median TTP and a larger median burden integral than MTD (by
 the costliest Strobl bin). Where sparing wins for the median patient, it wins
 on drug saved, not on time bought or tumour held down. % M1c, L968
 
+
+\section{Simulator and protocol in detail}\label{sec:methods}
+This appendix states every modelling and protocol choice behind the results, so
+that the experiments can be read without the code.
+
+\paragraph{Tumour model.} State $(S,R)$: sensitive and resistant cells,
+in the equations of \S\ref{sec:setup}. Both populations grow logistically toward the shared
+capacity; the drug acts on the sensitive growth term only, through
+$(1-d_D u)$, and both populations die at their own rates $d_S, d_R$. The
+resistant population pays a cost of resistance ($r_R<r_S$) and is untouched by
+the drug, so continued full dosing selects for it, which is what adaptive
+therapy tries to avoid. The primary parameter ranges are those of Strobl et al.\
+(2021); a patient is one Latin-hypercube draw of $(r_R/r_S,\,d_T/r_S,\,n_0,\,f_R)$
+with $r_S$, $d_D$ fixed. A second, stronger-cost regime is reported separately.
+
+\paragraph{Drug.} A dose is a bolus added to a single compartment, cleared
+exponentially at $0.5\,\mathrm{d}^{-1}$ (closed form between visits). The
+treatment intensity is $u = C/(C+EC_{50})$ with $EC_{50}=0.5$, so doubling a dose
+does not double cell kill. The three doses are $\{0,\tfrac12,1\}$.
+
+\paragraph{Time.} One episode is one year: 52 weekly visits, i.e.\ 357\,d.
+At every visit the policy sees one observation and chooses a dose; the chosen
+dose is administered at the visit and the tumour ODE is then integrated for
+7\,d with a fixed-step Tsitouras 5(4) solver (accurate to about $10^{-4}$). An episode always runs the full 52
+visits; progression is read off the burden curve afterwards. The ODE-RNN
+advances its latent state through each 7-day gap in 8 steps of $7/8$\,d; the MLP
+and LSTM treat one visit as one step. At Tier~4 a missed visit produces no
+observation and no decision, the previous dose continues, and the
+discrete-time arms receive no information about the gap except the LSTM+$\Delta t$
+arm.
+
+\paragraph{Observation.} The policy sees one number per visit,
+$\log(\text{burden}/\text{baseline})$, where burden is $S+R$ times a log-normal
+noise factor with 5\% standard deviation of the log and baseline is the same
+patient's burden at visit 0. It never sees $S$, $R$, $\theta$ or the visit index
+(except the positional MLP, which sees elapsed time).
+
+\paragraph{Reward and score.} The training reward at a visit is
+$-\max(b/b_{\min}-1.2,\,0) - w\cdot\text{dose}$ plus a constant, where $b_{\min}$
+is the lowest burden so far; the 1.2 matches the progression definition. One
+network is trained per exposure price $w\in\{0.05,0.1,0.2,0.4\}$ and seed.
+The reported score $U=\min(\mathrm{TTP},357)-w\cdot\text{exposure}$ uses the same $w$.
+Exposure is the cumulative dose over the episode. TTP is the first time the burden has
+stayed 20\% above its running nadir for 28 consecutive days (censored at 357\,d
+if it never does).
+
+\paragraph{Cohorts and seeds.} For each seed, 200 training patients are drawn
+and 200 held-out test patients from the same ranges (Tier~0). Tier~1 rescales
+$r_S, r_R$ by 1.5 and $K$ by 0.6 and recomputes the initial state so that no
+patient starts above capacity (an earlier build did not; \S\ref{sec:pitfalls}).
+Each (arm, $w$, seed) cell is trained from scratch on that seed's training
+cohort and then scored greedily on its test cohort. The primary regime uses 10
+seeds per arm; the provisional regime uses 5.
+
+\paragraph{Training.} Every arm is trained by PQN with the settings of
+Table~\ref{tab:hparams}: 300 updates, each collecting 32 training patients'
+full episodes with $\varepsilon$-greedy exploration, followed by 4 epochs of
+4 minibatches of whole patient episodes (never shuffled transitions, because a
+recurrent Q-value depends on the visits before it). Learning rate, discount and
+$\lambda$ are the published values and are the same for every architecture.
+No arm is tuned.
+
+\paragraph{Comparisons.} For two arms $A,B$ the paired difference is
+$U_A-U_B$ per test patient, averaged over $w$ (and over missed-visit rates at
+Tier~4), and the 95\% interval is the 2.5th and 97.5th percentiles of 2000
+bootstrap means that resample training seeds and patients. The
+registered gates and readings (``edge'', ``deficit'', ``ties'') and every run's
+pass and kill criteria were written before the run (Table~\ref{tab:runs}).
+
+\paragraph{What the simulator cannot show.} One resistance mechanism
+(competition), parameters from published ranges and not individual patients,
+one drug, weekly observations of total burden only, and a one-year horizon in
+the primary results. Section~\ref{sec:limits} states the consequences.
 
 \section{Reproducibility}\label{sec:repro}
 \begin{table}[h]
