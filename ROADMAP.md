@@ -399,6 +399,10 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
 
 13. *V9 run 2026-10-17 ([L1477](adaptive_therapy/RESEARCH_LOG.md#L1477)): clock-dropout recovers the positional MLP's deficit; paper updated. Next: W9 (scheduled visits, schedule pool; running). W9 ([L1498](adaptive_therapy/RESEARCH_LOG.md#L1498)): gate failed, nothing closed. V10 ([L1518](adaptive_therapy/RESEARCH_LOG.md#L1518)): state dropout does not fix the recurrent arms. Paper updated.*
 
+14. *figure done 2026-10-17 (`fig_shortcut.pdf`, from the logged artifacts).* **Headline figure + task panel.** Task panel (untreated / MTD / thr0.8 / learned MLP trajectories for one patient) still open.
+15. **Generality check (W10, RUN, not yet registered).** Does V9's clock shortcut and its dropout fix appear outside the cancer simulator? Use the JAX re-implementation of POPGym, [popjaxrl](https://github.com/luchris429/popjaxrl) (Lu et al. 2023), not the Gym original, so it drops into this stack. Plan: pick 2–3 tasks where memory matters; arms MLP, MLP + clock, clock-dropout MLP, LSTM; same PQN. Register first, with a manipulation check (the clock arm must lose to the MLP on at least one task, or there is no shortcut to remove) and a kill: no task shows the shortcut ⇒ the paper claims it for this simulator only. Estimate 2–4 days with the JAX port; the risk is PQN not training there untuned.
+16. **Remaining text fixes:** summary table of the dense CIs (item 10), citation check (item 12), anonymised repo link (item 2).
+
 **Kill:** none for text items; each RUN item carries its own kill in PREREG.
 
 ---
