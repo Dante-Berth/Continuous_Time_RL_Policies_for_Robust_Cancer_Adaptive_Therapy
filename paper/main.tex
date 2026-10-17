@@ -11,7 +11,7 @@
 \newcommand{\pending}[1]{\textcolor{red}{[#1]}}
 \input{numbers}
 
-\title{Neither Memory nor Continuous Time: A Pre-Registered Negative Result\\
+\title{Neither Memory nor an ODE-RNN: A Pre-Registered Negative Result\\
 for Learned Adaptive-Therapy Policies under Burden-Only Observation}
 \author{Anonymous}
 \date{}
@@ -20,25 +20,24 @@ for Learned Adaptive-Therapy Policies under Burden-Only Observation}
 \maketitle
 
 \begin{abstract}
-Continuous-time recurrent networks are proposed for control problems whose
-dynamics are differential equations and whose observations are irregular, but
-they are mostly tested on prediction, not on control. We test them with a
-pre-registered comparison on adaptive cancer therapy: a policy chooses doses
-for a virtual tumour from noisy total burden alone. One RL algorithm
-(PQN) trains a memoryless MLP, a parameter-matched LSTM, an LSTM given the
-visit gap, and an ODE-RNN. We compare them on paired virtual patients, with
-confidence intervals over both training seeds and patients. The ODE-RNN never
-beats the best discrete arm: not in distribution, not under a parameter
-shift, and not when up to half of the visits are missed. The best learned policy is
-the memoryless MLP, which learns a one-line burden threshold; giving it only a
-clock costs as much as giving it memory. The task is not
-solved: a per-patient search on the true simulator beats the MLP by about
-25 days, but at most ${\sim}15$ of those are reachable by memory, while
-recurrent training costs 40--50. The negative result is a learning cost larger
-than the available benefit. It is the same on a second parameter regime and on
-models fitted to 55 patients. We also report four evaluation errors, each of
-which gave a wrong result that looked publishable, and we give a short list of
-controls that found them.
+A memoryless network that learns a one-line burden threshold beats both
+recurrent memory and an ODE-RNN at scheduling adaptive cancer therapy, and a
+trainer-free bound on the headroom shows why. Continuous-time recurrent
+networks are proposed for control problems whose observations are irregular,
+but they are mostly tested on prediction. We test one, the ODE-RNN, in a
+pre-registered comparison: a policy doses a virtual tumour from noisy total
+burden alone. One RL algorithm (PQN) trains a memoryless MLP, a
+parameter-matched LSTM, an LSTM given the visit gap, and an ODE-RNN, compared
+on paired virtual patients with confidence intervals over training seeds and
+patients. The ODE-RNN never beats the best discrete arm: not in distribution,
+not under a parameter shift, and not when up to half of the visits are missed
+(one-year horizon). Giving the MLP only a clock costs as much as giving it
+memory. The task is not solved: a per-patient search on the true simulator
+beats the MLP by 23 days, but at most ${\sim}15$ of those are reachable by
+memory, while recurrent training costs 40--50. The negative result is a
+learning cost larger than the available benefit. We also report four
+evaluation errors, each of which gave a wrong result that looked publishable,
+and a short table of controls that found them.
 \end{abstract}
 
 \section{Introduction}
@@ -54,7 +53,8 @@ most when the biology shifts or when visits are irregular. This is a general
 question for RL under partial observation, and adaptive therapy is a small
 test bed where we can check it against the true simulator.
 
-We test that claim in a pre-registered comparison, and it is not supported. The
+We test that claim for one continuous-time design, the ODE-RNN, in a
+pre-registered comparison, and it is not supported. The
 main objection is that the recurrent arms were undertrained. We answer it without
 any trainer: a per-patient search on the true simulator bounds what any policy
 could gain, and splits that headroom by the information each part needs. At
@@ -64,20 +64,20 @@ for any budget. Contributions:
 \item \textbf{A strict ablation.} One trainer, one environment and one
 evaluation, with only the Q-network swapped; the recurrent arms are matched at
 ${\sim}3{,}100$ Q-path parameters.
-\item \textbf{Negative results with seed+patient CIs}: no continuous-time edge
-in range (Tier~0), under a parameter shift (Tier~1), or under missed visits
-(Tier~4), on two parameter regimes. A trainer-free full-information bound
-shows the task has headroom and splits it: at most ${\sim}15$ days were
-available to memory, while recurrent training cost 40--50.
-\item \textbf{A task finding.} At regular visits the best learned policy is a
-burden threshold. Over one year with half of the visits missed, no learned
-policy beats dosing at the maximum tolerated dose, on either parameter regime.
-Pre-registered maps over cost of resistance, turnover and horizon show where
-that crossover falls, and that it moves with the horizon (\S\ref{sec:monitoring}).
+\item \textbf{A strict ablation.} One trainer, one environment and one
+evaluation, with only the Q-network swapped; the recurrent arms are matched at
+${\sim}3{,}100$ Q-path parameters.
+\item \textbf{Negative results with seed+patient CIs}: no ODE-RNN edge in range
+(Tier~0), under a parameter shift (Tier~1), or under missed visits (Tier~4), on
+two parameter regimes and on models fitted to 55 patients. The best learned
+policy is a burden threshold. A trainer-free full-information bound shows the
+task has headroom and splits it: at most ${\sim}15$ days were available to
+memory, while recurrent training cost 40--50.
 \item \textbf{Four evaluation errors}, each of which gave a wrong result that
-looked publishable (\S\ref{sec:pitfalls}), and a record of every registered run
-(Appendix, Table~\ref{tab:runs}). Together they form a checklist of controls
-for claims about memory or continuous time in RL (\S\ref{sec:conclusion}).
+looked publishable, and the controls that found them
+(\S\ref{sec:pitfalls}, Table~\ref{tab:controls}). Appendix material: monitoring
+maps over cost of resistance, turnover and horizon (\S\ref{sec:monitoring}),
+and a record of every registered run (Table~\ref{tab:runs}).
 \end{itemize}
 
 \section{Related work}
@@ -302,27 +302,12 @@ on drug saved, as the threshold rules do (\S\ref{sec:monitoring}). The
 ODE-RNN shows no edge there either (ODE$-$LSTM $-32.1$ [$-70.9$, $+9.1$]).
 % V1b, V1c, L1136
 
-\paragraph{On models fitted to patients.} Strobl et al.\ fitted this model to
-PSA from \RTwoN\ men in an intermittent androgen-suppression trial
-\cite{strobl2021}. We repeated their fit with our simulator: \RTwoExcl\ fits
-fail their $r^2 \ge 0.5$ rule (theirs: 15), and fitted cost and turnover are
-anticorrelated (\RTwoPearson; theirs $-0.77$). Their relapse separation holds in
-direction only ($p = \RTwoMWp$, post hoc after a mis-registered test). Replaying
-the saved policies, unchanged, on the \POneN\ kept fits: at regular visits
-ODE-RNN$-$MLP is \POneOdeMlp\ and ODE-RNN$-$LSTM \POneOdeLstm; with half the
-visits missed, no learned arm beats MTD (ODE-RNN \POneOdeMtd, LSTM
-\POneLstmMtd). MTD keeps every fitted patient progression-free for a year, so
-this replay tests drug use more than progression time. These are models fitted
-to patients, not patients. % R2 L1075, P1 L1106
-
-\paragraph{When does monitoring stop being useful?} Whether feedback survives missed
-visits need not depend on architecture at all. With threshold rules only, no
-learning, and patients binned by cost of resistance and turnover, feedback
-beats MTD in every bin with reliable monitoring, and stops doing so at
-10--50\% missed visits over one year: latest where resistance is cheap and
-turnover high. Over three years the crossover moves later, but for the median
-patient sparing wins only where resistance is nearly free, and on drug saved
-rather than time to progression (Appendix~\ref{sec:monitoring}). % M1 L896, M1b L932, M1c L968
+\paragraph{Models fitted to patients; monitoring maps.} Replaying the saved
+policies on models fitted to 55 prostate-cancer patients, both negatives
+replicate (Appendix~\ref{sec:fitted}). Whether feedback survives missed visits
+need not depend on architecture at all: with threshold rules only, it stops
+beating MTD at 10--50\% missed visits over one year, and the crossover depends
+on cost of resistance, turnover and horizon (Appendix~\ref{sec:monitoring}).
 
 \section{Four evaluation errors}\label{sec:pitfalls}
 \begin{enumerate}
@@ -347,6 +332,24 @@ them diverged to NaN, and these were scored as censored, i.e.\ as successes
 in similar ways. This is why every comparison here uses the censoring-aware estimator and the
 exposure term.
 \end{enumerate}
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{Controls for claims about memory or continuous time in partially
+observed RL: what each catches here, and its cost.}
+\label{tab:controls}
+\resizebox{\linewidth}{!}{\begin{tabular}{@{}p{0.34\linewidth}p{0.40\linewidth}p{0.22\linewidth}@{}}
+\toprule
+Control & Error it catches here & Cost \\
+\midrule
+Memoryless and clock-only baselines & ``Memory helps'' when a threshold does as well; a clock costs as much as memory (V7) & two extra arms \\
+Trainer-free headroom bound, split by information & ``Undertrained recurrent nets'': memory could buy $\le 15$\,d (O1b) & one search on the simulator \\
+CIs over training seeds and test cases & A patient-only CI that held trained policies fixed (item 3) & $\ge 5$ seeds per arm \\
+Policy cost next to its score & TTP bought with drug; progressor-only medians (item 4) & one exposure term \\
+Failed runs kept in the count & A validity gate that selected the better cells (item 2); open-loop collapse (item 1) & intention-to-treat reporting \\
+\bottomrule
+\end{tabular}}
+\end{table}
 
 
 
@@ -400,12 +403,8 @@ information, such as scheduled rather than random visits, and a trainer that
 can first beat the threshold with the true state.
 
 \paragraph{Controls for similar claims.} Before reporting an architecture
-effect in partially observed RL, we suggest: (i) a memoryless and a clock-only
-baseline; (ii) a trainer-free bound on the headroom, split by the information
-each part needs; (iii) confidence intervals over training seeds as well as test
-cases; (iv) the cost of the policy (here, drug exposure) next to its score; and
-(v) a rule that keeps failed runs in the count, so that a validity filter cannot
-select the better cells.
+effect in partially observed RL, we suggest the five controls of
+Table~\ref{tab:controls}.
 
 \begin{thebibliography}{99}
 \bibitem{gallagher2024} K.~Gallagher, M.~A.~R. Strobl, D.~S. Park,
@@ -457,9 +456,25 @@ share of visits missed. The threshold is chosen on a separate selection cohort.
 Lines are bins of $r_R/r_S$; darker means a costlier resistance, and the dashed
 bin lies outside Strobl et al.'s sweep. A missed visit repeats the last dose.
 Rows: the same patients followed for one year (top) and three years (bottom);
-note the different $y$-scales. 10 seeds $\times$ 200 test patients per bin.}
+note the different $y$-scales. 10 seeds $\times$ 200 test patients per bin.
+Registered: one year (M1) and three years (M1b). The median analysis in the
+text (M1c) is post hoc.}
 \label{fig:monitoring}
 \end{figure}
+
+\section{Models fitted to patients}\label{sec:fitted}
+Strobl et al.\ fitted this model to
+PSA from \RTwoN\ men in an intermittent androgen-suppression trial
+\cite{strobl2021}. We repeated their fit with our simulator: \RTwoExcl\ fits
+fail their $r^2 \ge 0.5$ rule (theirs: 15), and fitted cost and turnover are
+anticorrelated (\RTwoPearson; theirs $-0.77$). Their relapse separation holds in
+direction only ($p = \RTwoMWp$, post hoc after a mis-registered test). Replaying
+the saved policies, unchanged, on the \POneN\ kept fits: at regular visits
+ODE-RNN$-$MLP is \POneOdeMlp\ and ODE-RNN$-$LSTM \POneOdeLstm; with half the
+visits missed, no learned arm beats MTD (ODE-RNN \POneOdeMtd, LSTM
+\POneLstmMtd). MTD keeps every fitted patient progression-free for a year, so
+this replay tests drug use more than progression time. These are models fitted
+to patients, not patients. % R2 L1075, P1 L1106
 
 \section{When does monitoring stop being useful?}\label{sec:monitoring}
 Whether feedback survives missed visits need not depend on architecture at all.

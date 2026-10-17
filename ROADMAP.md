@@ -355,6 +355,51 @@ The clarity pass is done (abstract, tier numbering, appendix split; commit
 
 **Kill:** none; text only. No sentence may claim more than its log entry.
 
+### W7b — Workshop review pass (planned 2026-10-17)
+
+Review of `paper/main.pdf` (11 pp, plain article). Text-only unless marked
+**RUN**; a RUN item needs its own [PREREG.md](adaptive_therapy/PREREG.md) entry first.
+
+**Blockers (before any submission)**
+
+1. **Venue + style file.** Pick the workshop; read its CfP for page limit, whether
+   appendices count, and double-blind rules; swap `\documentclass` in
+   `paper/main.tex`. ICLR 2027 workshops (~Jan–Feb 2027) are still unverified.
+   The body is likely over a 4-page limit and fine at 8–9.
+2. **Anonymity.** Add an anonymised repo link, or caption Table `tab:runs` saying
+   the L-numbers index the released research log.
+3. **`\pending` gate.** Clear as of 2026-10-17 (`grep -n pending paper/main.tex`
+   finds none beyond the macro).
+
+**Reviewer mark-downs, in cost order**
+
+4. *done 2026-10-17.* **Lead with one message.** Abstract and contributions say "a memoryless
+   threshold beats memory and an ODE-RNN; the headroom split shows why".
+   Contributions → 3 bullets.
+5. *narrowing done 2026-10-17; CfC/LTC run open.* **Fair-candidate objection.** Narrow title and claims to "an ODE-RNN", not
+   "continuous time". Optional **RUN:** a CfC or LTC arm (own PREREG; supersedes
+   the "conceded" W7.4 if run).
+6. *done 2026-10-17 (monitoring-figure caption; split table already marked).* **Mark post-hoc results** (O1b split, M1c, V1) in figure and table captions,
+   not only in the text.
+7. **Positional-MLP mechanism.** Keep the "not tested" wording, or **RUN** a
+   clock-shuffle control (own PREREG).
+8. *done 2026-10-17 (fitted-patient and monitoring paragraphs → appendix).* **Too many threads.** The body keeps the memory-vs-ODE-RNN story and the
+   headroom split; move the monitoring paragraphs and the fitted-patient (R2/P1)
+   paragraph to the appendix, one line each in the body.
+9. *done 2026-10-17.* **Duplication.** "When does monitoring stop being useful?" is in both Results
+   and the appendix; keep one copy.
+10. **Notation load.** Move dense CIs into one summary table; ≤ 2–3 numbers per
+    prose paragraph. The `\S…` macros are generated into `numbers.tex` by
+    `research/w6_figures.py`; keep them generated, never hand-typed.
+11. *done 2026-10-17 (checklist is Table `tab:controls`; section already follows Results).* **Promote the evaluation errors.** Move "Four evaluation errors" and the
+    controls checklist earlier; expand the checklist into a table (control /
+    error it catches / cost).
+12. *horizon + 23 d done 2026-10-17; citation check open.* **Cheap fixes.** State the one-year horizon in the abstract; abstract's
+    "about 25 days" → +23.1 (O1) or +26.0 (tuned threshold); verify every
+    citation resolves (2026 arXiv IDs first).
+
+**Kill:** none for text items; each RUN item carries its own kill in PREREG.
+
 ---
 
 ## Stage 2 — main-conference follow-up (deferred on runway, not merit)
