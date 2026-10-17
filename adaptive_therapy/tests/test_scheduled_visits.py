@@ -141,3 +141,36 @@ def test_clock_dropout_arm_matches_the_positional_mlp_parameter_count():
     pos = MLPPolicy(KEY, width=386, layer_norm=True, clock=True)
     cd = MLPPolicy(KEY, width=386, layer_norm=True, clock_dropout=True)
     assert q(pos) == q(cd) == 3091
+
+
+def test_state_dropout_resets_memory_in_the_hidden_half_and_adds_no_parameters():
+    """PREREG V10: hidden episodes see only the current observation; shown ones
+    are the unchanged recurrent policy; the flag is set once, at visit 0."""
+    from adaptive_therapy.policies.state_dropout import StateDropout
+
+    for inner in (LSTMPolicy(KEY, layer_norm=True), ODERNNPolicy(KEY, layer_norm=True)):
+        sd = StateDropout(inner)
+        s0 = sd.initial_state()
+        q0, up = sd(jnp.array(0.02), s0, 7.0)  # positive first obs -> hidden
+        _, down = sd(jnp.array(-0.02), s0, 7.0)  # -> shown
+        assert float(up[-2]) == 1.0 and float(down[-2]) == 0.0 and float(up[-1]) == 1.0
+        # hidden: the past cannot matter; shown: it can
+        a1, _ = sd(jnp.array(0.3), up, 7.0)
+        a2, _ = sd(jnp.array(0.3), up.at[:-2].add(0.5), 7.0)
+        assert jnp.allclose(a1, a2)
+        b1, _ = sd(jnp.array(0.3), down, 7.0)
+        b2, _ = sd(jnp.array(0.3), down.at[:-2].add(0.5), 7.0)
+        assert not jnp.allclose(b1, b2)
+        # shown reproduces the bare policy exactly
+        bare, hn = inner(jnp.array(0.3), inner.initial_state(), 7.0)
+        shown, sn = sd.forced("show")(jnp.array(0.3), s0, 7.0)
+        assert jnp.allclose(bare, shown) and jnp.allclose(hn, sn[:-2])
+        # forced overrides the flag in both directions
+        hide, show = sd.forced("hide"), sd.forced("show")
+        h1, _ = hide(jnp.array(0.3), down, 7.0)
+        h2, _ = hide(jnp.array(0.3), down.at[:-2].add(0.5), 7.0)
+        w1, _ = show(jnp.array(0.3), up, 7.0)
+        w2, _ = show(jnp.array(0.3), up.at[:-2].add(0.5), 7.0)
+        assert jnp.allclose(h1, h2) and not jnp.allclose(w1, w2)
+        n = lambda t: sum(x.size for x in jax.tree_util.tree_leaves(t) if hasattr(x, "size"))  # noqa: E731
+        assert n(sd.inner) == n(inner)
