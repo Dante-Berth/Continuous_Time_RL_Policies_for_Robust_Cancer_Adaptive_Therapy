@@ -24,7 +24,9 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-os.environ.setdefault("XLA_FLAGS", "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1")
+os.environ.setdefault(
+    "XLA_FLAGS", "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1"
+)
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, os.environ.get("POPJAXRL_DIR", str(ROOT / "outputs" / "popjaxrl")))
 
@@ -56,7 +58,10 @@ class MLPQ(eqx.Module):
 
     def __init__(self, key, obs_dim, n_act, width=128):
         k1, k2, k3 = jax.random.split(key, 3)
-        self.l1, self.l2 = eqx.nn.Linear(obs_dim, width, key=k1), eqx.nn.Linear(width, width, key=k2)
+        self.l1, self.l2 = (
+            eqx.nn.Linear(obs_dim, width, key=k1),
+            eqx.nn.Linear(width, width, key=k2),
+        )
         self.norm, self.head = eqx.nn.LayerNorm(width), eqx.nn.Linear(width, n_act, key=k3)
 
     def initial_state(self):
@@ -149,8 +154,12 @@ def train_cell(task: str, arch: str, seed: int, cfg: PQNConfig = CFG):
     def collect(net, k, eps):
         tr = rollout(net, k, eps, cfg.batch_patients)
         q = jax.vmap(lambda o: replay(net, o))(tr["obs"])
-        tgt = jax.vmap(lambda r, qq: q_lambda_targets(r * cfg.reward_scale, qq, cfg))(tr["reward"], q)
-        return jax.lax.stop_gradient({"obs": tr["obs"], "action": tr["action"], "target": tgt}), tr["reward"]
+        tgt = jax.vmap(lambda r, qq: q_lambda_targets(r * cfg.reward_scale, qq, cfg))(
+            tr["reward"], q
+        )
+        return jax.lax.stop_gradient({"obs": tr["obs"], "action": tr["action"], "target": tgt}), tr[
+            "reward"
+        ]
 
     def loss_fn(net, mb):
         q = jax.vmap(lambda o: replay(net, o))(mb["obs"])
@@ -190,8 +199,12 @@ def train_cell(task: str, arch: str, seed: int, cfg: PQNConfig = CFG):
 
     ret = np.asarray(evaluate(net, jax.random.PRNGKey(10_000 + seed)))
     return {
-        "task": task, "arch": arch, "seed": seed, "n_params": n_params(net),
-        "eval_return_mean": float(ret.mean()), "eval_return_sd": float(ret.std()),
+        "task": task,
+        "arch": arch,
+        "seed": seed,
+        "n_params": n_params(net),
+        "eval_return_mean": float(ret.mean()),
+        "eval_return_sd": float(ret.std()),
         "curve": curve,
     }
 
@@ -202,7 +215,9 @@ def cell_path(task, arch, seed) -> Path:
 
 def run_all(workers: int = 18):
     SHARDS.mkdir(parents=True, exist_ok=True)
-    jobs = [(t, a, s) for t in TASKS for a in ARCHS for s in SEEDS if not cell_path(t, a, s).exists()]
+    jobs = [
+        (t, a, s) for t in TASKS for a in ARCHS for s in SEEDS if not cell_path(t, a, s).exists()
+    ]
 
     def one(j):
         subprocess.run([sys.executable, __file__, "cell", *map(str, j)], check=True)
@@ -225,6 +240,7 @@ if __name__ == "__main__":
         task, arch, seed = sys.argv[2], sys.argv[3], int(sys.argv[4])
         n_up = int(os.environ.get("W10_UPDATES", CFG.n_updates))
         import dataclasses
+
         res = train_cell(task, arch, seed, dataclasses.replace(CFG, n_updates=n_up))
         if "W10_UPDATES" not in os.environ:
             SHARDS.mkdir(parents=True, exist_ok=True)
