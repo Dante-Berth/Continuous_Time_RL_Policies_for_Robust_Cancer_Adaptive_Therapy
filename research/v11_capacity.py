@@ -89,8 +89,8 @@ def analyse(new: list[dict]) -> dict:
         "capacity-limited" if lo > GATE else "not capacity-limited" if hi < GATE else "inconclusive"
     )
     for a in UNITS:
-        l, h = res["vs"][f"{a}-mlp_tier1"]["ci95"]
-        res["reading"][f"{a}_vs_mlp"] = "edge" if l > 0 else "deficit" if h < 0 else "ties"
+        lo_, hi_ = res["vs"][f"{a}-mlp_tier1"]["ci95"]
+        res["reading"][f"{a}_vs_mlp"] = "edge" if lo_ > 0 else "deficit" if hi_ < 0 else "ties"
     return res
 
 
