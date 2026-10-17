@@ -368,8 +368,12 @@ training reward and still trails on $U$, and with a progression term in the rewa
 ties the MLP on mean $U$. Neither change opened the registered 10-day gate, so
 we stopped the reward and budget search there, instead of tuning until it passed.
 We test one continuous-time design, the ODE-RNN; liquid time-constant
-\cite{hasani2021} and neural-CDE \cite{kidger2020} arms are untested. Missed visits are i.i.d., so the next gap is unknown when the policy doses;
-scheduled gaps, where continuous time has more to use, are untested. Before
+\cite{hasani2021} and neural-CDE \cite{kidger2020} arms are untested. Missed visits are i.i.d., so the next gap is unknown when the policy doses.
+On a fixed visit schedule, with the time to the next visit given as an input,
+the ODE-RNN is below the MLP on held-out schedules ($-21.4$ [$-42.8$, $-2.9]$)
+and ties it on the trained one; but the MLP gains little from the input either
+($+9.7$ [$-0.4$, $+19.4$]), so this test does not show that the information is
+useless. % W8 L1438 Before
 testing mechanism shift (Tier~2) we checked three other tumour models.
 Kuznetsov has no resistant population, so MTD is optimal by construction;
 Hahnfeldt is a mouse model with no resistant population, which our

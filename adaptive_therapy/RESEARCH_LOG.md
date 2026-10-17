@@ -1453,3 +1453,23 @@ Registered reading: **inconclusive** (upper CI +10.2 > −10, lower −44.2 < �
 - The paper's "any state beyond the burden lets the trainer fit a schedule" stays a reading, now with one test: removing the clock costs about 15–21 d on average, and the sign flips in 4/10 seeds, so some policies use it and some do not. It does not explain the whole 57-d deficit.
 - Exposure falls with a frozen clock and closed-loop share rises, which fits a clock-keyed dosing level more than a clock-keyed switch time; untested.
 - No follow-up registered. Clock-dropout training would be a new registration.
+
+## [2026-10-17] — W8: with a known next-visit time the ODE-RNN is BELOW the MLP on held-out schedules (−21.4 d [−42.8, −2.9]), but the lookahead barely helps the MLP, so the test is weak
+**Verdict:** OPEN — registered readings P1 deficit, P2 ties, manipulation check ties (+9.7 [−0.4, +19.4]); no continuous-time edge from knowing the schedule, yet the MLP did not use the lookahead either · **Gate:** U mean [seed+patient CI] / ode_L Tier-0 held-out TTP median 343 [238–357] vs mlp_L 357 [266–357] / median exposure 320 vs 192 d / pooled medians in table / per-w Wilcoxon (ODE greater) p 0.93–1.0 / 10 seeds × 4 w · **Artifacts:** research/w8_scheduled.py, research/outputs/w8_scheduled.json, w8_shards/
+### Context
+CLOSED #2 reserved one re-open: scheduled visits where the next visit's time is known when dosing ([L766](RESEARCH_LOG.md#L766)). Registered as W8 in PREREG.md [2026-10-17] (+ amendment before any cell: lstm_L is −2.0% params, schedule C has 27 visits).
+### What was tried
+Strobl ranges, Tier 0, PQN as S1. Train on schedule A = gaps (1, 3); test on A and the held-out B = (2, 2), C = (1, 2, 3), no retraining. Arms given slots-to-next-visit: mlp_L (386), lstm_L (25 + Δt), ode_L (62), all 3028–3091 Q-path params; control mlp_blind (S1's MLP). Seeds 61–70, w ∈ {0.05, 0.1, 0.2, 0.4}; 0/160 cells non-finite. Intention-to-treat.
+### Results
+| Contrast (mean U, d) | mean [CI] | median [CI] |
+|---|---|---|
+| P1 ode_L − mlp_L, held out (B, C) | −21.4 [−42.8, −2.9] | −15.4 [−24.0, −7.6] |
+| P2 ode_L − mlp_L, trained (A) | +3.7 [−13.3, +19.1] | −6.5 [−13.1, +2.1] |
+| check mlp_L − mlp_blind (A) | +9.7 [−0.4, +19.4] | +0.0 [−0.1, +2.3] |
+| ode_L − lstm_L, held out | +7.2 [−16.5, +29.9] | +7.0 [−8.1, +23.0] |
+| ode_L − MTD, A / B / C | −7.3 / −8.7 / −12.0 (all CIs cover 0) | +14.7 / +11.6 / +12.9 |
+| mlp_L − MTD, A / B / C | −11.0 / +23.1 [+16.0, +29.2] / −0.9 | +17.2 / +32.4 / +22.0 |
+ode_L doses far more (median exposure 320 vs 192 d for mlp_L on B) and is least closed-loop (0.26 vs 0.55).
+### Decision
+- Registered: P1 deficit and P2 ties ⇒ the prereg kill says CLOSED #2 extends to scheduled visits. But the manipulation check did not exclude 0 and its median is 0.0: the MLP ignored the lookahead, so the run does not show that knowing the schedule is useless to a continuous-time state, only that this ODE-RNN under this PQN budget did not exploit it and generalised worse than the MLP.
+- So: no LAW L1 exception, and no new CLOSED item until a variant makes the lookahead usable (not registered; that is a new mechanism). Paper: one sentence in Limitations, replacing "scheduled gaps ... are untested".
