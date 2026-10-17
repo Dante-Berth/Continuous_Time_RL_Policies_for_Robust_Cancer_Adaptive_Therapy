@@ -182,7 +182,7 @@ a control deficit present without any shift, not a robustness effect. The
 deficit is not specific to memory. A positional MLP, memoryless but given the
 elapsed time, trails the MLP by as much ($-56.8$ [$-64.2$, $-48.3$] at Tier~1)
 and ties the LSTM and ODE-RNN. The share of its doses explained by the current
-observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23. The deficit is a shortcut the trainer takes: trained with the clock hidden in
+observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23. The deficit is a shortcut the trainer takes (Fig.~\ref{fig:shortcut}): trained with the clock hidden in
 half of the episodes, the same network recovers it ($+54.4$ [$+44.9$, $+62.3$]
 over the positional MLP at Tier~1) and ties the MLP ($-2.4$ [$-5.2$, $+0.4$]).
 Scrambling the trained clock at test costs only $-14.6$ [$-44.2$, $+10.2$].
@@ -194,6 +194,18 @@ Under missed visits it ties the MLP ($+2.2$ [$-13.2$, $+16.4$]). % V7 L1414
 The
 provisional regime gives the same ordering: LSTM$-$MLP \WCMemOne, ODE$-$LSTM
 \WCOdeLstmOne\ (L596).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_shortcut.pdf}
+\caption{The extra-input deficit is a training shortcut for the clock, not for
+memory. $\Delta U$ against the MLP at Tier~1 (Strobl ranges, seeds 31--40).
+Circles: trained as is. Filled diamonds: trained with the clock (MLP) or the
+recurrent state (LSTM, ODE-RNN) unavailable in half of the episodes, tested with
+it available; hollow diamonds: tested with it hidden. Dropout removes the clock's
+deficit but not the recurrent ones. Both dropout experiments (V9, V10) were registered before they ran.}
+\label{fig:shortcut}
+\end{figure}
 
 \begin{figure}[t]
 \centering

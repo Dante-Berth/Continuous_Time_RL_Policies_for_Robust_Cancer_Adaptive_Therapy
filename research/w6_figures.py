@@ -8,6 +8,8 @@ that a registered run wrote, or from its saved policies (the MLP rule).
                    W3c L596 and W4b L668).
   fig_missed.pdf   mean U over w against the missed-visit rate, per arm and
                    the MTD / thr0.8 rules, both regimes.
+  fig_shortcut.pdf Delta U against the MLP at Tier 1 for every arm and its
+                   dropout-trained twin (V7, V9, V10), memory shown vs hidden.
   fig_rule.pdf     mean greedy dose of the trained MLP policies against
                    burden / baseline, both regimes.
   numbers.tex      \\newcommand macros for every S1 / S2 / W4b / W3c number in the text.
@@ -85,6 +87,8 @@ def load() -> dict:
         "t1": json.loads((g.OUT / "t1_steps.json").read_text()),
         "r2": json.loads((g.OUT / "r2_bruchovsky_fit.json").read_text()),
         "p1": json.loads((g.OUT / "p1_replay.json").read_text()),
+        "v9": json.loads((g.OUT / "v9_clockdropout.json").read_text()),
+        "v10": json.loads((g.OUT / "v10_statedropout.json").read_text()),
     }
 
 
@@ -121,6 +125,71 @@ def forest_rows(d: dict) -> dict:
         )
     }
     return rows
+
+
+def shortcut_rows(d: dict) -> list[tuple[str, str, tuple[float, float, float]]]:
+    """(family, variant, (delta, lo, hi)) against the MLP at Tier 1, Strobl, seeds 31-40."""
+
+    def t(v):
+        return (v["delta"], *v["ci95"])
+
+    A, v9, v10 = d["s1"]["A"], d["v9"]["vs"], d["v10"]["vs"]
+    return [
+        ("pos", "trained as is", t(v9["pos_mlp-mlp_tier1"])),
+        ("pos", "clock-dropout, clock shown", t(v9["cd_show-mlp_tier1"])),
+        ("pos", "clock-dropout, clock hidden", t(v9["cd_hide-mlp_tier1"])),
+        ("lstm", "trained as is", t(A["memory"]["tier1"])),
+        ("lstm", "state-dropout, memory shown", t(v10["lstm_sd_show-mlp_tier1"])),
+        ("lstm", "state-dropout, memory hidden", t(v10["lstm_sd_hide-mlp_tier1"])),
+        ("ode_rnn", "trained as is", t(A["H_ct_S"]["vs"]["mlp"]["tier1"])),
+        ("ode_rnn", "state-dropout, memory shown", t(v10["ode_sd_show-mlp_tier1"])),
+        ("ode_rnn", "state-dropout, memory hidden", t(v10["ode_sd_hide-mlp_tier1"])),
+    ]
+
+
+FAMILY = {
+    "pos": (ARM["mlp"][0], "MLP + clock"),
+    "lstm": (ARM["lstm"][0], "LSTM"),
+    "ode_rnn": (ARM["ode_rnn"][0], "ODE-RNN"),
+}
+VARIANT_MARK = {  # shape + fill carry the training and test condition; hue carries the arm
+    "trained as is": ("o", True),
+    "clock-dropout, clock shown": ("D", True),
+    "state-dropout, memory shown": ("D", True),
+    "clock-dropout, clock hidden": ("D", False),
+    "state-dropout, memory hidden": ("D", False),
+}
+
+
+def fig_shortcut(d: dict, path: Path) -> None:
+    rows = shortcut_rows(d)
+    fig, ax = plt.subplots(figsize=(6.5, 3.0))
+    y, ticks, labels = 0.0, [], []
+    for fam in ("pos", "lstm", "ode_rnn"):
+        colour, name = FAMILY[fam]
+        mine = [r for r in rows if r[0] == fam]
+        for k, (_, variant, (est, lo, hi)) in enumerate(mine):
+            yy = y - k
+            mark, filled = VARIANT_MARK[variant]
+            ax.plot([lo, hi], [yy, yy], color=colour, lw=1.4, zorder=2)
+            ax.plot(est, yy, mark, ms=5.5 if mark == "D" else 6, mfc=colour if filled else "white",
+                    mec=colour, mew=1.2, zorder=3)  # fmt: skip
+            ticks.append(yy)
+            labels.append(variant)
+        ax.text(-0.74, y + 0.55, name, transform=ax.get_yaxis_transform(), ha="left",
+                fontsize=8, color=colour, fontweight="bold")  # fmt: skip
+        y -= len(mine) + 0.8
+    ax.axvline(0, color=INK, lw=0.8, zorder=1)
+    ax.set_yticks(ticks, labels)
+    ax.tick_params(axis="y", labelsize=7)
+    style(ax)
+    ax.set_xlim(-80, 15)
+    ax.set_xlabel("Δ U against the MLP, Tier 1 (days; 95% CI over seeds and patients)")
+    ax.text(0.0, 1.03, "← worse than the MLP", transform=ax.transAxes, ha="left",
+            fontsize=7, color=INK2)  # fmt: skip
+    fig.subplots_adjust(left=0.42, right=0.97, top=0.9, bottom=0.17)
+    fig.savefig(path, metadata={"CreationDate": None})  # byte-reproducible
+    plt.close(fig)
 
 
 def style(ax) -> None:
@@ -487,11 +556,12 @@ def main() -> int:
     d = load()
     fig_forest(d, OUT / "fig_forest.pdf")
     fig_missed(d, OUT / "fig_missed.pdf")
+    fig_shortcut(d, OUT / "fig_shortcut.pdf")
     rule = fig_rule(OUT / "fig_rule.pdf")
     fig_monitoring(d, OUT / "fig_monitoring.pdf")
     (OUT.parent / "numbers.tex").write_text(numbers(d, rule))
     print(
-        f"wrote {OUT}/fig_{{forest,missed,rule,monitoring}}.pdf and paper/numbers.tex; rule {rule}"
+        f"wrote {OUT}/fig_{{forest,missed,shortcut,rule,monitoring}}.pdf and paper/numbers.tex; rule {rule}"
     )
     return 0
 
