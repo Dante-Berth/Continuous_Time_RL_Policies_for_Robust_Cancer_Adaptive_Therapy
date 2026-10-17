@@ -92,7 +92,7 @@ def test_scrambled_clock_changes_only_what_the_network_sees():
     assert jnp.allclose(base, intact) and jnp.allclose(s1, si)
     late = s1 + 140.0
     fz = ScrambledClock(p, "frozen")
-    (a, sa), (b, sb) = fz(obs, s0, dt), fz(obs, late, dt)
+    (a, _), (b, sb) = fz(obs, s0, dt), fz(obs, late, dt)
     assert jnp.allclose(a, b) and float(sb[0]) == float(late[0]) + dt
     want, _ = p(obs, jnp.full_like(s0, 178.5) - dt, dt)
     assert jnp.allclose(a, want)
