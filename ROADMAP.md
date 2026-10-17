@@ -380,7 +380,7 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
    re-open condition of CLOSED #2.
 6. *done 2026-10-17 (monitoring-figure caption; split table already marked).* **Mark post-hoc results** (O1b split, M1c, V1) in figure and table captions,
    not only in the text.
-7. **Positional-MLP mechanism.** Keep the "not tested" wording, or **RUN** a
+7. *done 2026-10-17: V8, inconclusive ([L1437](adaptive_therapy/RESEARCH_LOG.md#L1437)); paper sentence updated.* **Positional-MLP mechanism.** Keep the "not tested" wording, or **RUN** a
    clock-scramble control: **V8**, registered in PREREG.md.
 8. *done 2026-10-17 (fitted-patient and monitoring paragraphs → appendix).* **Too many threads.** The body keeps the memory-vs-ODE-RNN story and the
    headroom split; move the monitoring paragraphs and the fitted-patient (R2/P1)
