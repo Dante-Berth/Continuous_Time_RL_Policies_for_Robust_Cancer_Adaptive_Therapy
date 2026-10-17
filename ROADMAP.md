@@ -362,7 +362,7 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
 
 **Blockers (before any submission)**
 
-1. *template done 2026-10-17 (tmlr.sty/.bst unmodified; 10 pp, double-blind header, author-year citations); TMLR's current guidelines still to re-check.* **Venue + style file.** TMLR: swap `\documentclass` for its template and check
+1. *template done 2026-10-17 (tmlr.sty/.bst unmodified; 10 pp, double-blind header, author-year citations); TMLR's author guidelines re-read 2026-10-18: double-blind, TMLR style file, any length (appendix uncounted), supplement a PDF/ZIP ≤100 MB and anonymised, broader-impact statement only if significant risk of harm.* **Venue + style file.** TMLR: swap `\documentclass` for its template and check
    double-blind rules. (The ICLR 2027 workshop list is not out until 2026-11-29.)
 2. **Anonymity (TMLR is double-blind).** Add an anonymised repo link, or caption Table `tab:runs` saying
    the L-numbers index the released research log.
@@ -387,13 +387,13 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
    paragraph to the appendix, one line each in the body.
 9. *done 2026-10-17.* **Duplication.** "When does monitoring stop being useful?" is in both Results
    and the appendix; keep one copy.
-10. *table done 2026-10-17 (Table `tab:summary`, macros generated); prose trimming open.* **Notation load.** Move dense CIs into one summary table; ≤ 2–3 numbers per
+10. *table done 2026-10-17 (Table `tab:summary`, macros generated); prose trimming first pass done 2026-10-18 (CIs already in `tab:summary` removed from the regular-visits and training-reward prose).* **Notation load.** Move dense CIs into one summary table; ≤ 2–3 numbers per
     prose paragraph. The `\S…` macros are generated into `numbers.tex` by
     `research/w6_figures.py`; keep them generated, never hand-typed.
 11. *done 2026-10-17 (checklist is Table `tab:controls`; section already follows Results).* **Promote the evaluation errors.** Move "Four evaluation errors" and the
     controls checklist earlier; expand the checklist into a table (control /
     error it catches / cost).
-12. *horizon + 23 d done 2026-10-17; citations checked 2026-10-17 against `literature/papers/` front matter (all 12 present, metadata matches, `make lit-check` OK); live-link check of the 2026 arXiv IDs not done.* **Cheap fixes.** State the one-year horizon in the abstract; abstract's
+12. *horizon + 23 d done 2026-10-17; citations checked 2026-10-17 against `literature/papers/` front matter (all 12 present, metadata matches, `make lit-check` OK); live-link check done 2026-10-18: all four arXiv IDs resolve with matching titles/authors, three DOIs match Crossref; links added to every bibliography entry.* **Cheap fixes.** State the one-year horizon in the abstract; abstract's
     "about 25 days" → +23.1 (O1) or +26.0 (tuned threshold); verify every
     citation resolves (2026 arXiv IDs first).
 
@@ -404,7 +404,7 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
     *Scouted 2026-10-17:* popjaxrl has no licence file (cannot be vendored) and pins gymnax 0.0.6 / jax 0.4.7; with current gymnax its envs reset and step in a separate venv (`RepeatPrevious`, `CountRecall`, `StatelessCartPole`, `MultiarmedBandit`), `make(id)` returns `(env, params)`. Design problem found: the clock shortcut needs a task where a time-indexed open-loop policy scores in-distribution, and none of POPGym's tasks has that structure, so the manipulation check would likely fail by construction. Alternative W10: the headroom half of the claim, i.e. on tasks that need memory (`RepeatPrevious`, `CountRecall`) the PQN LSTM beats the MLP, which shows the trainer can use memory and the cancer deficit is not a trainer failure. Needs a decision before registering.
     *Decided 2026-10-17: registered as the headroom check (PREREG W10), running.*
 17. **Second review round (2026-10-17, two outside reviews; both said the same three things).** (a) Done in text: the "at most ~15 d by memory" claim is now a split of one rule family's gain, not a ceiling (the per-patient search +23.1 is below the tuned threshold +26.0); duplicate bullet, S3 pointer, exposure-artefact sentence, a Reg. column in `tab:runs`, V8–V10/W8–W9 rows, `make paper-anon` strips the comments that leak log lines. (b) **Done, V12 ([L1578](adaptive_therapy/RESEARCH_LOG.md#L1578)): PPO as a second trainer; LAW L1's headroom gate failed (full-information MLP did not beat the MLP), so it is uninformative about trainers, and by its own kill rule no further trainer is registered. Descriptively the recurrent arms trail the MLP and collapse to open-loop in 12 and 22 of 40 cells. A trainer with demonstrated headroom would need a new mechanism or reward.** (c) **Done, V11 (PREREG V11, [L1558](adaptive_therapy/RESEARCH_LOG.md#L1558)): inconclusive against the gate, both sizes −47 to −49 d vs MLP; MLP and ODE-RNN were not scaled.** a capacity sweep for the LSTM (26, 64, 128 units) against the matched-capacity claim; gate +10 d vs the 26-unit LSTM at Tier 1. (d) **RUN, optional:** a tighter bound (better optimiser or a DP on the known state) so the headroom is a real optimum.
-16. **Remaining before submission (2026-10-18):** prose trimming (item 10); anonymised repo link (item 2; `make paper-anon` already strips comments); live-link check of the 2026 arXiv IDs (item 12); re-check TMLR's current author guidelines (item 1); optional abstract tweak. Optional runs, not required: a tighter headroom bound and a matched-large MLP (item 17d). A second trainer with demonstrated headroom is open but has no registered path (V12).
+16. **Remaining before submission (2026-10-18):** anonymised repo link (item 2; needs a hosting decision; `make paper-anon` already strips comments); rebuild `paper/submission/`; one-line broader-impact note; OpenReview profiles; optional abstract tweak. Done 2026-10-18: prose trimming, live-link check, TMLR guidelines. Optional runs, not required: a tighter headroom bound and a matched-large MLP (item 17d). A second trainer with demonstrated headroom is open but has no registered path (V12).
 
 **Kill:** none for text items; each RUN item carries its own kill in PREREG.
 
