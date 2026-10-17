@@ -12,7 +12,7 @@ import pytest
 from adaptive_therapy.envs.reward import RewardConfig
 from adaptive_therapy.envs.sampling import sample_cohort
 from adaptive_therapy.policies.base import DOSE_LEVELS, N_ACTIONS, normalise_obs
-from adaptive_therapy.policies.mlp import MLPPolicy
+from adaptive_therapy.policies.mlp import MLPPolicy, ScrambledClock
 from adaptive_therapy.policies.ode_rnn import ODERNNPolicy
 from adaptive_therapy.rl.rollout import EpisodeConfig, rollout
 
@@ -79,6 +79,26 @@ def test_positional_mlp_sees_elapsed_time_but_not_past_observations():
     a, _ = p(jnp.array(0.2), s1, 7.0)
     b, _ = p(jnp.array(0.2), s1 + 200.0, 7.0)
     assert not jnp.allclose(a, b)
+
+
+def test_scrambled_clock_changes_only_what_the_network_sees():
+    """PREREG V8: intact reproduces the policy; frozen is blind to elapsed time
+    but still carries the true clock; reversed shows the time remaining."""
+    p = MLPPolicy(KEY, width=386, layer_norm=True, clock=True)
+    s0 = p.initial_state()
+    obs, dt = jnp.array(0.3), 7.0
+    base, s1 = p(obs, s0, dt)
+    intact, si = ScrambledClock(p, "intact")(obs, s0, dt)
+    assert jnp.allclose(base, intact) and jnp.allclose(s1, si)
+    late = s1 + 140.0
+    fz = ScrambledClock(p, "frozen")
+    (a, sa), (b, sb) = fz(obs, s0, dt), fz(obs, late, dt)
+    assert jnp.allclose(a, b) and float(sb[0]) == float(late[0]) + dt
+    want, _ = p(obs, jnp.full_like(s0, 178.5) - dt, dt)
+    assert jnp.allclose(a, want)
+    rv, _ = ScrambledClock(p, "reversed")(obs, late, dt)
+    ref, _ = p(obs, jnp.full_like(s0, 357.0) - (late + dt) - dt, dt)
+    assert jnp.allclose(rv, ref)
 
 
 def test_positional_mlp_q_path_matches_the_other_arms():

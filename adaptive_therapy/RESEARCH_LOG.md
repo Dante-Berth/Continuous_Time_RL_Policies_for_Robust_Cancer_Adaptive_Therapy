@@ -1433,3 +1433,23 @@ Descriptive, Tier 1: share of dose explained by the current observation (closed-
 - So "memory hurts" in the paper is better stated as "any state beyond the current observation hurt at this budget". The ≤ 15-d headroom bound ([L1310](RESEARCH_LOG.md#L1310)) is unaffected.
 ### Decision
 Paper: positional MLP added as an arm; the regular-visit sentence is revised to the narrower claim. No follow-up registered; a test of the shortcut mechanism (e.g. clock-dropout) would be a new registration.
+
+## [2026-10-17] — V8: scrambling the clock of V7's positional MLPs moves U by −14.6 d [−44.2, +10.2] at Tier 1: inconclusive, the schedule reading is neither confirmed nor refuted
+**Verdict:** OPEN — the clock matters on average (all four point estimates negative; Tier 0 CI excludes 0) but not by the registered 10-d gate, and per-seed effects span −117 to +32 d · **Gate:** Tier 1 frozen−intact −14.6 [−44.2, +10.2] mean, −14.5 [−57.7, +7.9] median / TTP median 175 [126–259] intact vs 161 [35–343] frozen / exposure median 211.8 vs 178.5 d / burden integral median 9.7e5 vs 1.17e6 / pooled Wilcoxon p=3e-36 (patients pooled across seeds, descriptive only) / 10 seeds × 4 w · **Artifacts:** research/v8_clockscramble.py, research/outputs/v8_clockscramble.json, v8_shards/
+### Context
+V7 ([L1414](RESEARCH_LOG.md#L1414)) read the positional MLP's 57-d deficit as PQN fitting a time-indexed schedule, post hoc and untested. V8 tests that reading without retraining: the 40 saved Part-A policies are rolled out with the clock input replaced.
+### What was tried
+Registered as V8 in PREREG.md [2026-10-17], before any cell ran: `frozen` (clock = 178.5 d every visit), `reversed` (357 d − elapsed), `intact`. Primary: frozen − intact on U at Tier 1, seed+patient bootstrap. "Schedule" iff upper CI < −10 d; "ignores" iff CI inside (−10, +10). `intact` had to reproduce V7's shards to 1e-6: it did (all 40 cells). One process per (w, seed): a single process died on the JIT mapping limit ([L207](RESEARCH_LOG.md#L207)); no result was seen before the rerun.
+### Results
+| Contrast (− intact) | Tier 0 | Tier 1 |
+|---|---|---|
+| frozen, mean | −21.1 [−45.2, −1.3] | −14.6 [−44.2, +10.2] |
+| frozen, median | −0.2 [−32.2, +5.1] | −14.5 [−57.7, +7.9] |
+| reversed, mean | −29.7 [−56.3, −7.3] | −22.8 [−54.5, +4.3] |
+Per seed (Tier 1, frozen): −3.0, +17.9, −116.7, +31.9, −5.4, −34.9, +14.5, −1.0, +24.1, −73.1. Per w: −5.7, −20.6, +6.0, −38.0.
+Valid: 0 non-finite. Frozen doses less (median exposure 178.5 vs 211.8 d), progresses earlier in the lower quartile (TTP q25 35 vs 126 d) and later in the upper (q75 343 vs 259 d). Closed-loop share 0.27 intact, 0.34 frozen, 0.19 reversed (Tier 1).
+Registered reading: **inconclusive** (upper CI +10.2 > −10, lower −44.2 < −10). Not a registered pass or fail: **met as registered** (a registered outcome was reached; no amendment).
+### Decision
+- The paper's "any state beyond the burden lets the trainer fit a schedule" stays a reading, now with one test: removing the clock costs about 15–21 d on average, and the sign flips in 4/10 seeds, so some policies use it and some do not. It does not explain the whole 57-d deficit.
+- Exposure falls with a frozen clock and closed-loop share rises, which fits a clock-keyed dosing level more than a clock-keyed switch time; untested.
+- No follow-up registered. Clock-dropout training would be a new registration.

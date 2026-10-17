@@ -77,3 +77,34 @@ class MLPPolicy(eqx.Module):
     def value(self, obs, state) -> jnp.ndarray:
         h = jax.nn.tanh(self.critic[0](self._input(obs, state)))
         return self.critic[1](h)[0]
+
+
+class ScrambledClock(eqx.Module):
+    """A trained positional MLP whose clock input is replaced at test time (PREREG V8).
+
+    The true elapsed time is carried as state, so the wrapper rolls out like
+    the arm it wraps; only the value the network sees changes:
+    `frozen` shows mid-episode at every visit (the clock carries no
+    information), `reversed` shows the time remaining, `intact` is unchanged.
+    """
+
+    inner: MLPPolicy
+    mode: str = eqx.field(static=True)
+
+    def initial_state(self) -> jnp.ndarray:
+        return self.inner.initial_state()
+
+    def _seen(self, elapsed):
+        if self.mode == "frozen":
+            return jnp.full_like(elapsed, CLOCK_SCALE / 2)
+        if self.mode == "reversed":
+            return CLOCK_SCALE - elapsed
+        return elapsed
+
+    def __call__(self, obs, state, dt, key=None):
+        elapsed = state + jnp.asarray(dt, state.dtype)
+        q, _ = self.inner(obs, self._seen(elapsed) - jnp.asarray(dt, state.dtype), dt)
+        return q, elapsed
+
+    def value(self, obs, state) -> jnp.ndarray:
+        return self.inner.value(obs, self._seen(state))
