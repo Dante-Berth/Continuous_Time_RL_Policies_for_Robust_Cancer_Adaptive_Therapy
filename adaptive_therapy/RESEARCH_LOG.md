@@ -1554,3 +1554,23 @@ All three pass the manipulation check (MLP < +0.1). LSTM seeds are bimodal on Re
 - Registered rule: ≥2 of 3 counted tasks show headroom ⇒ PASS. The paper says the trainer can use memory on tasks that need it, and that the LSTM's seed-to-seed instability seen on the cancer task also appears here (RepeatFirst).
 - Limits: two easy tasks, one trainer, PQN's published recurrent settings at 64 episodes per update; CountRecall shows the trainer does not reach every memory task. Not evidence about ODE-RNNs, and not about why the cancer task differs (V9/V10 bear on that).
 - No other task, width or budget is added after seeing this.
+
+## [2026-10-18] — V11: LSTM capacity sweep — 5× and 22× the parameters do not recover the deficit; both stay −47 to −49 d vs the MLP at Tier 1
+**Verdict:** OPEN — registered reading "inconclusive" (upper CIs +18.6 and +26.2 exceed the +10-d gate), but both point estimates are negative and the deficit against the MLP persists, so capacity is not what limits the LSTM · **Gate:** Tier 1 U vs 26-unit LSTM: 64 units −5.1 [−26.8, +18.6], 128 units −3.1 [−25.0, +26.2]; median TTP 210 d both (MLP 273, LSTM-26 217), median exposure 268 / 277 (MLP 245) · 10 seeds × 4 w, 0 non-finite · **Artifacts:** research/v11_capacity.py, research/outputs/v11_capacity.json, v11_shards/, v11_policies/
+### Context
+Two outside reviews: matching the arms at ~3,100 parameters is thin; a 26-unit LSTM may just be too small. PREREG V11 [2026-10-17].
+### What was tried
+S1 Part A's design (seeds 31–40, Strobl ranges, PQN, trained at p = 0, w ∈ {0.05, 0.1, 0.2, 0.4}) with the LSTM at 64 units (17 284 parameters) and 128 units (67 332), paired against S1's shards. Run as registered, no amendment.
+### Results
+| Contrast (mean U, d) | Tier 0 | Tier 1 |
+|---|---|---|
+| lstm_64 − lstm_26 | −5.1 [−29.0, +21.7] | −5.1 [−26.8, +18.6] |
+| lstm_128 − lstm_26 | −1.7 [−27.1, +30.8] | −3.1 [−25.0, +26.2] |
+| lstm_128 − lstm_64 | +3.3 [−20.7, +25.6] | +2.0 [−19.2, +22.3] |
+| lstm_64 − mlp | −47.1 [−60.1, −35.9] | −49.2 [−62.5, −38.3] |
+| lstm_128 − mlp | −43.8 [−62.8, −29.0] | −47.1 [−63.9, −33.3] |
+Closed-loop share Tier 1: MLP 0.46, LSTM-26 0.33, LSTM-64 0.30, LSTM-128 0.30.
+### Decision
+- Registered reading: inconclusive for capacity (CIs are wide, ±22 d), so the matched-capacity claim is not withdrawn. The data do not show a capacity effect: estimates are −5 and −3 d against a +10-d gate, and the 128-unit net, 22× larger, does not beat the 64-unit one.
+- Against the MLP, "deficit" for both sizes (upper CIs −38 and −33), so no LSTM size reaches the MLP at this trainer and budget.
+- Paper: one sentence and a table row. Not varied (declared): MLP width and ODE-RNN size, so a matched-large MLP is still untested.

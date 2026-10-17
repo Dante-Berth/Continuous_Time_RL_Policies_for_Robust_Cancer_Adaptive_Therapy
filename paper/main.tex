@@ -299,6 +299,13 @@ $+15$ days, mostly less drug) but its mean is lower because of a tail of earlier
 progressions, so on the mean it recovers none of O1's $+23$ days. The reward
 was part of the gap; the rest is PQN's difficulty in using the true state.
 % S2 L804, S3 L840, T1 L1042, V2 L1344
+\paragraph{Is the LSTM too small?} No evidence for it. An LSTM with 64 and 128
+units (5$\times$ and 22$\times$ the parameters) scores $-5.1$ [$-26.8$, $+18.6$]
+and $-3.1$ [$-25.0$, $+26.2$] days against the 26-unit one at Tier~1, and stays
+$-49$ and $-47$ days below the MLP. The intervals are wide, so the registered
+reading is ``inconclusive'' against our 10-day gate, but neither size recovers
+anything. The MLP and the ODE-RNN were not scaled. % V11, L1558
+
 \paragraph{Can this trainer use memory at all?} Yes, where memory pays. On
 three POPGym tasks \cite{morad2023}, run in the JAX port of \citet{lu2023}, the same PQN update trains an LSTM that
 beats a parameter-matched MLP on two (return, perfect $=+1$: RepeatPrevious
@@ -678,6 +685,7 @@ W8 & scheduled visits + lookahead input & check failed ($+9.7$ [$-0.4$, $+19.4$]
 V9 & clock-dropout MLP & deficit removed ($+54.4$ vs positional MLP) & yes & L1477 \\
 W9 & W8 on a pool of schedules & gate failed; ODE $=$ LSTM & yes & L1498 \\
 V10 & state-dropout LSTM, ODE-RNN & deficit remains ($+4$\,d, CI spans 0) & yes & L1518 \\
+V11 & LSTM at 64, 128 units & inconclusive vs gate; still $-47$ to $-49$\,d vs MLP & yes & L1558 \\
 W10 & PQN, LSTM vs MLP on POPGym memory tasks & met: headroom on 2 of 3 tasks & yes & L1540 \\
 \bottomrule
 \end{tabular}}
