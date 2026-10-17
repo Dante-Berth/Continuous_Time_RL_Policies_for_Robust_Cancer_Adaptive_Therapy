@@ -1494,3 +1494,45 @@ Tier-1 per-seed cd_show − pos: +19 to +72, all 10 positive. Closed-loop share 
 - Registered reading: shortcut confirmed (lower CI +44.9 > +10). The paper's schedule sentence becomes a tested statement. Caveat: cd_mlp is about as good as the MLP, not better; the clock carries no benefit at regular visits.
 - Suggested, not tested: the LSTM and ODE-RNN deficits (−44 to −50 d vs the MLP) may be the same optimisation failure. cd_show beats them by 42–48 d with the same trainer, but a recurrent arm trained with state dropout is a new registration and a new mechanism.
 - Cost of the check: V9 changes only the training input; the MLP-vs-recurrent ordering is unchanged until that arm is run.
+
+## [2026-10-17] — W9: with schedules varying across patients, the ODE-RNN beats the MLP on held-out schedules (+34.8 d [+16.1, +53.7]), but the lookahead is again unused by the MLP and the LSTM does as well
+**Verdict:** OPEN — the registered gate failed (lookahead not usable, +1.4 [−10.3, +14.4]), so by registration nothing is closed and no further lookahead variant is registered; P1 reads "edge" but is not specific to continuous time (ODE−LSTM −4.6 [−20.3, +9.2]) · **Gate:** held-out (C, D, E) ode_L−mlp_L +34.8 [+16.1, +53.7] mean, +20.2 [+2.4, +46.4] median / TTP median 294 [168–357] ode_L vs 189 [126–315] mlp_L at D / median exposure 191 vs 178 d / closed-loop 0.24 vs 0.50 / Wilcoxon not computed for the primary / 10 seeds × 4 w · **Artifacts:** research/w9_pool.py, research/outputs/w9_pool.json, w9_shards/
+### Context
+W8 ([L1457](RESEARCH_LOG.md#L1457)) trained on one schedule and the MLP ignored the lookahead. W9 trains on a pool of five schedules (gaps ≤ 3) so the next-visit time varies between patients, and tests on A = (1,3) (in pool) and held-out C = (1,2,3), D = (4,), E = (1,1,4), D and E with gaps longer than any trained.
+### What was tried
+Registered in PREREG.md [2026-10-17] W9 (+ erratum on the L-link) before any cell ran. Arms mlp_L (386), lstm_L (25 + Δt), ode_L (62), each shown slots-to-next-visit; control mlp_blind (441). Seeds 71–80, w ∈ {0.05, 0.1, 0.2, 0.4}; 0/240 cells non-finite. The gate was decided first: mlp_L − mlp_blind over C, D, E, usable iff lower CI > 0.
+### Results
+| Contrast (mean U, d) | mean [CI] | median [CI] |
+|---|---|---|
+| GATE mlp_L − mlp_blind, held out | +1.4 [−10.3, +14.4] | +0.1 [−5.5, +5.3] |
+| P1 ode_L − mlp_L, held out | +34.8 [+16.1, +53.7] | +20.2 [+2.4, +46.4] |
+| ode_L − mlp_L, D and E only | +45.4 [+23.9, +67.1] | +32.1 [+8.2, +67.5] |
+| ode_L − mlp_L, trained schedule A | +23.3 [+7.0, +38.6] | +0.6 [−7.2, +14.7] |
+| ode_L − lstm_L, held out | −4.6 [−20.3, +9.2] | +5.0 [−4.3, +14.2] |
+Post hoc (not registered): lstm_L − mlp_L +39.4 [+24.4, +53.4]; ode_L − mlp_blind +36.2 [+21.8, +49.8]; ode_L − MTD −7.5 [−19.1, +3.5] (median +21.5); mlp_L − MTD −42.3 [−53.1, −31.5].
+### Decision
+- Gate failed: the lookahead input is not what any arm exploits, so W9 does not test the known-schedule mechanism. By registration nothing is closed (CLOSED #2 keeps its reserved re-open, now spent twice without a usable input), no LAW L1 exception, and no third lookahead variant.
+- Separate finding: under schedules that vary between patients, both recurrent arms beat the MLP by 35–45 d. That is the first setting in the program where memory helps, but the ODE-RNN is not better than the LSTM, so it is a memory effect, not continuous time. L1's scope (regular visits, Tiers 0/1) is untouched.
+- Paper: Limitations replace the W8 sentence with both runs and say the gate failed; the recurrent-beats-MLP result is reported as post hoc.
+
+## [2026-10-17] — V10: state-dropout training does not remove the recurrent deficit — LSTM +4.3 d [−13.1, +21.5], ODE-RNN +4.2 [−8.8, +18.9] over the plain arms at Tier 1; both still ~40–46 d below the MLP
+**Verdict:** OPEN — registered readings "inconclusive" for both arms (the +10-d gate is inside both CIs), but the effect is a tie and the deficit vs the MLP persists (CIs exclude 0), so V9's shortcut does not carry over to the recurrent arms; with memory unavailable the LSTM equals the MLP · **Gate:** Tier 1 lstm_sd_show−lstm +4.3 [−13.1, +21.5] / ode_sd_show−ode_rnn +4.2 [−8.8, +18.9] / medians +4.3, +1.8 / TTP median 210 [147–294] lstm_sd vs 217 [147–294] lstm; 217 [119–322] ode_sd vs 210 [119–301] / median exposure 224, 203 d / closed-loop 0.36, 0.26 / 80/80 cells finite / 10 seeds × 4 w · **Artifacts:** research/v10_statedropout.py, research/outputs/v10_statedropout.json, v10_shards/
+### Context
+V9 ([L1477](RESEARCH_LOG.md#L1477)): hiding the positional MLP's clock half the time recovered its whole deficit. V10 gives the LSTM and ODE-RNN the same treatment: in episodes with a positive first observation the recurrent state is reset at every visit.
+### What was tried
+Registered as V10 in PREREG.md [2026-10-17] before any cell ran, with a declared LAW L1 note (no change of trainer, budget or reward). Part A of S1: seeds 31–40, Tiers 0/1, paired against S1's shards, `show` (memory available) primary, `hide` secondary. No parameters added.
+### Results
+| Contrast (mean U, d) | Tier 0 | Tier 1 |
+|---|---|---|
+| lstm_sd[show] − lstm | −2.2 [−21.0, +17.7] | +4.3 [−13.1, +21.5] |
+| ode_sd[show] − ode_rnn | +3.5 [−11.6, +20.3] | +4.2 [−8.8, +18.9] |
+| lstm_sd[show] − mlp | −44.2 [−59.5, −29.5] | −39.7 [−52.1, −28.7] |
+| ode_sd[show] − mlp | −46.9 [−58.4, −36.4] | −45.7 [−54.2, −37.7] |
+| lstm_sd[hide] − mlp | −2.4 [−8.8, +2.9] | −0.8 [−7.7, +5.0] |
+| ode_sd[hide] − mlp | −17.1 [−26.2, −8.9] | −15.1 [−25.9, −5.1] |
+| lstm_sd[hide] − lstm_sd[show] | +41.8 [+27.7, +57.0] | +39.0 [+28.7, +51.2] |
+| ode_sd[hide] − ode_sd[show] | +29.8 [+14.6, +45.4] | +30.6 [+15.6, +45.9] |
+### Decision
+- Registered: neither arm is "explained" (lower CIs −13.1 and −8.8 < +10), so the negative reading holds against the fairer baseline: training that can cope without memory does not remove the recurrent deficit.
+- The sharper fact is `hide` − `show`: the trained nets do better when their memory is switched off (+39 and +31 d), and the LSTM then equals the MLP. They use memory in a way that hurts, even though half of training did not have it. The mechanism is not the clock's schedule shortcut; it is untested.
+- Paper: one sentence in the Results; the title's "an ODE-RNN" claim stays.

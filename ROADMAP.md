@@ -397,7 +397,7 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
     "about 25 days" → +23.1 (O1) or +26.0 (tuned threshold); verify every
     citation resolves (2026 arXiv IDs first).
 
-13. *V9 run 2026-10-17 ([L1477](adaptive_therapy/RESEARCH_LOG.md#L1477)): clock-dropout recovers the positional MLP's deficit; paper updated. Next: W9 (scheduled visits, schedule pool; running). Open and unregistered: state-dropout for the recurrent arms.*
+13. *V9 run 2026-10-17 ([L1477](adaptive_therapy/RESEARCH_LOG.md#L1477)): clock-dropout recovers the positional MLP's deficit; paper updated. Next: W9 (scheduled visits, schedule pool; running). W9 ([L1498](adaptive_therapy/RESEARCH_LOG.md#L1498)): gate failed, nothing closed. V10 ([L1518](adaptive_therapy/RESEARCH_LOG.md#L1518)): state dropout does not fix the recurrent arms. Paper updated.*
 
 **Kill:** none for text items; each RUN item carries its own kill in PREREG.
 

@@ -186,6 +186,9 @@ observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23. The deficit is a short
 half of the episodes, the same network recovers it ($+54.4$ [$+44.9$, $+62.3$]
 over the positional MLP at Tier~1) and ties the MLP ($-2.4$ [$-5.2$, $+0.4$]).
 Scrambling the trained clock at test costs only $-14.6$ [$-44.2$, $+10.2$].
+The same treatment does not help the recurrent arms: with their memory reset in
+half of the training episodes, the LSTM and ODE-RNN gain $+4.3$ [$-13.1$, $+21.5$] and
+$+4.2$ [$-8.8$, $+18.9$] at Tier~1 and stay $40$--$46$ days below the MLP. % V10 L1518
 % V8 L1437, V9 L1477
 Under missed visits it ties the MLP ($+2.2$ [$-13.2$, $+16.4$]). % V7 L1414
 The
@@ -368,11 +371,12 @@ ties the MLP on mean $U$. Neither change opened the registered 10-day gate, so
 we stopped the reward and budget search there, instead of tuning until it passed.
 We test one continuous-time design, the ODE-RNN; liquid time-constant
 \cite{hasani2021} and neural-CDE \cite{kidger2020} arms are untested. Missed visits are i.i.d., so the next gap is unknown when the policy doses.
-On a fixed visit schedule, with the time to the next visit given as an input,
-the ODE-RNN is below the MLP on held-out schedules ($-21.4$ [$-42.8$, $-2.9$])
-and ties it on the trained one; but the MLP gains little from the input either
-($+9.7$ [$-0.4$, $+19.4$]), so this test does not show that the information is
-useless. % W8 L1457
+On a fixed visit schedule with the time to the next visit given as an input,
+the ODE-RNN is below the MLP on held-out schedules ($-21.4$ [$-42.8$, $-2.9$]);
+trained on a pool of schedules it is above the MLP ($+34.8$ [$+16.1$, $+53.7$]),
+but so is the LSTM, and the MLP never gains from the input ($+1.4$ [$-10.3$,
+$+14.4$]), so neither run tests whether a known schedule helps a continuous-time
+state. % W8 L1457, W9 L1498
 Before
 testing mechanism shift (Tier~2) we checked three other tumour models.
 Kuznetsov has no resistant population, so MTD is optimal by construction;
