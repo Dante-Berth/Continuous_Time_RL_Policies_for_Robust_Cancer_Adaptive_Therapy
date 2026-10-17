@@ -1536,3 +1536,21 @@ Registered as V10 in PREREG.md [2026-10-17] before any cell ran, with a declared
 - Registered: neither arm is "explained" (lower CIs −13.1 and −8.8 < +10), so the negative reading holds against the fairer baseline: training that can cope without memory does not remove the recurrent deficit.
 - The sharper fact is `hide` − `show`: the trained nets do better when their memory is switched off (+39 and +31 d), and the LSTM then equals the MLP. They use memory in a way that hurts, even though half of training did not have it. The mechanism is not the clock's schedule shortcut; it is untested.
 - Paper: one sentence in the Results; the title's "an ODE-RNN" claim stays.
+
+## [2026-10-17] — W10: the PQN trainer lets an LSTM use memory when memory pays — headroom shown on 2 of 3 POPGym tasks (RepeatPrevious +1.38, RepeatFirst +1.04; CountRecall +0.04)
+**Verdict:** FROZEN — the registered pass rule is met (2 of 3 tasks), so the cancer-task recurrent deficit is not "PQN cannot use memory"; it is specific to this task and training signal · **Gate:** metric is mean return of 512 greedy episodes (perfect +1, chance −0.5), not TTP; MLP −0.50 / −0.52 / −0.92, LSTM +0.88 / +0.52 / −0.88, 10 seeds per arm · **Artifacts:** research/w10_headroom.py, research/outputs/w10_headroom.json, w10_shards/
+### Context
+Both outside reviews: PQN may simply be unable to train anything stateful, so the recurrent deficit would be a trainer fact. PREREG W10 [2026-10-17] asks whether the same PQN update lets an LSTM beat an MLP on POPGym memory tasks (popjaxrl, unvendored, no licence).
+### What was tried
+Three tasks (RepeatPreviousEasy, RepeatFirstEasy, CountRecallEasy), 52 steps each; `mlp` 17 924 and `lstm` 18 052 parameters; `adaptive_therapy.rl.pqn` update, 2000 updates × 64 episodes, reward scale 10, untuned; 10 seeds (101–110). Registered as written; not amended. A first launch lost 24 cells to `No module named flax` (another `uv run` re-synced the environment and dropped the `popgym` extra); they were rerun unchanged from the same seeds with the venv python.
+### Results
+| Task | MLP | LSTM | Δ lstm − mlp (seed bootstrap) | counted | headroom |
+|---|---|---|---|---|---|
+| RepeatPreviousEasy | −0.498 (sd 0.005) | +0.876 (sd 0.21) | +1.375 [+1.227, +1.489] | yes | yes |
+| RepeatFirstEasy | −0.519 (sd 0.029) | +0.523 (sd 0.58) | +1.042 [+0.666, +1.386] | yes | yes |
+| CountRecallEasy | −0.924 (sd 0.003) | −0.883 (sd 0.007) | +0.041 [+0.036, +0.046] | yes | no (< 0.2) |
+All three pass the manipulation check (MLP < +0.1). LSTM seeds are bimodal on RepeatFirst (4 of 10 finish below +0.1; range −0.53 to +1.02) and mostly saturate on RepeatPrevious (range +0.45 to +1.00); CountRecall is not learned by either arm (both near the −0.92 floor).
+### Decision
+- Registered rule: ≥2 of 3 counted tasks show headroom ⇒ PASS. The paper says the trainer can use memory on tasks that need it, and that the LSTM's seed-to-seed instability seen on the cancer task also appears here (RepeatFirst).
+- Limits: two easy tasks, one trainer, PQN's published recurrent settings at 64 episodes per update; CountRecall shows the trainer does not reach every memory task. Not evidence about ODE-RNNs, and not about why the cancer task differs (V9/V10 bear on that).
+- No other task, width or budget is added after seeing this.
