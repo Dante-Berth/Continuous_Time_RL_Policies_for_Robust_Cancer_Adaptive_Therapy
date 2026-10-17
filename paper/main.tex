@@ -162,6 +162,18 @@ and the burden integral as a metastasis proxy. Reference rules: no treatment;
 MTD, full dose throughout; AT50, the adaptive-therapy trial rule; thr0.8, full
 dose above $0.8\times$ baseline.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_task.pdf}
+\caption{The task. One Tier-1 patient (Strobl ranges) under no treatment, MTD,
+thr0.8 and a trained MLP (seed 31, $w=0.1$); dots mark progression. The patient
+is the one whose drug saved by the MLP against MTD is the median over the
+patients where it saves any, a fixed rule rather than a hand pick. MTD
+pushes the burden lowest and progresses at 175\,d; thr0.8 and the MLP
+cut the dose, keep the burden nearer baseline, and progress at 322\,d and
+196\,d. Bars show the dose chosen each week.}\label{fig:task}
+\end{figure}
+
 \section{Results}\label{sec:results}
 \begin{figure}[t]
 \centering

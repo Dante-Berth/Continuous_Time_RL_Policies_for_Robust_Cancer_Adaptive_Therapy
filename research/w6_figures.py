@@ -10,6 +10,7 @@ that a registered run wrote, or from its saved policies (the MLP rule).
                    the MTD / thr0.8 rules, both regimes.
   fig_shortcut.pdf Delta U against the MLP at Tier 1 for every arm and its
                    dropout-trained twin (V7, V9, V10), memory shown vs hidden.
+  fig_task.pdf     one Tier-1 patient under no treatment, MTD, thr0.8 and a trained MLP.
   fig_rule.pdf     mean greedy dose of the trained MLP policies against
                    burden / baseline, both regimes.
   numbers.tex      \\newcommand macros for every S1 / S2 / W4b / W3c number in the text.
@@ -551,6 +552,62 @@ def fig_monitoring(d: dict, path: Path) -> None:
     plt.close(fig)
 
 
+def fig_task(path: Path) -> dict:
+    """One Tier-1 patient (Strobl ranges) under no treatment, MTD, thr0.8 and a trained MLP.
+
+    The patient is the one whose drug saved by the MLP against MTD is the
+    median over the patients where the MLP saves any (a fixed rule, not a
+    hand pick; 2026-10-17: the median-MTD-TTP patient had all three arms dosing
+    identically and showed nothing). The
+    MLP is S1's seed-31 policy at w = 0.1. Everything is rolled out here from
+    saved policies and rules; nothing is trained.
+    """
+    from adaptive_therapy.envs.reward import RewardConfig
+    from adaptive_therapy.eval.metrics import ttp_running_nadir
+    from adaptive_therapy.policies.rules import RulePolicy
+    from adaptive_therapy.rl import ppo
+
+    g.RANGES = "strobl2021"
+    th, y0 = (jnp.asarray(x) for x in g.tier1_cohort(g.N_TEST, 31))
+    like = w4.ARCHS["mlp"](jax.random.PRNGKey(0))
+    mlp = eqx.tree_deserialise_leaves(g.OUT / "s1_policies" / "a" / "mlp_w0.1_s31.eqx", like)
+    arms = {"untreated": RulePolicy("none"), "MTD": RulePolicy("MTD"),
+            "thr0.8": RulePolicy("thr0.8"), "MLP": mlp}  # fmt: skip
+    key, rw = jax.random.PRNGKey(0), RewardConfig(exposure_penalty=0.1)
+    ev = {k: ppo.evaluate(p, th, y0, key, g.EP, rw) for k, p in arms.items()}
+    ttp = {k: ttp_running_nadir(np.asarray(v["burden"]), g.TS) for k, v in ev.items()}
+    dose_sum = {k: np.asarray(v["dose"]).sum(axis=1) for k, v in ev.items()}
+    saved = dose_sum["MTD"] - dose_sum["MLP"]  # drug the MLP saves against MTD
+    pool = np.flatnonzero(saved > 0)  # patients where the MLP differs from MTD at all
+    i = int(pool[np.argmin(np.abs(saved[pool] - np.median(saved[pool])))])
+    base = float(np.asarray(ev["MTD"]["burden"])[i, 0])
+    colour = {"untreated": MUTED, "MTD": INK, "thr0.8": ARM["lstm"][0], "MLP": ARM["mlp"][0]}
+    fig, (ax, ad) = plt.subplots(2, 1, figsize=(6.4, 3.6), sharex=True,
+                                 gridspec_kw={"height_ratios": [3, 1.4], "hspace": 0.12})  # fmt: skip
+    levels = np.asarray(DOSE_LEVELS)
+    for r, (k, v) in enumerate(ev.items()):
+        b = np.asarray(v["burden"])[i] / base
+        ax.plot(g.TS, b, color=colour[k], lw=1.5, label=k)
+        if not ttp[k].censored[i]:
+            ax.plot(ttp[k].days[i], np.interp(ttp[k].days[i], g.TS, b), "o", color=colour[k], ms=4)
+        if k != "untreated":
+            d = levels[np.asarray(v["dose"])[i].astype(int)] if np.asarray(v["dose"]).dtype.kind in "iu" else np.asarray(v["dose"])[i]  # fmt: skip
+            ad.bar(g.TS, 0.8 * d, bottom=r - 1, width=6.0, align="edge", color=colour[k])
+    ax.axhline(1.0, color=GRID, lw=0.8, zorder=0)
+    ax.set_yscale("log")
+    ax.set_ylabel("burden / baseline")
+    ax.legend(frameon=False, fontsize=7, ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.2))
+    ad.set_yticks([0.4, 1.4, 2.4], ["MTD", "thr0.8", "MLP"])
+    ad.set_xlabel("day (dots: progression)")
+    ad.set_xlim(0, g.TS[-1] + 7)
+    for a in (ax, ad):
+        a.spines[["top", "right"]].set_visible(False)
+    fig.subplots_adjust(left=0.13, right=0.98, top=0.9, bottom=0.17)
+    fig.savefig(path, metadata={"CreationDate": None})  # byte-reproducible
+    plt.close(fig)
+    return {"patient": i, "ttp": {k: float(v.days[i]) for k, v in ttp.items()}}
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     d = load()
@@ -559,6 +616,8 @@ def main() -> int:
     fig_shortcut(d, OUT / "fig_shortcut.pdf")
     rule = fig_rule(OUT / "fig_rule.pdf")
     fig_monitoring(d, OUT / "fig_monitoring.pdf")
+    task = fig_task(OUT / "fig_task.pdf")
+    print("task panel", task)
     (OUT.parent / "numbers.tex").write_text(numbers(d, rule))
     print(
         f"wrote {OUT}/fig_{{forest,missed,shortcut,rule,monitoring}}.pdf and paper/numbers.tex; rule {rule}"
