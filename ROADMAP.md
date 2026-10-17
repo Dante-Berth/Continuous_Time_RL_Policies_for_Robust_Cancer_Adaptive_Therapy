@@ -355,18 +355,16 @@ The clarity pass is done (abstract, tier numbering, appendix split; commit
 
 **Kill:** none; text only. No sentence may claim more than its log entry.
 
-### W7b — Workshop review pass (planned 2026-10-17)
+### W7b — Journal review pass (planned 2026-10-17; retargeted to TMLR 2026-10-17)
 
-Review of `paper/main.pdf` (11 pp, plain article). Text-only unless marked
+Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from an ICLR 2027 workshop to TMLR** (rolling, judged on whether claims are supported, not novelty; check its current author guidelines). Page-budget trimming no longer applies; the appendix material may return to the body. Text-only unless marked
 **RUN**; a RUN item needs its own [PREREG.md](adaptive_therapy/PREREG.md) entry first.
 
 **Blockers (before any submission)**
 
-1. **Venue + style file.** Pick the workshop; read its CfP for page limit, whether
-   appendices count, and double-blind rules; swap `\documentclass` in
-   `paper/main.tex`. ICLR 2027 workshops (~Jan–Feb 2027) are still unverified.
-   The body is likely over a 4-page limit and fine at 8–9.
-2. **Anonymity.** Add an anonymised repo link, or caption Table `tab:runs` saying
+1. **Venue + style file.** TMLR: swap `\documentclass` for its template and check
+   double-blind rules. (The ICLR 2027 workshop list is not out until 2026-11-29.)
+2. **Anonymity (TMLR is double-blind).** Add an anonymised repo link, or caption Table `tab:runs` saying
    the L-numbers index the released research log.
 3. **`\pending` gate.** Clear as of 2026-10-17 (`grep -n pending paper/main.tex`
    finds none beyond the macro).
@@ -377,12 +375,13 @@ Review of `paper/main.pdf` (11 pp, plain article). Text-only unless marked
    threshold beats memory and an ODE-RNN; the headroom split shows why".
    Contributions → 3 bullets.
 5. *narrowing done 2026-10-17; CfC/LTC run open.* **Fair-candidate objection.** Narrow title and claims to "an ODE-RNN", not
-   "continuous time". Optional **RUN:** a CfC or LTC arm (own PREREG; supersedes
-   the "conceded" W7.4 if run).
+   "continuous time". A CfC/LTC arm is **barred** by [LAW L1](LAWS.md) / [CLOSED #2](CLOSED.md) (a
+   re-parametrization). The admissible run is **W8**: scheduled visits, the reserved
+   re-open condition of CLOSED #2.
 6. *done 2026-10-17 (monitoring-figure caption; split table already marked).* **Mark post-hoc results** (O1b split, M1c, V1) in figure and table captions,
    not only in the text.
 7. **Positional-MLP mechanism.** Keep the "not tested" wording, or **RUN** a
-   clock-shuffle control (own PREREG).
+   clock-scramble control: **V8**, registered in PREREG.md.
 8. *done 2026-10-17 (fitted-patient and monitoring paragraphs → appendix).* **Too many threads.** The body keeps the memory-vs-ODE-RNN story and the
    headroom split; move the monitoring paragraphs and the fitted-patient (R2/P1)
    paragraph to the appendix, one line each in the body.
