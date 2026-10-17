@@ -1574,3 +1574,22 @@ Closed-loop share Tier 1: MLP 0.46, LSTM-26 0.33, LSTM-64 0.30, LSTM-128 0.30.
 - Registered reading: inconclusive for capacity (CIs are wide, ±22 d), so the matched-capacity claim is not withdrawn. The data do not show a capacity effect: estimates are −5 and −3 d against a +10-d gate, and the 128-unit net, 22× larger, does not beat the 64-unit one.
 - Against the MLP, "deficit" for both sizes (upper CIs −38 and −33), so no LSTM size reaches the MLP at this trainer and budget.
 - Paper: one sentence and a table row. Not varied (declared): MLP width and ODE-RNN size, so a matched-large MLP is still untested.
+
+## [2026-10-18] — V12: second trainer (PPO) — LAW L1 headroom gate failed, so the arm comparison is uninformative about trainers; recurrent arms are 28–42 d below the MLP and open-loop in 12 (LSTM) and 22 (ODE-RNN) of 40 cells
+**Verdict:** OPEN — registered rule: gate failed (ref − MLP −1.6 [−10.4, +5.6] at Tier 0), so nothing is concluded about trainers and no further trainer is registered; descriptively both recurrent arms trail the MLP and many cells collapse to a fixed full-dose schedule · **Gate:** Tier 1 U: lstm − mlp −40.7 [−47.4, −34.8], ode − mlp −42.3 [−50.6, −34.9], ode − lstm −1.6 [−6.2, +2.2]; median TTP / exposure: MLP 294 / 294, LSTM 224 / 357, ODE 224 / 357 (Tier 1) · 10 seeds × 4 w, 0 non-finite · **Artifacts:** research/v12_ppo.py, research/outputs/v12_ppo.json, v12_shards/, v12_policies/
+### Context
+Both outside reviews: the negative result may be PQN-specific. PREREG V12 [2026-10-18] re-runs S1 Part A with the repo's recurrent PPO (600 updates, untuned) and adds the S2 full-information MLP as LAW L1's headroom gate.
+### What was tried
+Four arms (ppo_mlp, ppo_lstm, ppo_ode, ppo_ref), seeds 31–40, Strobl ranges, w ∈ {0.05, 0.1, 0.2, 0.4}, Tiers 0/1; all arms retrained under PPO and compared with each other. Run as registered, no amendment.
+### Results
+| Contrast (mean U, d) | Tier 0 | Tier 1 |
+|---|---|---|
+| ref − mlp (gate) | −1.6 [−10.4, +5.6] (median +8.8 [+6.6, +11.2]) | −3.4 [−18.3, +10.6] |
+| lstm − mlp | −27.9 [−32.4, −24.0] | −40.7 [−47.4, −34.8] |
+| ode − mlp | −29.9 [−35.0, −24.9] | −42.3 [−50.6, −34.9] |
+| ode − lstm | −2.0 [−6.1, +1.3] | −1.6 [−6.2, +2.2] |
+Closed-loop share, Tier 1: MLP 0.41, LSTM 0.21, ODE 0.14, ref 0.56. Cells with closed-loop share < 0.05 (Tier 0): MLP 0, LSTM 12, ODE-RNN 22, ref 0 of 40; the open-loop arms' median exposure is 357, the full-dose schedule.
+### Decision
+- Gate failed (lower CI of ref − mlp is −10.4, not > 0), so V12 is uninformative about trainers, as registered. The paper must not say the deficit holds under two trainers.
+- Descriptive, not a conclusion: under PPO the recurrent arms again trail the MLP, ODE = LSTM within noise, and both collapse to an open-loop schedule in 30–55% of cells, the same failure as Phase 2 (L312, L391). The reference's mean ties the MLP while its median is +9 d, the pattern V2 found under PQN (L1344).
+- No other budget, lr, entropy, batch or arm size is registered after seeing this (registered kill rule).

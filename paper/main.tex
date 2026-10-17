@@ -299,6 +299,17 @@ $+15$ days, mostly less drug) but its mean is lower because of a tail of earlier
 progressions, so on the mean it recovers none of O1's $+23$ days. The reward
 was part of the gap; the rest is PQN's difficulty in using the true state.
 % S2 L804, S3 L840, T1 L1042, V2 L1344
+\paragraph{A second trainer: not informative.} We re-ran the Tier-0/1 comparison
+with PPO instead of PQN (600 updates, untuned, all arms retrained). Our own rule
+for admitting a new trainer is that a policy shown the true hidden state must beat
+the burden-only MLP under it; it does not ($-1.6$ [$-10.4$, $+5.6$] at Tier~0),
+so the run cannot say whether the deficit is trainer-specific, and we do not
+claim it holds under two trainers. Descriptively, the LSTM and ODE-RNN again
+trail the MLP ($-40.7$ and $-42.3$ days at Tier~1, ODE-RNN and LSTM tied) and
+collapse to a fixed full-dose schedule in 12 and 22 of 40 cells, the failure of
+\S\ref{sec:pitfalls}, item~1. A trainer under which the reference
+does beat the MLP is still missing. % V12, L1578
+
 \paragraph{Is the LSTM too small?} No evidence for it. An LSTM with 64 and 128
 units (5$\times$ and 22$\times$ the parameters) scores $-5.1$ [$-26.8$, $+18.6$]
 and $-3.1$ [$-25.0$, $+26.2$] days against the 26-unit one at Tier~1, and stays
@@ -759,6 +770,7 @@ V9 & clock-dropout MLP & deficit removed ($+54.4$ vs positional MLP) & yes & L14
 W9 & W8 on a pool of schedules & gate failed; ODE $=$ LSTM & yes & L1498 \\
 V10 & state-dropout LSTM, ODE-RNN & deficit remains ($+4$\,d, CI spans 0) & yes & L1518 \\
 V11 & LSTM at 64, 128 units & inconclusive vs gate; still $-47$ to $-49$\,d vs MLP & yes & L1558 \\
+V12 & S1 design under PPO & gate failed: uninformative about trainers & yes & L1578 \\
 W10 & PQN, LSTM vs MLP on POPGym memory tasks & met: headroom on 2 of 3 tasks & yes & L1540 \\
 \bottomrule
 \end{tabular}}
