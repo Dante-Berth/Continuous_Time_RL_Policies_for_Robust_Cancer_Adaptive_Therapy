@@ -377,7 +377,7 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
 5. *narrowing done 2026-10-17; CfC/LTC run open.* **Fair-candidate objection.** Narrow title and claims to "an ODE-RNN", not
    "continuous time". A CfC/LTC arm is **barred** by [LAW L1](LAWS.md) / [CLOSED #2](CLOSED.md) (a
    re-parametrization). The admissible run is **W8**: scheduled visits, the reserved
-   re-open condition of CLOSED #2. *Run 2026-10-17: [L1438](adaptive_therapy/RESEARCH_LOG.md#L1438), no edge; the lookahead was barely usable by the MLP either. Paper Limitations updated.*
+   re-open condition of CLOSED #2. *Run 2026-10-17: [L1457](adaptive_therapy/RESEARCH_LOG.md#L1457), no edge; the lookahead was barely usable by the MLP either. Paper Limitations updated.*
 6. *done 2026-10-17 (monitoring-figure caption; split table already marked).* **Mark post-hoc results** (O1b split, M1c, V1) in figure and table captions,
    not only in the text.
 7. *done 2026-10-17: V8, inconclusive ([L1437](adaptive_therapy/RESEARCH_LOG.md#L1437)); paper sentence updated.* **Positional-MLP mechanism.** Keep the "not tested" wording, or **RUN** a
@@ -396,6 +396,8 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
 12. *horizon + 23 d done 2026-10-17; citation check open.* **Cheap fixes.** State the one-year horizon in the abstract; abstract's
     "about 25 days" → +23.1 (O1) or +26.0 (tuned threshold); verify every
     citation resolves (2026 arXiv IDs first).
+
+13. *V9 run 2026-10-17 ([L1477](adaptive_therapy/RESEARCH_LOG.md#L1477)): clock-dropout recovers the positional MLP's deficit; paper updated. Next: W9 (scheduled visits, schedule pool; running). Open and unregistered: state-dropout for the recurrent arms.*
 
 **Kill:** none for text items; each RUN item carries its own kill in PREREG.
 

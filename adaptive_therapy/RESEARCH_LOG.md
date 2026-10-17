@@ -1473,3 +1473,24 @@ ode_L doses far more (median exposure 320 vs 192 d for mlp_L on B) and is least 
 ### Decision
 - Registered: P1 deficit and P2 ties ⇒ the prereg kill says CLOSED #2 extends to scheduled visits. But the manipulation check did not exclude 0 and its median is 0.0: the MLP ignored the lookahead, so the run does not show that knowing the schedule is useless to a continuous-time state, only that this ODE-RNN under this PQN budget did not exploit it and generalised worse than the MLP.
 - So: no LAW L1 exception, and no new CLOSED item until a variant makes the lookahead usable (not registered; that is a new mechanism). Paper: one sentence in Limitations, replacing "scheduled gaps ... are untested".
+
+## [2026-10-17] — V9: training the positional MLP with its clock hidden half the time recovers the whole deficit (+54.4 d [+44.9, +62.3] over the positional MLP at Tier 1; −2.4 [−5.2, +0.4] vs the MLP)
+**Verdict:** OPEN — the registered reading is "shortcut confirmed": V7's 57-d deficit is a clock-keyed schedule that the trainer fits, not the clock's information, and clock-dropout training removes it · **Gate:** Tier 1 cd_show−pos_mlp +54.4 [+44.9, +62.3] mean, +49.4 [+35.6, +61.0] median / TTP median 273 [189–357] vs pos 175 [126–259] / median exposure 260.8 vs 211.8 d / closed-loop share 0.33 vs 0.27 / 40/40 cells finite / 10 seeds × 4 w · **Artifacts:** research/v9_clockdropout.py, research/outputs/v9_clockdropout.json, v9_shards/
+### Context
+V7 ([L1414](RESEARCH_LOG.md#L1414)): positional MLP −56.8 d vs MLP. V8 ([L1437](RESEARCH_LOG.md#L1437)) scrambling the trained clock cost only −14.6 [−44.2, +10.2], so the deficit was not simply "uses the clock". V9 asks the training-side question: if the trainer is made to cope without the clock half the time, does the deficit go?
+### What was tried
+Registered as V9 in PREREG.md [2026-10-17] before any cell ran. `cd_mlp` = V7's arm (width 386, Q-path 3091) whose clock input is replaced by its mid-episode value when the first observation is positive (~half the episodes). Seeds 31–40, w ∈ {0.05, 0.1, 0.2, 0.4}, trained at p = 0, Tiers 0/1, paired against S1's and V7's shards. Tested `show` (primary) and `hide`.
+### Results
+| Contrast (mean U, d) | Tier 0 | Tier 1 |
+|---|---|---|
+| cd_show − pos_mlp | +45.5 [+33.7, +57.3] | **+54.4 [+44.9, +62.3]** |
+| cd_show − mlp | −7.5 [−10.3, −4.5] | −2.4 [−5.2, +0.4] |
+| cd_hide − mlp | −5.3 [−7.4, −3.0] | −8.3 [−11.4, −5.1] |
+| cd_show − lstm | +34.5 [+17.4, +60.8] | +41.7 [+26.0, +63.8] |
+| cd_show − ode_rnn | +42.9 [+28.9, +57.9] | +47.6 [+36.2, +60.2] |
+| cd_hide − cd_show | +2.2 [−0.1, +4.7] | −6.0 [−9.0, −2.5] |
+Tier-1 per-seed cd_show − pos: +19 to +72, all 10 positive. Closed-loop share 0.33 (show) / 0.41 (hide) vs pos 0.27, MLP 0.46.
+### Decision
+- Registered reading: shortcut confirmed (lower CI +44.9 > +10). The paper's schedule sentence becomes a tested statement. Caveat: cd_mlp is about as good as the MLP, not better; the clock carries no benefit at regular visits.
+- Suggested, not tested: the LSTM and ODE-RNN deficits (−44 to −50 d vs the MLP) may be the same optimisation failure. cd_show beats them by 42–48 d with the same trainer, but a recurrent arm trained with state dropout is a new registration and a new mechanism.
+- Cost of the check: V9 changes only the training input; the MLP-vs-recurrent ordering is unchanged until that arm is run.

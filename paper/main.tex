@@ -182,13 +182,11 @@ a control deficit present without any shift, not a robustness effect. The
 deficit is not specific to memory. A positional MLP, memoryless but given the
 elapsed time, trails the MLP by as much ($-56.8$ [$-64.2$, $-48.3$] at Tier~1)
 and ties the LSTM and ODE-RNN. The share of its doses explained by the current
-observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23. A plausible reading
-is that any input beyond the
-current burden lets the trainer fit a time-indexed schedule instead of
-feedback. One test supports it only in part: replacing the trained clock with
-a constant moves $U$ by $-14.6$ [$-44.2$, $+10.2$] at Tier~1, with effects from
-$-117$ to $+32$ days across seeds, so the clock explains part of the deficit at
-most. % V8 L1437
+observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23. The deficit is a shortcut the trainer takes: trained with the clock hidden in
+half of the episodes, the same network recovers it ($+54.4$ [$+44.9$, $+62.3$]
+over the positional MLP at Tier~1) and ties the MLP ($-2.4$ [$-5.2$, $+0.4$]).
+Scrambling the trained clock at test costs only $-14.6$ [$-44.2$, $+10.2$].
+% V8 L1437, V9 L1477
 Under missed visits it ties the MLP ($+2.2$ [$-13.2$, $+16.4$]). % V7 L1414
 The
 provisional regime gives the same ordering: LSTM$-$MLP \WCMemOne, ODE$-$LSTM
@@ -374,7 +372,8 @@ On a fixed visit schedule, with the time to the next visit given as an input,
 the ODE-RNN is below the MLP on held-out schedules ($-21.4$ [$-42.8$, $-2.9$])
 and ties it on the trained one; but the MLP gains little from the input either
 ($+9.7$ [$-0.4$, $+19.4$]), so this test does not show that the information is
-useless. % W8 L1438 Before
+useless. % W8 L1457
+Before
 testing mechanism shift (Tier~2) we checked three other tumour models.
 Kuznetsov has no resistant population, so MTD is optimal by construction;
 Hahnfeldt is a mouse model with no resistant population, which our
