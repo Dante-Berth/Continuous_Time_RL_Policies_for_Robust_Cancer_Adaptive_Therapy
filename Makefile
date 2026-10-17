@@ -32,3 +32,10 @@ lit-check:
 	uv run python research/lit_table.py --check
 
 all: lint test audit lit-check
+
+# 2026-10-17: the .tex comments carry log line numbers and "our program" wording that
+# would deanonymise a source upload. Writes paper/submission/ with comments stripped.
+paper-anon:
+	mkdir -p paper/submission/figures
+	sed -E 's/(^|[^\\])%.*$$/\1/' paper/main.tex > paper/submission/main.tex
+	cp paper/numbers.tex paper/tmlr.sty paper/tmlr.bst paper/refs.bib paper/figures/*.pdf paper/submission/ 2>/dev/null; mv paper/submission/fig_*.pdf paper/submission/figures/ 2>/dev/null; true

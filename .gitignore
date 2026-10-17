@@ -233,3 +233,4 @@ research/outputs/*.log
 
 # Bruchovsky / Shaw clinical PSA data (Tanaka et al.); patient data, no licence stated. 2026-09-30: never committed.
 data/
+paper/submission/

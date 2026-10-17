@@ -21,9 +21,9 @@ for Learned Adaptive-Therapy Policies under Burden-Only Observation}
 \maketitle
 
 \begin{abstract}
-A memoryless network that learns a one-line burden threshold beats both
-recurrent memory and an ODE-RNN at scheduling adaptive cancer therapy, and a
-trainer-free bound on the headroom shows why. Continuous-time recurrent
+In a virtual-patient simulator of adaptive cancer therapy, a memoryless network
+that learns a one-line burden threshold matches or beats both a recurrent
+network and an ODE-RNN trained by the same algorithm. Continuous-time recurrent
 networks are proposed for control problems whose observations are irregular,
 but they are mostly tested on prediction. We test one, the ODE-RNN, in a
 pre-registered comparison: a policy doses a virtual tumour from noisy total
@@ -34,11 +34,12 @@ patients. The ODE-RNN never beats the best discrete arm: not in distribution,
 not under a parameter shift, and not when up to half of the visits are missed
 (one-year horizon). Giving the MLP only a clock costs as much as giving it
 memory. The task is not solved: a per-patient search on the true simulator
-beats the MLP by 23 days, but at most ${\sim}15$ of those are reachable by
-memory, while recurrent training costs 40--50. The negative result is a
-learning cost larger than the available benefit. We also report four
+beats the MLP by 23 days. Splitting a tuned threshold rule's gain, at most
+${\sim}15$ days come from information that memory could supply, while
+recurrent training costs 40--50. This is a negative result about this trainer
+and this task: we do not show that no memory policy could help. We also report four
 evaluation errors, each of which gave a wrong result that looked publishable,
-and a short table of controls that found them.
+and the five controls that found them.
 \end{abstract}
 
 \section{Introduction}
@@ -56,15 +57,13 @@ test bed where we can check it against the true simulator.
 
 We test that claim for one continuous-time design, the ODE-RNN, in a
 pre-registered comparison, and it is not supported. The
-main objection is that the recurrent arms were undertrained. We answer it without
-any trainer: a per-patient search on the true simulator bounds what any policy
-could gain, and splits that headroom by the information each part needs. At
-most ${\sim}15$ days of it require memory, less than recurrent training cost,
-for any budget. Contributions:
+main objection is that the recurrent arms were undertrained. We address it
+partly without any trainer: a per-patient search on the true simulator shows
+the task has headroom, and a tuned threshold rule's gain splits by the
+information each part needs. At most ${\sim}15$ days of that gain need memory,
+less than recurrent training cost. This is a split of one rule family's gain,
+not a ceiling on every memory policy. Contributions:
 \begin{itemize}
-\item \textbf{A strict ablation.} One trainer, one environment and one
-evaluation, with only the Q-network swapped; the recurrent arms are matched at
-${\sim}3{,}100$ Q-path parameters.
 \item \textbf{A strict ablation.} One trainer, one environment and one
 evaluation, with only the Q-network swapped; the recurrent arms are matched at
 ${\sim}3{,}100$ Q-path parameters.
@@ -72,8 +71,8 @@ ${\sim}3{,}100$ Q-path parameters.
 (Tier~0), under a parameter shift (Tier~1), or under missed visits (Tier~4), on
 two parameter regimes and on models fitted to 55 patients. The best learned
 policy is a burden threshold. A trainer-free full-information bound shows the
-task has headroom and splits it: at most ${\sim}15$ days were available to
-memory, while recurrent training cost 40--50.
+task has headroom and splits a threshold family's gain: at most ${\sim}15$ days
+need memory-type information, while recurrent training cost 40--50.
 \item \textbf{Four evaluation errors}, each of which gave a wrong result that
 looked publishable, and the controls that found them
 (\S\ref{sec:pitfalls}, Table~\ref{tab:controls}). Appendix material: monitoring
@@ -120,7 +119,7 @@ Strobl et al.'s two schedules, our implementation reproduces all 14 of their
 published times to progression and adaptive-therapy gains that we checked,
 within 3\% (their Fig.~4E and text). % R1, L871
 A \emph{provisional regime}, on
-which our program first ran, has a much stronger cost of resistance (median
+which we first ran the study, has a much stronger cost of resistance (median
 $r_R/r_S = 0.30$; only 9.8\% of its patients fall inside Strobl's sweep
 ranges). Strobl et al.'s own fits to prostate-cancer patients extend to costs
 above 50\%, paired with low turnover (their Fig.~5C). We therefore report it as
@@ -147,7 +146,7 @@ tanh-bounded latent flow between observations in fixed $7/8$\,d steps, so gaps
 of whole weeks compose exactly. All use a LayerNorm Q-readout, trained by PQN
 \cite{gallici2024} with its published recurrent settings, untuned here, except
 parallelism: 300 updates of 32 patients from a 200-patient training cohort,
-where the paper uses 1024 environments (we test 1024 in \S3).
+where the paper uses 1024 environments (S3, in \S\ref{sec:results}, tests 1024).
 \paragraph{Statistic.} Per patient, $U=\min(\mathrm{TTP},357)-w\cdot\text{exposure}$:
 the TTP endpoint net of the exposure price the policy was trained with. Its
 mean over patients is a restricted mean TTP net of exposure. The 357-d cap
@@ -175,6 +174,7 @@ cut the dose, keep the burden nearer baseline, and progress at 322\,d and
 \end{figure}
 
 \section{Results}\label{sec:results}
+Run labels (S1, O1, V9, \dots) index Table~\ref{tab:runs}, which says what each run changed and whether it was registered before it ran.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{figures/fig_forest.pdf}
@@ -276,10 +276,15 @@ represent but did not learn: the training reward charges for burden between the
 nadir line and baseline. A second third is the value of observing the burden
 exactly rather than with 5\% noise. That bounds what filtering the observation
 history could recover. The last third is knowing each patient's best level,
-which bounds what inferring the patient from history could add. Memory could
-therefore have bought at most ${\sim}15$ days. Recurrent training cost 40--50.
-The negative result is a learning cost larger than the available benefit, not
-an absence of benefit. % O1b, L1310
+which bounds what inferring the patient from history could add. For a threshold
+policy, memory-type information is therefore worth at most ${\sim}15$ days.
+This is a split of one rule family's gain, not a bound on memory: the search
+(+23.1) is itself below the tuned threshold (+26.0), so it is not the
+full-information optimum, and the first two rows of the table are post hoc.
+Recurrent training cost 40--50. Read against the reference trainer failures
+below, the negative result is a statement about PQN at this budget: a learning
+cost larger than the benefit we can measure, not proof that memory has none.
+% O1b, L1310
 The recurrent arms also reach a lower training reward than the MLP on their
 own training patients ($-20.7$ [$-28.4$, $-12.8$] and $-23.5$ [$-34.7$, $-14.0$]),
 so they optimise the reward less well; they do not exploit it. % V1a, L1136
@@ -329,8 +334,9 @@ visits missed, the ODE-RNN is above none of its comparators on Strobl's ranges
 $-$LSTM+$\Delta t$ \SBOdeLstmDt, $-$MTD \SBOdeMtd. It degrades more gracefully
 than the MLP (\SBGraceMlp\ on $U(p)-U(0)$) but less than the LSTM
 (\SBGraceLstm), so graceful degradation comes from recurrence, not from
-continuous time. Where the ODE-RNN is better than the MLP at $p=0.5$, it uses more drug:
-median exposure 326 vs 194 at $w=0.1$. % L766
+continuous time. The ODE-RNN's one advantage over the MLP, at $p=0.5$, is an
+exposure artefact: it doses more (median exposure 326 vs 194 at $w=0.1$), and
+the comparison already nets that drug out in $U$. % L766
 The provisional regime agrees: ODE$-$MLP \WBOdeMlp, ODE$-$MTD \WBOdeMtd.
 One Tier-4 effect is unstable: adding $\Delta t$ to the LSTM changed $U$ by
 $+38.8$, $+3.5$ and $-14.4$ in three independent runs, so we read LSTM+$\Delta t$
@@ -624,38 +630,44 @@ before it ran.
 \centering\footnotesize\setlength{\tabcolsep}{4pt}
 \caption{Every registered policy comparison, in order, including void and
 invalid ones. ``Valid'' means both arms passed the validity rule registered
-for that run.}
+for that run. ``Reg.'': yes = registered before it ran; post hoc = chosen after
+earlier results (O1b only partly). Run names used in the text index this table.}
 \label{tab:runs}
-\resizebox{\linewidth}{!}{\begin{tabular}{@{}llll@{}}
+\resizebox{\linewidth}{!}{\begin{tabular}{@{}lllll@{}}
 \toprule
-Run & Change & Outcome & Log entry \\
+Run & Change & Outcome & Reg. & Log entry \\
 \midrule
-Phase 2 & MLP vs ODE-RNN, PPO, Tier 1 & void: cohort above capacity & L242 \\
-Phase 2 rerun & cohort fixed & FAIL; ODE open-loop in 4/6 cells & L275, L312 \\
-Phase 2b & PPO fixes + closed-loop gate & invalid: 3/6 ODE cells open-loop & L391 \\
-Phase 2c & PQN for both arms & FAIL, first valid run & L424 \\
-W3 & + LSTM, exposure frontier & invalid: 1 open-loop cell per arm & L496 \\
-W3b & fresh seeds, restricted-mean TTP & invalid: same & L526 \\
-W3c & per-cell gate, $U$ primary & valid; no memory or CT edge & L565, L596 \\
-W4 & Tier 4, trained at 35\% missed & invalid: gate removed better cells & L632 \\
-W4b & intention-to-treat, MTD reference & FAIL: no CT edge & L668 \\
-S1 & Strobl ranges, W3c + W4b designs & FAIL: no CT edge, Tiers 0/1/4 & L766 \\
-S2 & reference also sees $S$, $R$, $\theta$ & below the MLP & L804 \\
-S3 & S2 at PQN's published parallelism & still trainer-limited & L840 \\
-M1 & threshold rules vs MTD, cost $\times$ turnover bins & met: $p^*$ 0.10--0.50 & L896 \\
-M1b & M1 over three years & met; crossover moves later & L932 \\
-M1c & M1, M1b on medians (post hoc) & mixed: holds only if $\hat r_R \ge 0.75$ & L968 \\
-W5-pre & rules on Hahnfeldt, Kuznetsov & FAIL: no TTP range; Tier 2 cut & L1004 \\
-T1 & S3 with $10\times$ gradient steps & reward-limited & L1042 \\
-V2 & T1 + survival until progression & trainer-limited; ties MLP & L1344 \\
-R2 & Strobl's fits to the Bruchovsky cohort & 2/3 reproduce; relapse weaker & L1075 \\
-P1 & saved policies on the 55 fits & met: both negatives replicate & L1106 \\
-V5 & reproduce Hahnfeldt, Zhang & FAIL: 3/5, 0/4 targets & L1176 \\
-V5d/e & Zhang 2017 + SI & structure ok; times $\le$15/40 & L1216--48 \\
-O1 & full-information search, no trainer & headroom $+23$\,d & L1279 \\
-O1b & split of O1's headroom & $\le$15\,d reachable by memory & L1310 \\
-V7 & positional MLP on S1's design & hurts at Tier 1; ties at Tier 4 & L1414 \\
-V1 & reward, medians, 3 y (post hoc) & no misalignment; LSTM $>$ MTD (medians) & L1136 \\
+Phase 2 & MLP vs ODE-RNN, PPO, Tier 1 & void: cohort above capacity & yes & L242 \\
+Phase 2 rerun & cohort fixed & FAIL; ODE open-loop in 4/6 cells & yes & L275, L312 \\
+Phase 2b & PPO fixes + closed-loop gate & invalid: 3/6 ODE cells open-loop & yes & L391 \\
+Phase 2c & PQN for both arms & FAIL, first valid run & yes & L424 \\
+W3 & + LSTM, exposure frontier & invalid: 1 open-loop cell per arm & yes & L496 \\
+W3b & fresh seeds, restricted-mean TTP & invalid: same & yes & L526 \\
+W3c & per-cell gate, $U$ primary & valid; no memory or CT edge & yes & L565, L596 \\
+W4 & Tier 4, trained at 35\% missed & invalid: gate removed better cells & yes & L632 \\
+W4b & intention-to-treat, MTD reference & FAIL: no CT edge & yes & L668 \\
+S1 & Strobl ranges, W3c + W4b designs & FAIL: no CT edge, Tiers 0/1/4 & yes & L766 \\
+S2 & reference also sees $S$, $R$, $\theta$ & below the MLP & yes & L804 \\
+S3 & S2 at PQN's published parallelism & still trainer-limited & yes & L840 \\
+M1 & threshold rules vs MTD, cost $\times$ turnover bins & met: $p^*$ 0.10--0.50 & yes & L896 \\
+M1b & M1 over three years & met; crossover moves later & yes & L932 \\
+M1c & M1, M1b on medians (post hoc) & mixed: holds only if $\hat r_R \ge 0.75$ & post hoc & L968 \\
+W5-pre & rules on Hahnfeldt, Kuznetsov & FAIL: no TTP range; Tier 2 cut & yes & L1004 \\
+T1 & S3 with $10\times$ gradient steps & reward-limited & yes & L1042 \\
+V2 & T1 + survival until progression & trainer-limited; ties MLP & yes & L1344 \\
+R2 & Strobl's fits to the Bruchovsky cohort & 2/3 reproduce; relapse weaker & yes & L1075 \\
+P1 & saved policies on the 55 fits & met: both negatives replicate & yes & L1106 \\
+V5 & reproduce Hahnfeldt, Zhang & FAIL: 3/5, 0/4 targets & yes & L1176 \\
+V5d/e & Zhang 2017 + SI & structure ok; times $\le$15/40 & yes & L1216--48 \\
+O1 & full-information search, no trainer & headroom $+23$\,d & yes & L1279 \\
+O1b & split of O1's headroom & $\le$15\,d of a threshold family's gain needs memory & post hoc & L1310 \\
+V7 & positional MLP on S1's design & hurts at Tier 1; ties at Tier 4 & yes & L1414 \\
+V1 & reward, medians, 3 y (post hoc) & no misalignment; LSTM $>$ MTD (medians) & post hoc & L1136 \\
+V8 & clock scrambled at test, V7's policies & scrambling costs 14.6\,d, CI spans 0 & yes & L1437 \\
+W8 & scheduled visits + lookahead input & check failed ($+9.7$ [$-0.4$, $+19.4$]); nothing closed & yes & L1457 \\
+V9 & clock-dropout MLP & deficit removed ($+54.4$ vs positional MLP) & yes & L1477 \\
+W9 & W8 on a pool of schedules & gate failed; ODE $=$ LSTM & yes & L1498 \\
+V10 & state-dropout LSTM, ODE-RNN & deficit remains ($+4$\,d, CI spans 0) & yes & L1518 \\
 \bottomrule
 \end{tabular}}
 \end{table}
