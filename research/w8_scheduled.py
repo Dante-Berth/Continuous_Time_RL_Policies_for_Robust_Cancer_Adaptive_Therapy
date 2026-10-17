@@ -66,9 +66,7 @@ def eval_schedules(policy, seed: int, w: float, look: bool) -> dict:
 
 def arm_cell(arch: str, w: float, seed: int) -> dict:
     make, look = ARMS[arch]
-    policy, secs = w4.train_policy(
-        arch, w, seed, train_drop=0.0, ep=ep_for(TRAIN, look), make=make
-    )
+    policy, secs = w4.train_policy(arch, w, seed, train_drop=0.0, ep=ep_for(TRAIN, look), make=make)
     w4.save_policy(policy, POLICIES, arch, w, seed)
     return {"arch": arch, "w": w, "seed": seed, "train_seconds": secs,
             **eval_schedules(policy, seed, w, look)}  # fmt: skip

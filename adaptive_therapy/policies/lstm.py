@@ -33,7 +33,11 @@ class LSTMPolicy(eqx.Module):
     dt_input: bool = eqx.field(static=True)
 
     def __init__(
-        self, key, hidden: int = 26, layer_norm: bool = False, dt_input: bool = False,
+        self,
+        key,
+        hidden: int = 26,
+        layer_norm: bool = False,
+        dt_input: bool = False,
         in_dim: int = 1,
     ):  # in_dim 2 only for PREREG W8's lookahead arm
         k1, k2, k3 = jax.random.split(key, 3)

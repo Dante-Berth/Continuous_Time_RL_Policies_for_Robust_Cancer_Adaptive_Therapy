@@ -70,9 +70,7 @@ def eval_schedules(policy, seed: int, w: float, look: bool) -> dict:
 
 def arm_cell(arch: str, w: float, seed: int) -> dict:
     make, look = ARMS[arch]
-    policy, secs = w4.train_policy(
-        arch, w, seed, train_drop=0.0, ep=ep_train(look), make=make
-    )
+    policy, secs = w4.train_policy(arch, w, seed, train_drop=0.0, ep=ep_train(look), make=make)
     w4.save_policy(policy, POLICIES, arch, w, seed)
     return {"arch": arch, "w": w, "seed": seed, "train_seconds": secs,
             **eval_schedules(policy, seed, w, look)}  # fmt: skip
@@ -177,7 +175,13 @@ def main() -> int:
     res = analyse(cells)
     (g.OUT / "w9_pool.json").write_text(json.dumps(res, indent=2))
     print(f"arm valid {res['arm_valid']}  nonfinite {res['nonfinite']}")
-    for k in ("manipulation_check", "P1_held_out", "P1_long_gaps", "P_trained", "ode_vs_lstm_held_out"):
+    for k in (
+        "manipulation_check",
+        "P1_held_out",
+        "P1_long_gaps",
+        "P_trained",
+        "ode_vs_lstm_held_out",
+    ):
         print(f"  {k:22s} {ci(res[k])}")
     for s, v in res["ode_vs_lstm"].items():
         print(f"  ode_L-lstm_L {s}        {ci(v)}")

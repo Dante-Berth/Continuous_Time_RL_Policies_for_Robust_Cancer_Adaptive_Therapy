@@ -63,7 +63,9 @@ def test_a_schedule_of_one_slot_is_the_regular_episode():
 def test_the_policy_is_shown_the_true_gap_to_its_next_visit():
     th, y0 = _patient()
     ep = EpisodeConfig(schedule=(1, 3), lookahead=True)
-    traj = rollout(MLPPolicy(KEY, width=386, layer_norm=True, in_dim=2), th, y0, KEY, ep, RewardConfig())
+    traj = rollout(
+        MLPPolicy(KEY, width=386, layer_norm=True, in_dim=2), th, y0, KEY, ep, RewardConfig()
+    )
     seen = np.asarray(traj["seen"])
     got = np.asarray(traj["obs"])[:, 1] * LOOKAHEAD_SCALE
     assert np.allclose(got, slots_to_next_visit(seen))
@@ -73,7 +75,15 @@ def test_the_policy_is_shown_the_true_gap_to_its_next_visit():
 def test_a_missed_slot_repeats_the_last_dose_under_a_schedule():
     th, y0 = _patient()
     ep = EpisodeConfig(schedule=(1, 3), lookahead=True)
-    traj = rollout(MLPPolicy(KEY, width=386, layer_norm=True, in_dim=2), th, y0, KEY, ep, RewardConfig(), greedy=True)
+    traj = rollout(
+        MLPPolicy(KEY, width=386, layer_norm=True, in_dim=2),
+        th,
+        y0,
+        KEY,
+        ep,
+        RewardConfig(),
+        greedy=True,
+    )
     seen, dose = np.asarray(traj["seen"]), np.asarray(traj["dose"])
     for i in np.flatnonzero(~seen):
         assert dose[i] == dose[i - 1]
@@ -107,7 +117,9 @@ def test_a_schedule_pool_gives_each_patient_one_of_its_schedules():
         seen = np.asarray(traj["seen"])
         which = [i for i, m in enumerate(allowed) if (m == seen).all()]
         assert len(which) == 1
-        assert np.allclose(np.asarray(traj["obs"])[:, 1] * LOOKAHEAD_SCALE, slots_to_next_visit(seen))
+        assert np.allclose(
+            np.asarray(traj["obs"])[:, 1] * LOOKAHEAD_SCALE, slots_to_next_visit(seen)
+        )
         picked.add(which[0])
     assert picked == {0, 1, 2}
     with pytest.raises(ValueError):
@@ -136,7 +148,9 @@ def test_clock_dropout_hides_the_clock_in_about_half_the_episodes_and_can_be_for
 
 def test_clock_dropout_arm_matches_the_positional_mlp_parameter_count():
     def q(p):
-        return sum(x.size for x in jax.tree_util.tree_leaves((p.layers, p.norm)) if hasattr(x, "size"))
+        return sum(
+            x.size for x in jax.tree_util.tree_leaves((p.layers, p.norm)) if hasattr(x, "size")
+        )
 
     pos = MLPPolicy(KEY, width=386, layer_norm=True, clock=True)
     cd = MLPPolicy(KEY, width=386, layer_norm=True, clock_dropout=True)

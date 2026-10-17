@@ -44,7 +44,12 @@ def cell(w: float, seed: int) -> dict:
     w4.save_policy(policy, POLICIES, ARCH, w, seed)
     out = {"w": w, "seed": seed, "train_seconds": secs}
     for name, mode in MODES.items():
-        out[name] = {"arch": name, "w": w, "seed": seed, **s1.tiers_eval(policy.forced(mode), seed, w)}
+        out[name] = {
+            "arch": name,
+            "w": w,
+            "seed": seed,
+            **s1.tiers_eval(policy.forced(mode), seed, w),
+        }
     return out
 
 
@@ -87,7 +92,9 @@ def analyse(new: list[dict]) -> dict:
     cells = old_cells() + [c[m] for c in new for m in MODES]
     valid = {(c["arch"], c["w"], c["seed"]): s1.finite_a(c) for c in cells}
     res = {"prereg": "adaptive_therapy/PREREG.md V9 [2026-10-17]"}
-    res["nonfinite"] = [f"{a}_w{w}_s{s}" for (a, w, s), ok in valid.items() if not ok and a in MODES]
+    res["nonfinite"] = [
+        f"{a}_w{w}_s{s}" for (a, w, s), ok in valid.items() if not ok and a in MODES
+    ]
     res["vs"] = {}
     for tier in s1.TIERS:
         for a in MODES:
@@ -95,9 +102,7 @@ def analyse(new: list[dict]) -> dict:
                 res["vs"][f"{a}-{b}_{tier}"] = compare(cells, valid, a, b, tier)
         res["vs"][f"cd_hide-cd_show_{tier}"] = compare(cells, valid, "cd_hide", "cd_show", tier)
         res["vs"][f"pos_mlp-mlp_{tier}"] = compare(cells, valid, "pos_mlp", "mlp", tier)
-    res["arms"] = {
-        f"{a}_{t}": describe(cells, a, t) for a in (*MODES, *OTHERS) for t in s1.TIERS
-    }
+    res["arms"] = {f"{a}_{t}": describe(cells, a, t) for a in (*MODES, *OTHERS) for t in s1.TIERS}
     lo, hi = res["vs"]["cd_show-pos_mlp_tier1"]["ci95"]
     res["primary_cd_show_vs_pos_tier1"] = (
         "shortcut confirmed" if lo > GATE else "refuted" if hi < GATE else "inconclusive"

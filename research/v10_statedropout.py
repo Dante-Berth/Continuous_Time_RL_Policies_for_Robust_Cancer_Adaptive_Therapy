@@ -46,7 +46,12 @@ def cell(arch: str, w: float, seed: int) -> dict:
     out = {"arch": arch, "w": w, "seed": seed, "train_seconds": secs}
     for mode in MODES:
         name = f"{arch}_{mode}"
-        out[name] = {"arch": name, "w": w, "seed": seed, **s1.tiers_eval(policy.forced(mode), seed, w)}
+        out[name] = {
+            "arch": name,
+            "w": w,
+            "seed": seed,
+            **s1.tiers_eval(policy.forced(mode), seed, w),
+        }
     return out
 
 
@@ -89,7 +94,9 @@ def analyse(new: list[dict]) -> dict:
     cells = old_cells() + [c[f"{c['arch']}_{m}"] for c in new for m in MODES]
     valid = {(c["arch"], c["w"], c["seed"]): s1.finite_a(c) for c in cells}
     res = {"prereg": "adaptive_therapy/PREREG.md V10 [2026-10-17]"}
-    res["nonfinite"] = [f"{a}_w{w}_s{s}" for (a, w, s), ok in valid.items() if not ok and a in set(names)]
+    res["nonfinite"] = [
+        f"{a}_w{w}_s{s}" for (a, w, s), ok in valid.items() if not ok and a in set(names)
+    ]
     res["vs"], res["reading"] = {}, {}
     for tier in s1.TIERS:
         for arm, base in BASE.items():
@@ -97,8 +104,12 @@ def analyse(new: list[dict]) -> dict:
                 a = f"{arm}_{mode}"
                 res["vs"][f"{a}-{base}_{tier}"] = compare(cells, valid, a, base, tier)
                 res["vs"][f"{a}-mlp_{tier}"] = compare(cells, valid, a, "mlp", tier)
-            res["vs"][f"{arm}_hide-{arm}_show_{tier}"] = compare(cells, valid, f"{arm}_hide", f"{arm}_show", tier)
-        res["vs"][f"ode_sd_show-lstm_sd_show_{tier}"] = compare(cells, valid, "ode_sd_show", "lstm_sd_show", tier)
+            res["vs"][f"{arm}_hide-{arm}_show_{tier}"] = compare(
+                cells, valid, f"{arm}_hide", f"{arm}_show", tier
+            )
+        res["vs"][f"ode_sd_show-lstm_sd_show_{tier}"] = compare(
+            cells, valid, "ode_sd_show", "lstm_sd_show", tier
+        )
     res["arms"] = {
         f"{a}_{t}": describe(cells, a, t)
         for a in ("mlp", "lstm", "ode_rnn", *(f"{x}_{m}" for x in BASE for m in MODES))
@@ -107,7 +118,11 @@ def analyse(new: list[dict]) -> dict:
     for arm, base in BASE.items():
         lo, hi = res["vs"][f"{arm}_show-{base}_tier1"]["ci95"]
         res["reading"][arm] = (
-            "shortcut explains the deficit" if lo > GATE else "does not" if hi < GATE else "inconclusive"
+            "shortcut explains the deficit"
+            if lo > GATE
+            else "does not"
+            if hi < GATE
+            else "inconclusive"
         )
         lo, hi = res["vs"][f"{arm}_show-mlp_tier1"]["ci95"]
         res["reading"][f"{arm}_vs_mlp"] = "edge" if lo > 0 else "deficit" if hi < 0 else "ties"

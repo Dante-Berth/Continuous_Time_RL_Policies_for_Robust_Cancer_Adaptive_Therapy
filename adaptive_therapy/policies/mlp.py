@@ -99,7 +99,9 @@ class MLPPolicy(eqx.Module):
 
     def __call__(self, obs, state, dt, key=None):
         if self.clock_dropout:
-            flag = jnp.where(state[2] > 0.5, state[1], (jnp.atleast_1d(obs)[0] > 0).astype(state.dtype))
+            flag = jnp.where(
+                state[2] > 0.5, state[1], (jnp.atleast_1d(obs)[0] > 0).astype(state.dtype)
+            )
             state = jnp.stack([state[0] + jnp.asarray(dt, state.dtype), flag, jnp.ones_like(flag)])
         elif self.clock:
             state = state + jnp.asarray(dt, state.dtype)
