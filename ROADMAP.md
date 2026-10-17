@@ -387,13 +387,13 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
    paragraph to the appendix, one line each in the body.
 9. *done 2026-10-17.* **Duplication.** "When does monitoring stop being useful?" is in both Results
    and the appendix; keep one copy.
-10. **Notation load.** Move dense CIs into one summary table; ≤ 2–3 numbers per
+10. *table done 2026-10-17 (Table `tab:summary`, macros generated); prose trimming open.* **Notation load.** Move dense CIs into one summary table; ≤ 2–3 numbers per
     prose paragraph. The `\S…` macros are generated into `numbers.tex` by
     `research/w6_figures.py`; keep them generated, never hand-typed.
 11. *done 2026-10-17 (checklist is Table `tab:controls`; section already follows Results).* **Promote the evaluation errors.** Move "Four evaluation errors" and the
     controls checklist earlier; expand the checklist into a table (control /
     error it catches / cost).
-12. *horizon + 23 d done 2026-10-17; citation check open.* **Cheap fixes.** State the one-year horizon in the abstract; abstract's
+12. *horizon + 23 d done 2026-10-17; citations checked 2026-10-17 against `literature/papers/` front matter (all 12 present, metadata matches, `make lit-check` OK); live-link check of the 2026 arXiv IDs not done.* **Cheap fixes.** State the one-year horizon in the abstract; abstract's
     "about 25 days" → +23.1 (O1) or +26.0 (tuned threshold); verify every
     citation resolves (2026 arXiv IDs first).
 
@@ -401,7 +401,7 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
 
 14. *figure done 2026-10-17 (`fig_shortcut.pdf`, from the logged artifacts).* **Headline figure + task panel.** Task panel (untreated / MTD / thr0.8 / learned MLP trajectories for one patient) still open.
 15. **Generality check (W10, RUN, not yet registered).** Does V9's clock shortcut and its dropout fix appear outside the cancer simulator? Use the JAX re-implementation of POPGym, [popjaxrl](https://github.com/luchris429/popjaxrl) (Lu et al. 2023), not the Gym original, so it drops into this stack. Plan: pick 2–3 tasks where memory matters; arms MLP, MLP + clock, clock-dropout MLP, LSTM; same PQN. Register first, with a manipulation check (the clock arm must lose to the MLP on at least one task, or there is no shortcut to remove) and a kill: no task shows the shortcut ⇒ the paper claims it for this simulator only. Estimate 2–4 days with the JAX port; the risk is PQN not training there untuned.
-16. **Remaining text fixes:** summary table of the dense CIs (item 10), citation check (item 12), anonymised repo link (item 2).
+16. **Remaining text fixes:** prose trimming (item 10), anonymised repo link (item 2), the task-panel figure (item 14).
 
 **Kill:** none for text items; each RUN item carries its own kill in PREREG.
 
