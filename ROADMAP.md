@@ -362,7 +362,7 @@ Review of `paper/main.pdf` (11 pp, plain article). **Retargeted 2026-10-17 from 
 
 **Blockers (before any submission)**
 
-1. **Venue + style file.** TMLR: swap `\documentclass` for its template and check
+1. *template done 2026-10-17 (tmlr.sty/.bst unmodified; 10 pp, double-blind header, author-year citations); TMLR's current guidelines still to re-check.* **Venue + style file.** TMLR: swap `\documentclass` for its template and check
    double-blind rules. (The ICLR 2027 workshop list is not out until 2026-11-29.)
 2. **Anonymity (TMLR is double-blind).** Add an anonymised repo link, or caption Table `tab:runs` saying
    the L-numbers index the released research log.
