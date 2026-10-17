@@ -37,7 +37,13 @@ GATE = 10.0  # days; the program's gate, as registered
 def cell(arch: str, w: float, seed: int) -> dict:
     policy, secs = w4.train_policy(arch, w, seed, train_drop=0.0)
     w4.save_policy(policy, POLICIES, arch, w, seed)
-    return {"arch": arch, "w": w, "seed": seed, "train_seconds": secs, **s1.tiers_eval(policy, seed, w)}
+    return {
+        "arch": arch,
+        "w": w,
+        "seed": seed,
+        "train_seconds": secs,
+        **s1.tiers_eval(policy, seed, w),
+    }
 
 
 def spawn(arch: str, w: float, seed: int) -> dict:
@@ -74,7 +80,9 @@ def analyse(new: list[dict]) -> dict:
     cells = old + new
     valid = {(c["arch"], c["w"], c["seed"]): s1.finite_a(c) for c in cells}
     res = {"prereg": "adaptive_therapy/PREREG.md V11 [2026-10-17]", "vs": {}, "reading": {}}
-    res["nonfinite"] = [f"{a}_w{w}_s{s}" for (a, w, s), ok in valid.items() if not ok and a in UNITS]
+    res["nonfinite"] = [
+        f"{a}_w{w}_s{s}" for (a, w, s), ok in valid.items() if not ok and a in UNITS
+    ]
     for tier in s1.TIERS:
         for a in UNITS:
             res["vs"][f"{a}-lstm_{tier}"] = compare(cells, valid, a, "lstm", tier)
