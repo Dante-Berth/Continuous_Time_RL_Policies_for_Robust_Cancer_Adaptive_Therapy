@@ -299,6 +299,15 @@ $+15$ days, mostly less drug) but its mean is lower because of a tail of earlier
 progressions, so on the mean it recovers none of O1's $+23$ days. The reward
 was part of the gap; the rest is PQN's difficulty in using the true state.
 % S2 L804, S3 L840, T1 L1042, V2 L1344
+\paragraph{Can this trainer use memory at all?} Yes, where memory pays. On
+three POPGym tasks \cite{morad2023}, run in the JAX port of \citet{lu2023}, the same PQN update trains an LSTM that
+beats a parameter-matched MLP on two (return, perfect $=+1$: RepeatPrevious
+$+1.38$ [$+1.23$, $+1.49$], RepeatFirst $+1.04$ [$+0.67$, $+1.39$], 10 seeds),
+and on the third, CountRecall, neither arm learns ($+0.04$). The LSTM is
+unstable across seeds there as on the cancer task (4 of 10 RepeatFirst seeds
+end below $+0.1$). So the recurrent deficit is not a trainer that cannot
+represent memory; it is specific to this task and signal. Two easy tasks, one
+trainer, no tuning. % W10, L1540
 
 \begin{table}[t]
 \centering\footnotesize
@@ -505,6 +514,7 @@ can be a strong baseline for many POMDPs. \emph{ICML}, PMLR 162, 2022.
 \bibitem[Morad et~al.(2023)Morad, Kortvelesy, Bettini, Liwicki, and Prorok]{morad2023} S.~Morad, R.~Kortvelesy, M.~Bettini, S.~Liwicki,
 A.~Prorok. POPGym: benchmarking partially observable reinforcement learning.
 \emph{ICLR}, 2023.
+\bibitem[Lu et~al.(2023)Lu, Schroecker, Gu, Parisotto, Foerster, Singh, and Behbahani]{lu2023} C.~Lu, Y.~Schroecker, A.~Gu, E.~Parisotto, J.~Foerster, S.~Singh, F.~Behbahani. Structured state space models for in-context reinforcement learning. \emph{NeurIPS}, 2023 (arXiv:2303.03982); we use only its JAX re-implementation of POPGym, github.com/luchris429/popjaxrl.
 \bibitem[Kidger et~al.(2020)Kidger, Morrill, Foster, and Lyons]{kidger2020} P.~Kidger, J.~Morrill, J.~Foster, T.~Lyons. Neural
 controlled differential equations for irregular time series. \emph{NeurIPS},
 2020.
@@ -668,6 +678,7 @@ W8 & scheduled visits + lookahead input & check failed ($+9.7$ [$-0.4$, $+19.4$]
 V9 & clock-dropout MLP & deficit removed ($+54.4$ vs positional MLP) & yes & L1477 \\
 W9 & W8 on a pool of schedules & gate failed; ODE $=$ LSTM & yes & L1498 \\
 V10 & state-dropout LSTM, ODE-RNN & deficit remains ($+4$\,d, CI spans 0) & yes & L1518 \\
+W10 & PQN, LSTM vs MLP on POPGym memory tasks & met: headroom on 2 of 3 tasks & yes & L1540 \\
 \bottomrule
 \end{tabular}}
 \end{table}
