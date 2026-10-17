@@ -216,17 +216,16 @@ and \SAOdeMlpZero\ at Tier~0, with all ten seeds negative. ODE$-$LSTM is
 \SAOdeLstmOne, and LSTM$-$MLP \SAMemOne. Tier~0 and Tier~1 agree, so the gap is
 a control deficit present without any shift, not a robustness effect. The
 deficit is not specific to memory. A positional MLP, memoryless but given the
-elapsed time, trails the MLP by as much ($-56.8$ [$-64.2$, $-48.3$] at Tier~1)
+elapsed time, trails the MLP by as much ($-56.8$ days at Tier~1, Table~\ref{tab:summary})
 and ties the LSTM and ODE-RNN. The share of its doses explained by the current
 observation halves (0.26 vs 0.48), to the ODE-RNN's 0.23. The deficit is a shortcut the trainer takes (Fig.~\ref{fig:shortcut}): trained with the clock hidden in
 half of the episodes, the same network recovers it ($+54.4$ [$+44.9$, $+62.3$]
-over the positional MLP at Tier~1) and ties the MLP ($-2.4$ [$-5.2$, $+0.4$]).
-Scrambling the trained clock at test costs only $-14.6$ [$-44.2$, $+10.2$].
+over the positional MLP at Tier~1) and ties the MLP ($-2.4$ days).
+Scrambling the trained clock at test costs only $-14.6$ days (CI spans zero).
 The same treatment does not help the recurrent arms: with their memory reset in
-half of the training episodes, the LSTM and ODE-RNN gain $+4.3$ [$-13.1$, $+21.5$] and
-$+4.2$ [$-8.8$, $+18.9$] at Tier~1 and stay $40$--$46$ days below the MLP. % V10 L1518
+half of the training episodes, the LSTM and ODE-RNN gain about $+4$ days at Tier~1 (CIs span zero) and stay $40$--$46$ days below the MLP. % V10 L1518
 % V8 L1437, V9 L1477
-Under missed visits it ties the MLP ($+2.2$ [$-13.2$, $+16.4$]). % V7 L1414
+Under missed visits it ties the MLP ($+2.2$ days). % V7 L1414
 The
 provisional regime gives the same ordering: LSTM$-$MLP \WCMemOne, ODE$-$LSTM
 \WCOdeLstmOne\ (L596).
@@ -286,7 +285,7 @@ below, the negative result is a statement about PQN at this budget: a learning
 cost larger than the benefit we can measure, not proof that memory has none.
 % O1b, L1310
 The recurrent arms also reach a lower training reward than the MLP on their
-own training patients ($-20.7$ [$-28.4$, $-12.8$] and $-23.5$ [$-34.7$, $-14.0$]),
+own training patients ($-20.7$ and $-23.5$ reward units, CIs exclude zero),
 so they optimise the reward less well; they do not exploit it. % V1a, L1136
 A reference trained like the arms but also shown $S$, $R$ and $\theta$ never
 reached this headroom. It was \HFullZero\ below the MLP, then \SThreeFull\ at
