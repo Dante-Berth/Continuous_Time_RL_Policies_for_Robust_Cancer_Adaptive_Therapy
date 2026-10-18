@@ -311,6 +311,11 @@ def analyse(shards: list[dict]) -> dict:
                 res["vs_teacher"][f"change_{a}_{t}_{tier}"] = cmp(
                     cells, valid, f"ft_{a}_{t}", f"bc_{a}_{t}", tier
                 )
+    # 2026-10-18: lstm_pat vs mlp_pat gives one-sided p~1e-18 while the mean delta is
+    # -2.5 d. Not a helper bug: on the clones (tier0, w=0.05) LSTM beats MLP on 40% of
+    # patients, loses on 20%, ties on 40%, but the losses reach -320 d, so the sign test
+    # is positive and the mean negative. Wilcoxon is a per-patient rank test and says
+    # nothing about the size of the tail; the registered readings use the CI on the mean.
     res["wilcoxon"] = {
         f"{a}_{t}": w4.wilcoxon_per_w_p(cells, valid, f"bc_{a}_{t}", f"bc_mlp_{t}", SEEDS, ("tier0",))
         for a in ("lstm", "ode_rnn")
