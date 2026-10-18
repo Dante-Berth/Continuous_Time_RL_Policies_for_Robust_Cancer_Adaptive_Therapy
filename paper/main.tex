@@ -36,8 +36,11 @@ not under a parameter shift, and not when up to half of the visits are missed
 memory. The task is not solved: a per-patient search on the true simulator
 beats the MLP by 23 days. Splitting a tuned threshold rule's gain, at most
 ${\sim}15$ days come from information that memory could supply, while
-recurrent training costs 40--50. This is a negative result about this trainer
-and this task: we do not show that no memory policy could help. We also report four
+recurrent training costs 40--50. That cost is a learning cost: all three
+networks can be cloned from a threshold teacher to its score, and PQN
+fine-tuning then destroys the recurrent two ($-69$ and $-88$ days) but not the
+MLP. This is a negative result about this trainer and this task: we do not show
+that no memory policy, or no other trainer, could help. We also report four
 evaluation errors, each of which gave a wrong result that looked publishable,
 and the five controls that found them.
 \end{abstract}
@@ -316,6 +319,20 @@ $-49$ and $-47$ days below the MLP. The intervals are wide, so the registered
 reading is ``inconclusive'' against our 10-day gate, but neither size recovers
 anything. The MLP and the ODE-RNN were not scaled. % V11, L1558
 
+\paragraph{Representation or learning?} Behaviour-cloning a threshold teacher
+(a fixed level, or the level tuned to each patient) gives every arm the
+teacher's score: the cloned MLP, LSTM and ODE-RNN reach $U=284.6$, 284.7 and
+284.6 for the fixed threshold, so the recurrent networks can represent a good
+policy. Cloning the patient-tuned level, which a burden-only student can
+recover only from history, shows no memory gain (LSTM $-2.5$ [$-10.6$, $+6.5$];
+ODE-RNN $+1.8$ [$-9.9$, $+13.1$], inconclusive against the 10-day gate). PQN
+fine-tuning from the cloned fixed-threshold policy then leaves the MLP where it
+was ($-0.5$ [$-5.1$, $+4.6$]) and costs the LSTM $-69.0$ [$-92.3$, $-48.1$] and
+the ODE-RNN $-87.7$ [$-121.1$, $-60.2$], with 2--12\% of recurrent cells
+collapsing to open loop. The recurrent deficit is therefore a cost of
+training them with PQN, not a limit of what they can represent. It does not say
+that another trainer would avoid it (the PPO check above cannot). % W11 L1597
+
 \paragraph{Can this trainer use memory at all?} Yes, where memory pays. On
 three POPGym tasks \cite{morad2023}, run in the JAX port of \citet{lu2023}, the same PQN update trains an LSTM that
 beats a parameter-matched MLP on two (return, perfect $=+1$: RepeatPrevious
@@ -443,7 +460,9 @@ Failed runs kept in the count & A validity gate that selected the better cells (
 One ODE family (LV), virtual patients only, and no claim about clinical
 outcomes. PQN's settings are the published ones except parallelism (32 patients
 per update, not 1024) and untuned, and the recurrent arms are unstable in
-training; we treat that as part of their cost rather than tuning it away. Given
+training; we treat that as part of their cost rather than tuning it away. A warm-start
+check supports reading it as a learning cost of PQN (\S\ref{sec:results}), but
+it uses PQN throughout and cannot say whether another trainer avoids it. Given
 the true hidden state, PQN at the registered budgets scores below the
 burden-only MLP. With ten times the gradient steps it matches the MLP on the
 training reward and still trails on $U$, and with a progression term in the reward it
@@ -486,7 +505,7 @@ memory nor continuous time beat it, on two parameter regimes and on models
 fitted to 55 patients' PSA. The task has headroom, but most of it is a better
 threshold or better measurement, not something a recurrent state could infer;
 what memory could add (${\sim}15$ days) is smaller than what recurrent training
-cost (40--50). Even given the hidden state, and with a reward that pays until
+cost (40--50), a cost that cloning from a threshold shows to be PQN's rather than a limit of the networks. Even given the hidden state, and with a reward that pays until
 progression, the same trainer only ties the burden-only MLP. When half of the
 visits are missed, the question is no longer which architecture uses feedback
 best but whether feedback has any value; over one year, on average, it had none.
@@ -771,6 +790,7 @@ V9 & clock-dropout MLP & deficit removed ($+54.4$ vs positional MLP) & yes & L14
 W9 & W8 on a pool of schedules & gate failed; ODE $=$ LSTM & yes & L1498 \\
 V10 & state-dropout LSTM, ODE-RNN & deficit remains ($+4$\,d, CI spans 0) & yes & L1518 \\
 V11 & LSTM at 64, 128 units & inconclusive vs gate; still $-47$ to $-49$\,d vs MLP & yes & L1558 \\
+W11 & clone threshold teachers, then PQN fine-tune & clones match teacher; fine-tune costs LSTM $-69$, ODE-RNN $-88$\,d, MLP $-0.5$ & yes & L1597 \\
 V12 & S1 design under PPO & gate failed: uninformative about trainers & yes & L1578 \\
 W10 & PQN, LSTM vs MLP on POPGym memory tasks & met: headroom on 2 of 3 tasks & yes & L1540 \\
 \bottomrule
