@@ -246,7 +246,9 @@ def cmp(cells, valid, a, b, tier) -> dict:
 
 def did(cells, valid, arch, teacher, tier) -> dict:
     """(ft - bc)[arch] - (ft - bc)[mlp], paired on patient, seed+patient bootstrap."""
-    d = w4.paired(cells, valid, f"ft_{arch}_{teacher}", f"bc_{arch}_{teacher}", "level", SEEDS, (tier,))
+    d = w4.paired(
+        cells, valid, f"ft_{arch}_{teacher}", f"bc_{arch}_{teacher}", "level", SEEDS, (tier,)
+    )
     m = w4.paired(cells, valid, f"ft_mlp_{teacher}", f"bc_mlp_{teacher}", "level", SEEDS, (tier,))
     return w4.delta_ci(d - m, (tier,))
 
@@ -306,8 +308,12 @@ def analyse(shards: list[dict]) -> dict:
                 r = did(cells, valid, a, t, tier)
                 res["P2"][f"{a}_{t}_{tier}"] = {**r, "reading": reading_p2(r)}
             for a in ARCHS:
-                res["vs_teacher"][f"bc_{a}_{t}_{tier}"] = cmp(cells, valid, f"bc_{a}_{t}", f"T_{t}", tier)
-                res["vs_teacher"][f"ft_{a}_{t}_{tier}"] = cmp(cells, valid, f"ft_{a}_{t}", f"T_{t}", tier)
+                res["vs_teacher"][f"bc_{a}_{t}_{tier}"] = cmp(
+                    cells, valid, f"bc_{a}_{t}", f"T_{t}", tier
+                )
+                res["vs_teacher"][f"ft_{a}_{t}_{tier}"] = cmp(
+                    cells, valid, f"ft_{a}_{t}", f"T_{t}", tier
+                )
                 res["vs_teacher"][f"change_{a}_{t}_{tier}"] = cmp(
                     cells, valid, f"ft_{a}_{t}", f"bc_{a}_{t}", tier
                 )
@@ -317,7 +323,9 @@ def analyse(shards: list[dict]) -> dict:
     # is positive and the mean negative. Wilcoxon is a per-patient rank test and says
     # nothing about the size of the tail; the registered readings use the CI on the mean.
     res["wilcoxon"] = {
-        f"{a}_{t}": w4.wilcoxon_per_w_p(cells, valid, f"bc_{a}_{t}", f"bc_mlp_{t}", SEEDS, ("tier0",))
+        f"{a}_{t}": w4.wilcoxon_per_w_p(
+            cells, valid, f"bc_{a}_{t}", f"bc_mlp_{t}", SEEDS, ("tier0",)
+        )
         for a in ("lstm", "ode_rnn")
         for t in TEACHERS
     }
@@ -331,7 +339,9 @@ def ci(v: dict) -> str:
 
 def report(res: dict) -> None:
     print(f"nonfinite {res['nonfinite']}  arm_valid {res['arm_valid']}")
-    print(f"GATE (bc_mlp_fix - T_fix, Tier 0, lower CI > -{GATE_D:.0f}): {ci(res['gate'])}  PASS={res['gate']['passes']}")
+    print(
+        f"GATE (bc_mlp_fix - T_fix, Tier 0, lower CI > -{GATE_D:.0f}): {ci(res['gate'])}  PASS={res['gate']['passes']}"
+    )
     for k, v in res["P1"].items():
         print(f"  P1 {k:22s} {ci(v)}  {v['reading']}")
     for k, v in res["P2"].items():
@@ -340,7 +350,9 @@ def report(res: dict) -> None:
         if k.endswith("tier0"):
             print(f"  {k:28s} {ci(v)}")
     for a, cl in res["closed_loop"].items():
-        print(f"  closed-loop {a:18s} median {np.median(cl):.3f}  <0.10: {np.mean(np.array(cl) < 0.10):.0%}")
+        print(
+            f"  closed-loop {a:18s} median {np.median(cl):.3f}  <0.10: {np.mean(np.array(cl) < 0.10):.0%}"
+        )
 
 
 def main() -> int:
@@ -357,7 +369,9 @@ def main() -> int:
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--ref":
         teacher, w, seed = sys.argv[2], float(sys.argv[3]), int(sys.argv[4])
-        (SHARDS / f"ref_{teacher}_w{w}_s{seed}.json").write_text(json.dumps(teacher_ref(teacher, w, seed)))
+        (SHARDS / f"ref_{teacher}_w{w}_s{seed}.json").write_text(
+            json.dumps(teacher_ref(teacher, w, seed))
+        )
         raise SystemExit(0)
     if len(sys.argv) > 1 and sys.argv[1] == "--worker":
         arch, teacher, w, seed = sys.argv[2], sys.argv[3], float(sys.argv[4]), int(sys.argv[5])
