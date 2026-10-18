@@ -1593,3 +1593,22 @@ Closed-loop share, Tier 1: MLP 0.41, LSTM 0.21, ODE 0.14, ref 0.56. Cells with c
 - Gate failed (lower CI of ref − mlp is −10.4, not > 0), so V12 is uninformative about trainers, as registered. The paper must not say the deficit holds under two trainers.
 - Descriptive, not a conclusion: under PPO the recurrent arms again trail the MLP, ODE = LSTM within noise, and both collapse to an open-loop schedule in 30–55% of cells, the same failure as Phase 2 (L312, L391). The reference's mean ties the MLP while its median is +9 d, the pattern V2 found under PQN (L1344).
 - No other budget, lr, entropy, batch or arm size is registered after seeing this (registered kill rule).
+
+## [2026-10-18] — W11: all three arms can represent the threshold policy (clone = teacher), but PQN fine-tuning destroys it in the recurrent arms only (−69 and −88 d) — the deficit is a learning cost, not a representation limit
+**Verdict:** OPEN — gate passed; P1 "memory helps" absent (3 of 4 tie, ODE-RNN/T_pat inconclusive); P2 "learning cost" in all 8 teacher×tier×arm readings · **Gate:** Tier 0, w-mean over 4 w, 10 seeds (31–40): T_fix U 284.6 (TTP median 357 [357–357], exposure 192); bc_mlp_fix 284.6; bc_lstm_fix 284.7; bc_ode_fix 284.6; after PQN: MLP 284.1 (TTP 357 [315–357], exp 210), LSTM 215.7 (298 [128–357], exp 181), ODE-RNN 196.9 (290 [58–357], exp 168); burden integral median 1.81e6 → 1.35e6 / 1.41e6 / 1.59e6; Wilcoxon p not reported (see Results) · **Artifacts:** research/w11_warmstart.py → research/outputs/w11_warmstart.json, w11_shards/, w11_policies/
+### Context
+PREREG W11 [2026-10-18]: is the 40–50 d recurrent deficit ([L424](RESEARCH_LOG.md#L424), [L766](RESEARCH_LOG.md#L766), O1b [L1310](RESEARCH_LOG.md#L1310)) a representation limit or a PQN learning cost? Registered as met-as-registered below; one implementation note was added after launch and before any result was read.
+### What was tried
+Stage A: each arm (S1 sizes) behaviour-cloned from T_fix (O1b leave-one-seed-out level) and T_pat (per-training-patient best level), teacher rollouts + 3 DAgger rounds, 2000 Adam steps. Stage B: 300 PQN updates, ε = 0.005. S1 Part A cohort, 4 w × 10 seeds × 3 arms × 2 teachers = 240 cells; pipeline checked first on unregistered seed 99.
+### Results
+- Gate (bc_mlp_fix − T_fix, Tier 0): +0.0 [−0.1, +0.1] — passed. Clone-teacher action agreement: T_fix 0.99–1.00 in every arm; T_pat 0.84–0.86 in every arm.
+- P1 (Tier 0, bc recurrent − bc MLP): T_fix LSTM +0.1 [−0.3, +0.4], ODE +0.0 [−0.9, +0.8]; T_pat LSTM −2.5 [−10.6, +6.5] (ties), ODE +1.8 [−9.9, +13.1] (inconclusive: spans the 10 d gate). Memory does not help a cloned policy infer the patient's level from burden history.
+- P2 (DiD, fine-tune change vs the MLP's): Tier 0 T_fix LSTM −68.5 [−93.3, −46.4], ODE −87.2 [−120.2, −59.9]; T_pat −91.3 [−116.7, −68.9], −83.3 [−108.9, −59.3]; Tier 1 the same sign, −60 to −88. All 8 readings "learning cost".
+- Fine-tune change alone (Tier 0, T_fix): MLP −0.5 [−5.1, +4.6]; LSTM −69.0 [−92.3, −48.1]; ODE-RNN −87.7 [−121.1, −60.2]. Closed-loop share < 0.10 after fine-tuning: LSTM 12%, ODE-RNN 2% (T_fix) / 10% (T_pat), MLP 0% of cells; all clones 0%.
+- T_pat reference (U 305.1) selects each test patient's level on the scored rollout (O1's convention), so "vs T_pat" gaps are optimistic and not read; the T_pat fine-tuned MLP rose +41.8 [+29.1, +56.2] but still sits below it.
+- Wilcoxon: the helper returned one-sided p = 0.0 for LSTM−MLP under T_pat although the mean difference is negative; I could not reconcile this, so no p-value is cited.
+### Decision
+- Registered consequence "P1 ties and P2 learning cost" ⇒ the paper may state the recurrent deficit is a PQN learning cost, with this warm start as evidence. ODE-RNN/T_pat P1 is inconclusive and is reported as such.
+- Not shown: that another trainer would not also destroy it (V12 stays uninformative). The result is about PQN fine-tuning from a good policy; it does not identify why PQN does it.
+- The "memory is worth at most ~15 d" claim is not withdrawn: no P1 gain was found, but one reading is inconclusive and the T_pat clone itself reaches only 0.85 agreement for every arm.
+- W12 proceeds only after its own feasibility check (Hahnfeldt has no resistance term).

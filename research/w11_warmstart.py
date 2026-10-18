@@ -206,6 +206,20 @@ def spawn(arch: str, teacher: str, w: float, seed: int) -> dict:
     return json.loads(shard.read_text())
 
 
+def spawn_ref(teacher: str, w: float, seed: int) -> dict:
+    # 2026-10-18: scoring the 80 teacher references in the analysis process compiled
+    # ~4000 evaluate() calls and died of "Cannot allocate memory" (L207's leak again);
+    # each reference now runs in its own process and is cached as a shard.
+    shard = SHARDS / f"ref_{teacher}_w{w}_s{seed}.json"
+    if not shard.exists():
+        subprocess.run(
+            [sys.executable, __file__, "--ref", teacher, str(w), str(seed)],
+            check=True,
+            cwd=Path(__file__).resolve().parent.parent,
+        )
+    return json.loads(shard.read_text())
+
+
 # --- analysis ---------------------------------------------------------------------------
 
 
@@ -252,7 +266,7 @@ def analyse(shards: list[dict]) -> dict:
     # W4's helpers read global WEIGHTS; the smoke run uses a subset
     w4.WEIGHTS = WEIGHTS
     refs = {
-        (t, w, s): {"arch": f"T_{t}", "w": w, "seed": s, **teacher_ref(t, w, s)}
+        (t, w, s): {"arch": f"T_{t}", "w": w, "seed": s, **spawn_ref(t, w, s)}
         for t in TEACHERS
         for w in WEIGHTS
         for s in SEEDS
@@ -336,6 +350,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "--ref":
+        teacher, w, seed = sys.argv[2], float(sys.argv[3]), int(sys.argv[4])
+        (SHARDS / f"ref_{teacher}_w{w}_s{seed}.json").write_text(json.dumps(teacher_ref(teacher, w, seed)))
+        raise SystemExit(0)
     if len(sys.argv) > 1 and sys.argv[1] == "--worker":
         arch, teacher, w, seed = sys.argv[2], sys.argv[3], float(sys.argv[4]), int(sys.argv[5])
         SHARDS.mkdir(parents=True, exist_ok=True)
