@@ -39,6 +39,16 @@ All were trained with the same algorithm (PQN, a recent simple Q-learning method
 
 *How to read this figure.* The top panel is the tumour size relative to its starting size (logarithmic axis) over one year; each line is one dosing policy and the grey line is no treatment. A dot marks progression. The bottom panel has one bar per week for each policy: a tall bar is a full dose, a short bar a half dose, a gap means no drug. The patient is the one whose drug saved by the MLP against MTD is the median over the patients where it saves any (a fixed rule, not a hand pick).
 
+*Why does the MTD curve turn upward after about 150 days although the dose stays at maximum?* Nothing in the tumour changes or "learns"; the cause is who is left alive. Think of two crops sharing one field, with a weedkiller that only works on one of them:
+
+1. **Start.** Most of the tumour is sensitive cells (S); a small minority (0.1% to 10%) are resistant cells (R). They compete for the same space, and S is the stronger grower, so S keeps R small.
+2. **Full dose, first weeks.** The drug kills S, so the total burden falls fast, to the lowest point in the curve. This is the stage where MTD looks best, and it is why the MTD line is the lowest in the top panel.
+3. **The cost.** As S disappears, so does the competition that was holding R back. R is not affected by the drug at all, so it now grows into the space S has left. This is called *competitive release*.
+4. **Burden turns upward.** Once R is most of the tumour, the total follows R's regrowth. The drug is still being given at full dose (tall bars in the lower panel), but it has nothing left to act on, so the curve rises regardless. In this patient the rise passes 20% above the lowest point and stays there for 28 days, which counts as progression at 175 days.
+5. **Why the other policies last longer.** thr0.8 and the trained MLP stop dosing when the tumour is small, so some S survives and keeps R suppressed. The burden stays closer to its starting size instead of dropping far, but the resistant takeover is delayed (progression at 322 and 196 days). The trade-off is a higher burden for much of the year in exchange for a longer time before the regrowth.
+
+The same logic explains the reward. Burden alone would make MTD the winner (it gives the lowest burden for the first months); the score U counts days until the regrowth starts, which is where sparing the sensitive cells pays. The steps above come from the model equations, not from a plot of S and R for this particular patient; the figure itself shows only the total.
+
 # 3. Methods in detail
 
 **The decision problem, stated as a POMDP.** Everything below fills in the pieces of this tuple $(\mathcal{S},\mathcal{A},P,R,\Omega,O,\gamma,T)$; the tumour equations are only the transition function $P$.
