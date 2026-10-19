@@ -41,6 +41,21 @@ All were trained with the same algorithm (PQN, a recent simple Q-learning method
 
 # 3. Methods in detail
 
+**The decision problem, stated as a POMDP.** Everything below fills in the pieces of this tuple $(\mathcal{S},\mathcal{A},P,R,\Omega,O,\gamma,T)$; the tumour equations are only the transition function $P$.
+
+| Piece | Definition here |
+|---|---|
+| Hidden state $s_t$ | $(S_t,\,R_t,\,C_t,\,\theta)$: sensitive cells, resistant cells, drug concentration in the single PK compartment, and the patient's parameters (growth rates, turnover, capacity, initial fill). The policy never sees any of it, and neither does it see the running lowest burden that the reward and the score use. |
+| Action $a_t$ | One dose from $\{0,\tfrac12,1\}$, chosen at visit $t$ and held for 7 days. |
+| Transition $P$ | The dose is added to $C_t$ as a bolus, then the tumour ODE is integrated for 7 days (fixed-step solver) with $C$ cleared at 0.5 per day. The dynamics are deterministic given $\theta$; all randomness is in the initial patient and the measurement noise. |
+| Initial state | A patient drawn by Latin hypercube from the regime's ranges (200 for training, 200 for testing, per seed), with no drug on board. |
+| Observation $o_t$ | $\log\big((S_t+R_t)/(S_0+R_0)\big)$ plus 5% log-normal noise: one number per visit. At Tier 4 a missed visit gives no observation and no decision, and the last dose continues. |
+| Reward $r_t$ | $-\max(b_t/b_{\min,t}-1.2,\,0)\;-\;w\cdot a_t$ plus a constant paid every visit, where $b_t=S_t+R_t$ and $b_{\min,t}$ is the lowest burden so far. $w\in\{0.05,0.1,0.2,0.4\}$; one network per $w$. |
+| Horizon and discount | Fixed: 52 visits (357 days), no early termination, $\gamma=0.99$. |
+| Policy and objective | A network $\pi(a_t\mid o_{1:t})$ that sees the history of observations only (for the MLP, the last one). Training maximises expected discounted reward; the reported score is $U=\min(\mathrm{TTP},357)-w\cdot\text{exposure}$ per patient. |
+
+Two consequences matter for the rest of the report. The reward and the score are close but not identical: the reward penalises burden above $1.2\times$ the nadir at every visit, while $U$ counts days to a *confirmed* progression, so a policy is trained on a proxy for what it is scored on. And because $S$ and $R$ are hidden, total burden alone is ambiguous: a falling burden can mean sensitive cells dying with resistant ones already dominant, which is why memory could in principle help.
+
 **The patient model.** Each virtual patient has two cell populations that compete for the same space (a Lotka-Volterra model):
 
 - sensitive cells S grow at rate $r_S$, are killed by the drug (strength $d_D$ times the drug effect u), and die naturally at rate $d_S$;
