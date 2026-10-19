@@ -128,6 +128,7 @@ ranges). Strobl et al.'s own fits to prostate-cancer patients extend to costs
 above 50\%, paired with low turnover (their Fig.~5C). We therefore report it as
 a second, high-cost regime, whose ranges are not taken from the literature.
 % L703
+\paragraph{Decision problem.} The task is a finite-horizon partially observable MDP (POMDP) with discount $\gamma=0.99$. The hidden state is $(S_t,R_t,C_t,\theta)$: both cell populations, the drug level $C_t$ in the PK compartment, and the patient's parameters. At each of 52 visits the policy chooses a dose $a_t\in\{0,\tfrac12,1\}$, held for 7\,d; the dose is added to $C_t$ and the tumour ODE is integrated to the next visit. Given $\theta$ the dynamics are deterministic; the randomness is the sampled patient and the observation noise. The observation is $o_t=\log\frac{S_t+R_t}{S_0+R_0}+\varepsilon_t$ with $\varepsilon_t\sim\mathcal{N}(0,0.05^2)$, and the policy $\pi(a_t\mid o_{1:t})$ sees only the history of $o$ (the MLP only the latest value). The reward is given below.
 \paragraph{Episodes and reward.} 52 weekly visits (357\,d). The policy sees
 only $\log(\text{burden}/\text{baseline})$ with 5\% log-normal noise, never $S$
 or $R$, and chooses a dose in $\{0, \tfrac12, 1\}$. Progression (TTP) is a 20\%
@@ -173,7 +174,7 @@ is the one whose drug saved by the MLP against MTD is the median over the
 patients where it saves any, a fixed rule rather than a hand pick. MTD
 pushes the burden lowest and progresses at 175\,d; thr0.8 and the MLP
 cut the dose, keep the burden nearer baseline, and progress at 322\,d and
-196\,d. Bars show the dose chosen each week.}\label{fig:task}
+196\,d. In this model MTD progresses because the drug acts on $S$ only: once $S$ is cleared, the resistant cells $R$ regrow into the freed capacity (competitive release) and the burden follows them upward although the dose stays maximal. The cut-dose policies keep some $S$ alive to hold $R$ back. Bars show the dose chosen each week.}\label{fig:task}
 \end{figure}
 
 \section{Results}\label{sec:results}
