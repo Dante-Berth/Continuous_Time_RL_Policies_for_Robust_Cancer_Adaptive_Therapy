@@ -35,8 +35,8 @@ a per-patient search on the true simulator beats the memoryless network by 23
 days. But at most about 15 of those days could come from memory, and training
 the recurrent networks costs 40 to 50. Cloning a threshold teacher shows that
 the recurrent networks can represent a good policy, and PQN fine-tuning then
-damages them, so the deficit belongs to this trainer and not to the
-architecture. We do not show that no memory policy, or no other trainer, could
+damages them, so the deficit looks like a learning cost of PQN and not a limit
+on what the architectures can represent. We do not show that no memory policy, or no other trainer, could
 help. We also describe four evaluation mistakes that each gave a result that
 looked publishable, and the controls that caught them.
 \end{abstract}
@@ -79,7 +79,7 @@ whether the recurrent networks can represent a good policy and lose it in
 training.
 
 This paper makes three contributions.
-\begin{itemize}
+\begin{enumerate}
 \item A controlled comparison. One trainer, one environment and one evaluation
 protocol, with only the Q-network swapped and the recurrent arms matched in size.
 \item A negative result and a partial explanation. There is no ODE-RNN edge in
@@ -89,7 +89,7 @@ PQN, with little room for memory to repay it.
 \item A record of how the result was reached: four evaluation mistakes that
 produced a wrong result that looked publishable, the controls that found them,
 and a table of every registered run.
-\end{itemize}
+\end{enumerate}
 We do not claim that no memory policy could help, that no other trainer would
 avoid the deficit, or anything about real patients; all patients are simulated.
 
@@ -233,8 +233,9 @@ ODE-RNN, state dropout $-$ ODE-RNN$^\dagger$ & $+3.5$~[$-11.6$, $+20.3$] & $+4.2
 \end{tabular}
 \end{table}
 
-\paragraph{Regular visits: memory does not help.} On Strobl's ranges
-(Fig.~\ref{fig:forest}) the ODE-RNN scores \SAOdeMlpOne\ against the MLP at
+\paragraph{Regular visits: memory does not help.} The first question is whether
+any recurrent or continuous-time arm beats the MLP when visits are regular. On
+Strobl's ranges (Fig.~\ref{fig:forest}) the ODE-RNN scores \SAOdeMlpOne\ against the MLP at
 Tier~1 and \SAOdeMlpZero\ at Tier~0, and all ten seeds are negative. Against the
 LSTM it scores \SAOdeLstmOne, and the LSTM itself is \SAMemOne\ against the MLP.
 Tiers~0 and~1 agree, so the gap is a deficit in control that is already there
@@ -279,8 +280,8 @@ already past progression, so a dose there only costs exposure.}
 \label{fig:rule}
 \end{figure}
 
-\paragraph{The best learned policy is a threshold.} A memoryless MLP's dose is a
-function of the current observation, so what matters is the shape of that
+\paragraph{The best learned policy is a threshold.} Next we ask what the winning
+policy actually does. A memoryless MLP's dose is a function of the current observation, so what matters is the shape of that
 function (Fig.~\ref{fig:rule}). On Strobl's ranges the mean dose crosses one
 half at $\RuleHalfStrobl\times$ baseline and is full by $0.8\times$. A one-line
 rule that doses fully above $0.8\times$ baseline (thr0.8) matches it: mean $U$ is
@@ -289,7 +290,8 @@ rule that doses fully above $0.8\times$ baseline (thr0.8) matches it: mean $U$ i
 (below) the MLP ends slightly above the rule, \SThreeUMlpZero\ against
 \SThreeUThrZero\ at Tier~0, by dosing less.
 
-\paragraph{What memory could have bought.} At regular visits the simulator is
+\paragraph{What memory could have bought.} The third question is how much room
+the task leaves for memory at all. At regular visits the simulator is
 deterministic given the doses, so the best policy with full information is just
 the best dose sequence for each patient, and no trainer is needed to bound it. A
 search on the true simulator, run per test patient, beats the MLP by $+23.1$
@@ -306,7 +308,7 @@ exactly instead of with 5\% noise, which bounds what filtering the observation
 history could recover. The last third comes from knowing each patient's best
 level, which bounds what inferring the patient from history could add. For a
 threshold policy, then, information that memory could supply is worth at most
-about 15 days, while training the recurrent arms cost 40 to 50. This is a
+about 15 days, while the learning cost of the recurrent arms was 40 to 50. This is a
 split of one rule family's gain and not a bound on memory: the per-patient
 search ($+23.1$) is itself below the tuned threshold ($+26.0$), so it is not the
 full-information optimum, and the first two rows of the table are post hoc.
@@ -329,7 +331,8 @@ lower because of a tail of earlier progressions, so on the mean it recovers none
 of the $+23$ days. The reward was part of the gap, and the rest is PQN's
 difficulty in using the true state. % S2 L804, S3 L840, T1 L1042, V2 L1344
 
-\paragraph{A second trainer: not informative.} We re-ran the Tier~0 and Tier~1
+\paragraph{A second trainer: not informative.} The obvious objection is that the
+deficit belongs to PQN. To test it we re-ran the Tier~0 and Tier~1
 comparison with PPO instead of PQN (600 updates, untuned, all arms retrained).
 Our own rule for admitting a new trainer is that a policy shown the true hidden
 state must beat the burden-only MLP under it. It does not ($-1.6$ [$-10.4$,
@@ -400,8 +403,9 @@ arm. Grey: MTD (dashed) and the thr0.8 rule (dotted).}
 \label{fig:missed}
 \end{figure}
 
-\paragraph{Missed visits: no continuous-time edge.} Trained with 35\% of visits
-missed, the ODE-RNN is above none of its comparators on Strobl's ranges
+\paragraph{Missed visits: no continuous-time edge.} Missed visits are where a
+continuous-time state should help most, so we ask whether it does. Trained with
+35\% of visits missed, the ODE-RNN is above none of its comparators on Strobl's ranges
 (Fig.~\ref{fig:forest}): against the MLP \SBOdeMlp, against the LSTM
 \SBOdeLstm, against LSTM+$\Delta t$ \SBOdeLstmDt, and against MTD \SBOdeMtd. It
 degrades more gracefully than the MLP as visits go missing (\SBGraceMlp\ on
@@ -551,15 +555,14 @@ our metastasis proxy counts against them.
 \section{Conclusion}\label{sec:conclusion}
 On this task a memoryless burden threshold is a strong baseline, and neither
 memory nor continuous time beat it, on two parameter regimes and on models
-fitted to 55 patients' PSA. The task does have headroom, but most of it comes
-from a better threshold or a cleaner measurement, which a recurrent state could
-not supply. What memory could add (about 15 days) is smaller than what recurrent
-training cost (40 to 50 days), and cloning from a threshold shows that cost to be
-PQN's and not a limit of the networks. Even given the hidden state, and with a
+fitted to 55 patients' PSA. The task does have headroom, but the part that memory could supply is at most
+about 15 days, smaller than the learning cost of the recurrent arms (40 to 50
+days), and the warm-start experiment points to PQN's training and not to a limit
+on what the networks can represent. Even given the hidden state, and with a
 reward that pays until progression, the same trainer only ties the burden-only
 MLP. When half of the visits are missed, the question changes from which
 architecture uses feedback best to whether feedback has any value, and over one
-year, on average, it had none. A fair test of a continuous-time policy needs a
+year, on average, it had none. We think a fair test of a continuous-time policy needs a
 setting where the gap itself carries information, such as scheduled instead of
 random visits, and a trainer that can first beat the threshold with the true
 state.
