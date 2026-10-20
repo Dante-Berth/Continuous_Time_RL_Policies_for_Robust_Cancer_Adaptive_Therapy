@@ -39,3 +39,17 @@ paper-anon:
 	mkdir -p paper/submission/figures
 	sed -E 's/(^|[^\\])%.*$$/\1/' paper/main.tex > paper/submission/main.tex
 	cp paper/numbers.tex paper/tmlr.sty paper/tmlr.bst paper/refs.bib paper/figures/*.pdf paper/submission/ 2>/dev/null; mv paper/submission/fig_*.pdf paper/submission/figures/ 2>/dev/null; true
+
+# 2026-10-19: arXiv source (non-anonymous, `preprint` option, comments stripped because they carry
+# log line numbers). Set the author block: make paper-arxiv ARXIV_AUTHOR='\name A. Name \email a@b.c \\ \addr Institution'
+# The bibliography is inline (no .bib); the zip is paper/arxiv.zip. Do NOT upload paper/submission/ (anonymised).
+ARXIV_AUTHOR ?= \name AUTHOR NAME \email AUTHOR@EMAIL \\ \addr AFFILIATION
+paper-arxiv:
+	mkdir -p paper/arxiv/figures
+	sed -E 's/(^|[^\\])%.*$$/\1/' paper/main.tex \
+	| sed -E 's/\\usepackage\{tmlr\}/\\usepackage[preprint]{tmlr}/' \
+	| ARXIV_AUTHOR='$(ARXIV_AUTHOR)' awk '/^\\author\{/ {print "\\author{" ENVIRON["ARXIV_AUTHOR"] "}"; next} {print}' > paper/arxiv/main.tex
+	cp paper/numbers.tex paper/tmlr.sty paper/arxiv/
+	cp paper/figures/*.pdf paper/arxiv/figures/
+	cd paper/arxiv && latexmk -pdf -interaction=nonstopmode main.tex >/dev/null
+	cd paper/arxiv && rm -f ../arxiv.zip && zip -q ../arxiv.zip main.tex numbers.tex tmlr.sty figures/*.pdf
