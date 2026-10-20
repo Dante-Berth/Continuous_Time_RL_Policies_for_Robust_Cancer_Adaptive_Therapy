@@ -11,7 +11,7 @@ index; the judgment lives in `papers/<id>.md`.
 > uv run python research/lit_table.py --check   # exit 1 if stale
 > ```
 
-**Provenance status: 14/27 read from the PDF (`1°`); 13 are `2°` (48%).**
+**Provenance status: 15/27 read from the PDF (`1°`); 12 are `2°` (44%).**
 
 A `2°` row is seeded from PROJECT.md §12-REF — the citation resolves, but
 the paper has not been read. **A `2°` cell may not be cited in a design**
@@ -42,7 +42,7 @@ to our design", and it is the only section most readers need.
 | `mechanism` | [doi-10.1016-j.jtbi.2005.06.037](papers/doi-10.1016-j.jtbi.2005.06.037.md) | 1° | W13 candidate, read 1°; gated by PREREG W13 [2026-10-19] (reproduction of Figs 6-8, then headroom) before any policy use |
 | `mechanism` | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | 2° | Superseded by doi-10.1158-0008-5472.CAN-23-2040. Kept, never deleted, per REVIEW_PROTOCOL §0.2. |
 | `mechanism` | [doi-10.1158-0008-5472.CAN-23-2040](papers/doi-10.1158-0008-5472.CAN-23-2040.md) | 1° | Our setting, pre-occupied: LV, burden-only, TTP = +20%. Its threshold rule is the one our MLP learned (W1, ~0.80x baseline). Fig. 3C predicts W4's direction for any policy trained weekly and evaluated with dropped visits. |
-| `mechanism` | [doi-10.1371-journal.pcbi.1009418](papers/doi-10.1371-journal.pcbi.1009418.md) | 2° | W14 candidate (second MECHANISM: drug-induced rather than selected resistance); prose read 2026-10-20 via PMC, equations and Table 1 values were lost in text extraction, so the PDF must be read before any parameter is used |
+| `mechanism` | [doi-10.1371-journal.pcbi.1009418](papers/doi-10.1371-journal.pcbi.1009418.md) | 1° | Second MECHANISM (drug-induced resistance) read 1°; but the paper itself finds the optimum is an almost time-independent constant dose with only marginal closed-loop gain, and excludes standing variation (R0 = 0): little room for memory in the paper's own regime |
 | `mechanism` | [doi-10.3934-mbe.2019010](papers/doi-10.3934-mbe.2019010.md) | 1° | ROADMAP V6 candidate, read 1°; gated by PREREG V6-gate [2026-10-04] before any policy use |
 | `mechanism` | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | 2° | The third family. Produces dynamics LV and Hahnfeldt cannot, and the Hopf bifurcations that break a naive TTP rule (PROJECT.md 6.3). |
 | `mechanism` | [doi-10.1038-nature-hahnfeldt-1999](papers/doi-10.1038-nature-hahnfeldt-1999.md) | 1° | Our vector field is this one; our drug scale was not. In its own units it reproduces 3 of 5 published targets, and the other 2 within 3.1–10.5% (V5, RESEARCH_LOG L1176). A mouse model with no resistant population: hosts a transfer test at most, never an adaptive-therapy comparison. |
@@ -62,7 +62,6 @@ what promotes a row to `1°` and makes it citable in a design argument.
 |---|---|---|
 | 1 | [arxiv-2608.18387](papers/arxiv-2608.18387.md) | r_R is weakly identifiable under adaptive therapy; parameters fit under one schedule do not transport to another; TTP and metastasis risk pull against each other |
 | 1 | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | REJECTED: mis-seeded stub. Wrong DOI and title for Gallagher 2024; the PDF's own DOI is 10.1158/0008-5472.CAN-23-2040 (p.1929) |
-| 1 | [doi-10.1371-journal.pcbi.1009418](papers/doi-10.1371-journal.pcbi.1009418.md) | Sensitive S and resistant R cells with Hill pharmacodynamics and a S->R rescue-mutation rate that rises linearly with dose; the probability of cure is maximised at an INTERMEDIATE constant dose, below the dose of maximal decay (abstract and prose) |
 | 2 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Effector-tumour predation dynamics with immunostimulation, sneaking-through, and a dormant state; BCL1 lymphoma parameters |
 | 2 | [doi-10.1038-s41559-021-01428-w](papers/doi-10.1038-s41559-021-01428-w.md) | Abstract only (PubMed, 2026-10-02): general conditions and formulas for when containment beats MTD, beyond logistic growth (abstract) |
 | 2 | [doi-10.1200-CCI.18.00087](papers/doi-10.1200-CCI.18.00087.md) | Abstract only (PubMed, 2026-10-02): a model with both spontaneous and drug-induced resistance; the induction parameter is identifiable (abstract) |
@@ -83,7 +82,7 @@ what promotes a row to `1°` and makes it citable in a design argument.
 | [doi-10.1016-j.jtbi.2005.06.037](papers/doi-10.1016-j.jtbi.2005.06.037.md) | Journal of Theoretical Biology 2006;238(4):841-862 (PMID 16153659) | model | other | full-state | none (tumour eradicated or at carrying capacity; qualitative time courses) | no | 1° | reviewed |
 | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 2° | rejected |
 | [doi-10.1158-0008-5472.CAN-23-2040](papers/doi-10.1158-0008-5472.CAN-23-2040.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 1° | reviewed |
-| [doi-10.1371-journal.pcbi.1009418](papers/doi-10.1371-journal.pcbi.1009418.md) | PLoS Computational Biology 2021;17(9):e1009418 (PMID 34555024, PMC8491903) | model | lotka-volterra | full-state | probability of elimination (evolutionary rescue), not TTP | no | 2° | queued |
+| [doi-10.1371-journal.pcbi.1009418](papers/doi-10.1371-journal.pcbi.1009418.md) | PLoS Computational Biology 2021;17(9):e1009418 (PMID 34555024, PMC8491903) | model | lotka-volterra | full-state | probability of elimination (evolutionary rescue), not TTP | no | 1° | reviewed |
 | [doi-10.3934-mbe.2019010](papers/doi-10.3934-mbe.2019010.md) | Mathematical Biosciences and Engineering 2019;16(1):187-204 (PMID 30674116) | model | other | burden-only | fit and forecast RMSE, PSA and androgen (no TTP) | no | 1° | reviewed |
 | [arxiv-2609.12264](papers/arxiv-2609.12264.md) | arXiv:2609.12264v1 | policy | other | full-state | survival-proxy | no | 1° | reviewed |
 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Bulletin of Mathematical Biology 1994;56(2):295-321 | model | kuznetsov | full-state | none | no | 2° | queued |
