@@ -1612,3 +1612,20 @@ Stage A: each arm (S1 sizes) behaviour-cloned from T_fix (O1b leave-one-seed-out
 - Not shown: that another trainer would not also destroy it (V12 stays uninformative). The result is about PQN fine-tuning from a good policy; it does not identify why PQN does it.
 - The "memory is worth at most ~15 d" claim is not withdrawn: no P1 gain was found, but one reading is inconclusive and the T_pat clone itself reaches only 0.85 agreement for every arm.
 - W12 proceeds only after its own feasibility check (Hahnfeldt has no resistance term).
+
+## [2026-10-20] — W13 Stage 0: our de Pillis 2006 implementation reproduces 7/7 qualitative outcomes of Figs 6-8, but only after two amendments (one made after the 6/7 result was seen)
+**Verdict:** OPEN — the family reproduces; headroom (Stage 1) not yet run · **Gate:** reproduction only, no policy: median TTP / exposure / 2nd endpoint / Wilcoxon p / n seeds not applicable (deterministic ODEs, 0 seeds) · **Artifacts:** `adaptive_therapy/envs/depillis.py`, `adaptive_therapy/tests/test_depillis.py`, `research/w13_reproduce.py`, `research/outputs/w13_reproduce.json`
+
+### Context
+CLOSED #3 bars Hahnfeldt/Kuznetsov (no resistant compartment, MTD optimal by construction). de Pillis-Gu-Radunskaya 2006 ([doi-10.1016-j.jtbi.2005.06.037](../literature/papers/doi-10.1016-j.jtbi.2005.06.037.md), read 1°) has chemotherapy kill the immune compartments too (K_N = K_L = K_C = 0.6 < K_T = 0.9 per day), so full dosing may not be optimal. Pinho 2013 was read and not registered (normal-cell kill 1.2e-7 vs 0.205 on cancer cells). PREREG W13 (2026-10-19): Stage 0 reproduce 7 outcomes, pass = 7/7; Stage 1 rule-based headroom gate.
+
+### What was tried
+`envs/depillis.py` = Eqs 1-8 with Table 1-2 values read off the rendered pages (the PDF text layer drops exponent signs), float64, 1-day constant inputs, Tsit5 rtol 1e-8. 7 invariant tests (drug decay, rest-state equilibrium, chemo depletes C, TIL bolus, finite and non-negative). `w13_reproduce.py` runs Fig 6 (mouse), Fig 7 (patient 9 healthy/depleted), Fig 8 (patient 9, chemo every 5 vs 10 days).
+
+### Results
+**7/7 pass, after two amendments (both in PREREG W13).** Day-120 tumour T: Fig 6 untreated 3.38e7 (the paper's plateau, ~3e7), chemo pulses 3.02e7 (survives), chemo + TIL < 1; Fig 7 healthy < 1, depleted 9.8e8; Fig 8 chemo every 5 d < 1 by day 55 (min 9.7e-7), every 10 d 9.80e8 (= 1/b).
+- Amendment 1 (before the script ran, one own value seen: untreated mouse 3.4e7): "reaches capacity" 0.5/b -> T(120) >= 10 T0, because the paper's own Fig 6 plateau is ~3e7, not 4.6e8. Consistent with the figure; not tuned to pass.
+- **Amendment 2 (AFTER the result: 6/7 as registered): "regrows" "dT/dt > 0 at day 120" -> T(120) >= 10 x min T.** The registered clause failed because the tumour regrew to capacity and was flat at 1/b. The model matched the paper; our wording did not. This is a selection event: **criteria amended after seeing the result (selection risk)**; Stage 1 inherits the caveat.
+
+### Decision
+Stage 0 passes as amended, not as registered. Proceed to Stage 1 (rule-based headroom, no training); a fail there closes the family and is added to CLOSED #3's list. Table values are transcribed from rendered pages, not machine-read; tests do not check them against the paper beyond the reproduced outcomes.

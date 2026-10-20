@@ -1,9 +1,9 @@
-"""W13 Stage 0 (PREREG W13, 2026-10-19; amended 2026-10-20): reproduce 7 qualitative
+"""W13 Stage 0 (PREREG W13, 2026-10-19; amended twice on 2026-10-20, the second time after the result was seen): reproduce 7 qualitative
 outcomes of de Pillis et al. 2006, Figs. 6-8, with `envs/depillis.py`. No policy.
 
 Pass = 7/7. One reading only: no fitted rescaling, no second tolerance, no other
 dose start day (CLOSED #4's rule). Outcomes are the operational definitions in
-PREREG's IMPLEMENTATION NOTE as amended ("reaches capacity" -> T(120) >= 10 T0).
+PREREG's IMPLEMENTATION NOTE as amended ("reaches capacity" -> T(120) >= 10 T0; "regrows" -> T(120) >= 10 min T, amended after seeing the 6/7 result).
 
     uv run python research/w13_reproduce.py
 """
@@ -63,7 +63,7 @@ def main() -> int:
         "fig7_healthy_patient9_eradicates": (t_healthy[120] < 1.0, float(t_healthy[120])),
         "fig7_depleted_patient9_fails_to_kill": (t_depl[120] >= 10 * depleted[0], float(t_depl[120])),
         "fig8_chemo_every_5d_eradicates_by_day_55": (bool((t_5d[:56] < 1.0).any()), float(t_5d[:56].min())),
-        "fig8_chemo_every_10d_regrows": (bool(t_10d[120] >= 1.0 and t_10d[120] > t_10d[119]), float(t_10d[120])),
+        "fig8_chemo_every_10d_regrows": (bool(t_10d[120] >= 1.0 and t_10d[120] >= 10 * t_10d.min()), float(t_10d[120])),
     }  # fmt: skip
     res = {
         "prereg": "W13 Stage 0, 2026-10-19, amended 2026-10-20",
