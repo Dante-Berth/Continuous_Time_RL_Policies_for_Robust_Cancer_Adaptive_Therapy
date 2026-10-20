@@ -11,7 +11,7 @@ index; the judgment lives in `papers/<id>.md`.
 > uv run python research/lit_table.py --check   # exit 1 if stale
 > ```
 
-**Provenance status: 15/27 read from the PDF (`1°`); 12 are `2°` (44%).**
+**Provenance status: 15/28 read from the PDF (`1°`); 13 are `2°` (46%).**
 
 A `2°` row is seeded from PROJECT.md §12-REF — the citation resolves, but
 the paper has not been read. **A `2°` cell may not be cited in a design**
@@ -52,6 +52,7 @@ to our design", and it is the only section most readers need.
 | `mechanism` | [url-neurips-2019-latent-odes](papers/url-neurips-2019-latent-odes.md) | 1° | Our ODE-RNN arm is Alg. 1 (GRU jump + learnt flow). The paper's evidence is supervised and leans on sparse/informative timing, which i.i.d. missed visits do not supply. |
 | `mechanism` | [doi-10.1126-scirobotics.adc8892](papers/doi-10.1126-scirobotics.adc8892.md) | 2° | The OOD-robustness claim for continuous-time policies, in another domain. The architecture we are porting into oncology. |
 | `mechanism` | [arxiv-2407.04811](papers/arxiv-2407.04811.md) | 1° | Adopted as the Phase 2c trainer for BOTH arms after PPO left the ODE-RNN open-loop (L312, L391); its stability theorem is a wide-network result, which our 16-unit ODE hidden state is not. |
+| `transfer` | [doi-10.1093-bib-bbae071](papers/doi-10.1093-bib-bbae071.md) | 2° | Cited in related work for RL on patient-fitted LV models; PDF is in literature/pdf but not yet reviewed 1°, so it cannot support a design argument |
 
 ## Read next
 
@@ -61,6 +62,7 @@ what promotes a row to `1°` and makes it citable in a design argument.
 | Tier | Paper | Why it matters |
 |---|---|---|
 | 1 | [arxiv-2608.18387](papers/arxiv-2608.18387.md) | r_R is weakly identifiable under adaptive therapy; parameters fit under one schedule do not transport to another; TTP and metastasis risk pull against each other |
+| 1 | [doi-10.1093-bib-bbae071](papers/doi-10.1093-bib-bbae071.md) | tM-GLV (time-varied mixed-effect generative Lotka-Volterra) fitted to individual IADT patients, with RL (I2ADT) reported to prolong TTP at lower cumulative dose; abstract plus partial skim only |
 | 1 | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | REJECTED: mis-seeded stub. Wrong DOI and title for Gallagher 2024; the PDF's own DOI is 10.1158/0008-5472.CAN-23-2040 (p.1929) |
 | 2 | [doi-10.1007-BF02460644](papers/doi-10.1007-BF02460644.md) | Effector-tumour predation dynamics with immunostimulation, sneaking-through, and a dormant state; BCL1 lymphoma parameters |
 | 2 | [doi-10.1038-s41559-021-01428-w](papers/doi-10.1038-s41559-021-01428-w.md) | Abstract only (PubMed, 2026-10-02): general conditions and formulas for when containment beats MTD, beyond logistic growth (abstract) |
@@ -80,6 +82,7 @@ what promotes a row to `1°` and makes it citable in a design argument.
 | [arxiv-2605.02552](papers/arxiv-2605.02552.md) | arXiv:2605.02552v1, 4 May 2026 | policy | other | full-state | survival-proxy | no | 1° | reviewed |
 | [arxiv-2608.18387](papers/arxiv-2608.18387.md) | arXiv:2608.18387 | theory | lotka-volterra | burden-only | metastasis | yes | 2° | queued |
 | [doi-10.1016-j.jtbi.2005.06.037](papers/doi-10.1016-j.jtbi.2005.06.037.md) | Journal of Theoretical Biology 2006;238(4):841-862 (PMID 16153659) | model | other | full-state | none (tumour eradicated or at carrying capacity; qualitative time courses) | no | 1° | reviewed |
+| [doi-10.1093-bib-bbae071](papers/doi-10.1093-bib-bbae071.md) | Briefings in Bioinformatics 2024;25(2):bbae071 | both | lotka-volterra | burden-only | TTP and cumulative dose (simulated, with trial data) | yes | 2° | queued |
 | [doi-10.1158-0008-5472.CAN-23-0713](papers/doi-10.1158-0008-5472.CAN-23-0713.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 2° | rejected |
 | [doi-10.1158-0008-5472.CAN-23-2040](papers/doi-10.1158-0008-5472.CAN-23-2040.md) | Cancer Research 2024;84(11):1929-1941 | policy | lotka-volterra | burden-only | TTP | no | 1° | reviewed |
 | [doi-10.1371-journal.pcbi.1009418](papers/doi-10.1371-journal.pcbi.1009418.md) | PLoS Computational Biology 2021;17(9):e1009418 (PMID 34555024, PMC8491903) | model | lotka-volterra | full-state | probability of elimination (evolutionary rescue), not TTP | no | 1° | reviewed |
@@ -107,8 +110,8 @@ what promotes a row to `1°` and makes it citable in a design argument.
 
 ## What the pile looks like
 
-- **Model families:** `hahnfeldt` 2, `kuznetsov` 2, `lotka-volterra` 5, `none` 8, `other` 10
-- **Observability:** `burden-only` 8, `full-state` 8, `n/a` 11
-- **Bearing on identifiability (PROJECT.md §5):** 2
+- **Model families:** `hahnfeldt` 2, `kuznetsov` 2, `lotka-volterra` 6, `none` 8, `other` 10
+- **Observability:** `burden-only` 9, `full-state` 8, `n/a` 11
+- **Bearing on identifiability (PROJECT.md §5):** 3
 
-*Generated 2026-10-19 by `research/lit_table.py`.*
+*Generated 2026-10-20 by `research/lit_table.py`.*

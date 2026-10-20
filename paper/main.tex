@@ -21,89 +21,108 @@ for Learned Adaptive-Therapy Policies under Burden-Only Observation}
 \maketitle
 
 \begin{abstract}
-In a virtual-patient simulator of adaptive cancer therapy, a memoryless network
-that learns a one-line burden threshold matches or beats both a recurrent
-network and an ODE-RNN trained by the same algorithm. Continuous-time recurrent
-networks are proposed for control problems whose observations are irregular,
-but they are mostly tested on prediction. We test one, the ODE-RNN, in a
-pre-registered comparison: a policy doses a virtual tumour from noisy total
-burden alone. One RL algorithm (PQN) trains a memoryless MLP, a
-parameter-matched LSTM, an LSTM given the visit gap, and an ODE-RNN, compared
-on paired virtual patients with confidence intervals over training seeds and
-patients. The ODE-RNN never beats the best discrete arm: not in distribution,
-not under a parameter shift, and not when up to half of the visits are missed
-(one-year horizon). Giving the MLP only a clock costs as much as giving it
-memory. The task is not solved: a per-patient search on the true simulator
-beats the MLP by 23 days. Splitting a tuned threshold rule's gain, at most
-${\sim}15$ days come from information that memory could supply, while
-recurrent training costs 40--50. That cost is a learning cost: all three
-networks can be cloned from a threshold teacher to its score, and PQN
-fine-tuning then destroys the recurrent two ($-69$ and $-88$ days) but not the
-MLP. This is a negative result about this trainer and this task: we do not show
-that no memory policy, or no other trainer, could help. We also report four
-evaluation errors, each of which gave a wrong result that looked publishable,
-and the five controls that found them.
+Adaptive therapy tries to keep drug-sensitive tumour cells alive so that they
+hold resistant cells in check. Reinforcement learning has been used to schedule
+it, and recurrent or continuous-time policies are natural candidates when the
+clinician sees only the total tumour burden. We ask whether a policy whose
+hidden state is an ODE (an ODE-RNN) schedules better than an LSTM or a
+memoryless network, in a virtual-patient simulator, with the main hypotheses and
+kill criteria written down before the runs. It does not. Trained by the same
+algorithm (PQN), a memoryless network that learns a burden threshold matches or
+beats both recurrent networks in range, under a parameter shift, and when up to
+half of the visits are missed, over a one-year horizon. The task is not trivial:
+a per-patient search on the true simulator beats the memoryless network by 23
+days. But at most about 15 of those days could come from memory, and training
+the recurrent networks costs 40 to 50. Cloning a threshold teacher shows that
+the recurrent networks can represent a good policy, and PQN fine-tuning then
+damages them, so the deficit belongs to this trainer and not to the
+architecture. We do not show that no memory policy, or no other trainer, could
+help. We also describe four evaluation mistakes that each gave a result that
+looked publishable, and the controls that caught them.
 \end{abstract}
 
 \section{Introduction}
-Adaptive therapy doses a tumour so that drug-sensitive cells stay alive and
-compete with resistant cells, instead of trying to eradicate it. Reinforcement
-learning (RL) has been used to schedule it. On a Lotka--Volterra (LV) model with
-burden-only observation, A3C learns a treat-above-threshold rule close to the
-clinical algorithm \cite{gallagher2024}, and recurrence has been reported to
-help chemotherapy control when part of the state is hidden \cite{kiram2026}. A
-natural next claim is that a policy whose hidden state is itself an ODE
-\cite{rubanova2019} carries the right inductive bias. That bias should matter
-most when the biology shifts or when visits are irregular. This is a general
-question for RL under partial observation, and adaptive therapy is a small
-test bed where we can check it against the true simulator.
+Adaptive therapy treats a tumour so that drug-sensitive cells survive and keep
+competing with resistant ones, instead of trying to eradicate everything. The
+idea comes from evolutionary models of resistance, and its first clinical test
+in prostate cancer paused and restarted the drug according to the PSA level
+\cite{zhang2017}. Whether a rule that simple is the best one is an open
+question, and it is a natural place to ask what a learned policy can add.
 
-We test that claim for one continuous-time design, the ODE-RNN, in a
-pre-registered comparison, and it is not supported. The
-main objection is that the recurrent arms were undertrained. We address it
-partly without any trainer: a per-patient search on the true simulator shows
-the task has headroom, and a tuned threshold rule's gain splits by the
-information each part needs. At most ${\sim}15$ days of that gain need memory,
-less than recurrent training cost. This is a split of one rule family's gain,
-not a ceiling on every memory policy. Contributions:
+Reinforcement learning (RL) has been applied to exactly this. On a
+Lotka--Volterra (LV) model where the policy sees only total burden, A3C learns a
+treat-above-threshold rule close to the clinical algorithm \cite{gallagher2024}.
+Recurrent policies are reported to help chemotherapy control when part of the
+state is hidden \cite{kiram2026}. Policies fitted to patient data are starting
+to appear as well \cite{lu2024}. In these studies the architecture of the policy
+is mostly a fixed choice, and the comparison between architectures is not the
+question.
+
+That comparison matters because of a common argument. A tumour is a continuous
+process observed at irregular visits, so a policy whose hidden state is itself
+an ODE \cite{rubanova2019} should carry the right inductive bias, especially
+when the biology shifts or visits are missed. The evidence for continuous-time
+networks comes mostly from prediction on irregularly sampled series. To our knowledge
+there is no controlled test of the argument for control under partial
+observation, where the policy also has to learn from reward. Adaptive therapy is a small test bed
+for it, because the simulator lets us compare any policy with the true state.
+
+We run that test for one continuous-time design, the ODE-RNN. The main hypotheses and kill criteria were written down before the runs,
+so that a null result could not be explained away afterwards; analyses chosen
+after seeing results are marked as such. The ODE-RNN is compared with a memoryless MLP,
+an LSTM and an LSTM that is told the gap between visits, all trained with the
+same algorithm and matched in size. The ODE-RNN never beats the best discrete
+arm. The obvious objection is that recurrent networks are simply hard to train,
+so we address it in two ways: a search on the true simulator that measures how
+much room there is for memory at all, and a warm-start experiment that asks
+whether the recurrent networks can represent a good policy and lose it in
+training.
+
+This paper makes three contributions.
 \begin{itemize}
-\item \textbf{A strict ablation.} One trainer, one environment and one
-evaluation, with only the Q-network swapped; the recurrent arms are matched at
-${\sim}3{,}100$ Q-path parameters.
-\item \textbf{Negative results with seed+patient CIs}: no ODE-RNN edge in range
-(Tier~0), under a parameter shift (Tier~1), or under missed visits (Tier~4), on
-two parameter regimes and on models fitted to 55 patients. The best learned
-policy is a burden threshold. A trainer-free full-information bound shows the
-task has headroom and splits a threshold family's gain: at most ${\sim}15$ days
-need memory-type information, while recurrent training cost 40--50.
-\item \textbf{Four evaluation errors}, each of which gave a wrong result that
-looked publishable, and the controls that found them
-(\S\ref{sec:pitfalls}, Table~\ref{tab:controls}). Appendix material: monitoring
-maps over cost of resistance, turnover and horizon (\S\ref{sec:monitoring}),
-and a record of every registered run (Table~\ref{tab:runs}).
+\item A controlled comparison. One trainer, one environment and one evaluation
+protocol, with only the Q-network swapped and the recurrent arms matched in size.
+\item A negative result and a partial explanation. There is no ODE-RNN edge in
+range, under a parameter shift or with missed visits. The headroom split and the
+warm-start experiment suggest that the recurrent deficit is a learning cost of
+PQN, with little room for memory to repay it.
+\item A record of how the result was reached: four evaluation mistakes that
+produced a wrong result that looked publishable, the controls that found them,
+and a table of every registered run.
 \end{itemize}
+We do not claim that no memory policy could help, that no other trainer would
+avoid the deficit, or anything about real patients; all patients are simulated.
 
 \section{Related work}
-\paragraph{RL for adaptive therapy.} Learned dosing policies on tumour ODEs
-have been reported to approach a clinical threshold rule from burden alone
+\paragraph{RL for tumour control.} Learned dosing policies on tumour ODEs have
+been reported to approach a clinical threshold rule from burden alone
 \cite{gallagher2024}, to approach an optimal-control benchmark when every
-subpopulation is observed \cite{kidane2026}, and to benefit from recurrence
-when part of the state is hidden \cite{kiram2026}. None compares memory with
-continuous time under one trainer, with seed-level uncertainty.
+subpopulation is observed \cite{kidane2026}, to benefit from recurrence when part
+of the state is hidden \cite{kiram2026}, and to prolong time to progression on
+models fitted to trial patients \cite{lu2024}. None compares memory with
+continuous time under one trainer, with uncertainty over training seeds. Optimal
+control gives a useful contrast: when the drug raises the mutation rate toward
+resistance, the optimal elimination strategy is a nearly constant intermediate
+dose, and the gain from closed-loop adjustment is described as marginal
+\cite{kuosmanen2021}. A small gain from feedback is consistent with what we find.
+\paragraph{Adaptive therapy and its models.} The competition between sensitive
+and resistant cells is modelled with Lotka--Volterra systems, whose parameters
+can be taken from published ranges \cite{strobl2021}; the first clinical trial
+used a PSA threshold rule \cite{zhang2017}. Our primary regime follows those
+ranges, and we test on them how much a learned policy can gain over such a rule.
 \paragraph{Memory in partially observed RL.} Carefully implemented recurrent
 model-free RL is a strong POMDP baseline; there, as here, an oracle given the
-hidden state under shared hyperparameters often scored below it
-\cite{ni2022}. Across 13 memory models, classical RNNs beat modern ones and
-a memoryless MLP is often not beaten at all \cite{morad2023}. Our MLP result
-is this pattern in its extreme form; our headroom split (\S\ref{sec:results})
-measures how little there was for memory to buy.
-\paragraph{Continuous-time networks.} ODE-RNNs \cite{rubanova2019}, neural
-CDEs \cite{kidger2020} and liquid time-constant networks \cite{hasani2021}
-outperform discrete RNNs on irregularly sampled \emph{prediction}. Their
-advantage is largest when the observation pattern itself is informative
+hidden state under shared hyperparameters often scored below it \cite{ni2022}.
+Across 13 memory models, classical RNNs beat modern ones and a memoryless MLP is
+often not beaten at all \cite{morad2023}. Our MLP result is this pattern in an
+extreme form, and our headroom split (\S\ref{sec:results}) measures how little
+there was for memory to buy.
+\paragraph{Continuous-time networks.} ODE-RNNs \cite{rubanova2019}, neural CDEs
+\cite{kidger2020} and liquid time-constant networks \cite{hasani2021} outperform
+discrete RNNs on irregularly sampled \emph{prediction}. Their advantage is
+largest when the observation pattern itself is informative
 \cite{rubanova2019,kidger2020}, and control is named as untested future work
-\cite{hasani2021}. We test the control case, with gaps that carry no
-information.
+\cite{hasani2021}. We test the control case, with gaps that carry no information.
 
 \section{Setup}\label{sec:setup}
 \paragraph{Virtual patients.} (Full protocol: Appendix~\ref{sec:methods}.) Sensitive cells $S$ and resistant cells $R$
@@ -566,6 +585,12 @@ controlled differential equations for irregular time series. \emph{NeurIPS},
 time-constant networks. \emph{AAAI} 35(9), 2021. \url{https://arxiv.org/abs/2006.04439}.
 \bibitem[de Pillis et~al.(2006)de Pillis, Gu, and Radunskaya]{depillis2006} L.~G. de Pillis, W.~Gu, A.~E. Radunskaya. Mixed immunotherapy and
 chemotherapy of tumors: modeling, applications and biological interpretations. \emph{J. Theor. Biol.} 238(4):841--862, 2006. \url{https://doi.org/10.1016/j.jtbi.2005.06.037}.
+\bibitem[Lu et~al.(2024)Lu, Chu, Li, Wang, Gatenby, and Zhang]{lu2024} Y.~Lu, Q.~Chu, Z.~Li, M.~Wang, R.~Gatenby, Q.~Zhang. Deep reinforcement
+learning identifies personalized intermittent androgen deprivation therapy for prostate cancer. \emph{Briefings in Bioinformatics} 25(2):bbae071, 2024.
+\url{https://doi.org/10.1093/bib/bbae071}.
+\bibitem[Kuosmanen et~al.(2021)Kuosmanen, Cairns, Noble, Beerenwinkel, Mononen, and Mustonen]{kuosmanen2021} T.~Kuosmanen, J.~Cairns, R.~Noble, N.~Beerenwinkel, T.~Mononen, V.~Mustonen.
+Drug-induced resistance evolution necessitates less aggressive treatment. \emph{PLoS Computational Biology} 17(9):e1009418, 2021.
+\url{https://doi.org/10.1371/journal.pcbi.1009418}.
 \end{thebibliography}
 
 \appendix
