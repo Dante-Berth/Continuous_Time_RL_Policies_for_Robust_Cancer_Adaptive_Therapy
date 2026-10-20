@@ -74,3 +74,24 @@ def test_untreated_rollout_is_finite_and_nonnegative_for_all_presets():
         ys = dp.simulate_days(theta, MOUSE_Y0, _zeros(60), _zeros(60), _zeros(60))
         assert bool(jnp.isfinite(ys).all())
         assert float(ys.min()) > -1e-6
+
+
+def test_fixed_step_agrees_with_the_adaptive_solver_on_a_chemo_course():
+    theta = dp.theta_from(dp.PATIENT9)
+    y0 = jnp.array([2e7, 1e3, 10.0, 6e8, 0.0, 0.0])
+    v_m = jnp.zeros(40).at[::5].set(5.0)
+    a = dp.simulate_days(theta, y0, v_m, _zeros(40), _zeros(40))
+    b = dp.simulate_days(theta, y0, v_m, _zeros(40), _zeros(40), fixed_dt=0.05)
+    np.testing.assert_allclose(
+        np.log10(np.asarray(b[:, 0]) + 1.0), np.log10(np.asarray(a[:, 0]) + 1.0), atol=2e-3
+    )
+    np.testing.assert_allclose(np.asarray(b[:, 3]), np.asarray(a[:, 3]), rtol=1e-3)
+
+
+def test_sampled_patients_stay_in_the_registered_box_and_cycle_the_three_sets():
+    theta, y0 = dp.sample_patients(jax.random.PRNGKey(0), 90)
+    assert theta.shape == (90, dp.N_THETA) and y0.shape == (90, 6)
+    for i, (lo, hi) in enumerate(dp.IC_BOX.values()):
+        assert float(y0[:, i].min()) >= lo * 0.999 and float(y0[:, i].max()) <= hi * 1.001
+    assert bool(jnp.all(y0[:, 4:] == 0.0))
+    assert len({tuple(map(float, r)) for r in theta}) == 3

@@ -108,24 +108,58 @@ def vector_field(t, y, args):
     return jnp.stack([dT, dN, dL, dC, dM, dI])
 
 
-def simulate_days(theta, y0, v_m, v_l, v_i, rtol: float = 1e-8):
+def simulate_days(theta, y0, v_m, v_l, v_i, rtol: float = 1e-8, fixed_dt: float | None = None):
     """Integrate day by day with the inputs of that day held constant.
 
     `v_m`, `v_l`, `v_i`: arrays of length `n_days`. Returns the state at the
     end of every day, shape (n_days + 1, 6), row 0 = `y0`. Float64 is needed:
     cell counts span ~1e0..1e10 and the rate constants ~1e-11.
+
+    `fixed_dt` (days, must divide 1) swaps the adaptive controller for a fixed
+    step: under `vmap` an adaptive solver costs every patient the stiffest one's
+    step count (CLAUDE.md code philosophy), so bulk rollouts use it.
     """
     term = dfx.ODETerm(vector_field)
     solver = dfx.Tsit5()
-    ctrl = dfx.PIDController(rtol=rtol, atol=1e-6)
+    if fixed_dt is None:
+        ctrl, dt0, max_steps = dfx.PIDController(rtol=rtol, atol=1e-6), 1e-3, 100_000
+    else:
+        ctrl, dt0, max_steps = dfx.ConstantStepSize(), fixed_dt, int(round(1.0 / fixed_dt)) + 1
 
     def one_day(y, u):
         sol = dfx.diffeqsolve(
-            term, solver, 0.0, 1.0, 1e-3, y, args=(theta, u),
-            stepsize_controller=ctrl, max_steps=100_000,
+            term, solver, 0.0, 1.0, dt0, y, args=(theta, u),
+            stepsize_controller=ctrl, max_steps=max_steps,
         )  # fmt: skip
         y1 = sol.ys[-1] if sol.ys is not None else sol.y1
         return y1, y1
 
     _, ys = jax.lax.scan(one_day, y0, (v_m, v_l, v_i))
     return jnp.concatenate([y0[None], ys], axis=0)
+
+
+# PREREG W13 Stage 1 box: the span between Fig. 7's depleted and healthy immune
+# states (our box, not a literature density), log-uniform, Latin hypercube.
+IC_BOX = {
+    "T0": (1e5, 2e7),
+    "N0": (1e3, 1e5),
+    "L0": (10.0, 100.0),
+    "C0": (6e8, 6e10),
+}
+
+
+def sample_patients(key, n: int):
+    """`n` virtual patients: (theta (n, N_THETA), y0 (n, 6)).
+
+    Parameter sets cycle mouse / patient 9 / patient 10 (the three the paper
+    reports); initial conditions are a log-uniform Latin hypercube over `IC_BOX`.
+    """
+    keys = jax.random.split(key, len(IC_BOX) + 1)
+    cols = []
+    for k, (lo, hi) in zip(keys[:-1], IC_BOX.values()):
+        strata = (jnp.arange(n) + jax.random.uniform(k, (n,))) / n
+        u = jax.random.permutation(jax.random.fold_in(k, 1), strata)
+        cols.append(jnp.exp(jnp.log(lo) + u * (jnp.log(hi) - jnp.log(lo))))
+    y0 = jnp.stack([*cols, jnp.zeros(n), jnp.zeros(n)], axis=1)  # T, N, L, C, M=0, I=0
+    sets = jnp.stack([theta_from(PRESETS[k]) for k in ("mouse", "patient9", "patient10")])
+    return sets[jnp.arange(n) % 3], y0

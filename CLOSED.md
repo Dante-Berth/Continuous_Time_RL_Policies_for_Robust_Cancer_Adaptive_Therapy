@@ -109,6 +109,14 @@ families. Each is a re-parametrization chosen after seeing this result.
 a drug-effect scale taken from them (new data); for Kuznetsov, additionally a
 resistance mechanism (a new model).
 
+**Extended 2026-10-20** (W13, [L1633](adaptive_therapy/RESEARCH_LOG.md#L1633)): de Pillis 2006, a
+family where chemotherapy also kills the immune cells (K_N = K_L = K_C < K_T),
+reproduces its paper (Stage 0, [L1616](adaptive_therapy/RESEARCH_LOG.md#L1616)) but a per-patient
+best rule beats MTD by +1.7 d [+1.0, +3.0] against a +10 d gate: outcomes are set by
+the patient's immune state, not the dosing. Pinho 2013 was read and not registered (normal-cell
+kill 1.2e-7 vs 0.205 on cancer cells). **Do not re-propose** stronger pulses, other
+visit intervals, horizons or initial-condition boxes on this family.
+
 **Not covered:** other mechanistic families; LV's own Tier-3 drift.
 
 ---

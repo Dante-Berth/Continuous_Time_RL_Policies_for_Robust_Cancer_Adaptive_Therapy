@@ -1629,3 +1629,21 @@ CLOSED #3 bars Hahnfeldt/Kuznetsov (no resistant compartment, MTD optimal by con
 
 ### Decision
 Stage 0 passes as amended, not as registered. Proceed to Stage 1 (rule-based headroom, no training); a fail there closes the family and is added to CLOSED #3's list. Table values are transcribed from rendered pages, not machine-read; tests do not check them against the paper beyond the reproduced outcomes.
+
+## [2026-10-20] — W13 Stage 1 FAILED as registered: on de Pillis 2006 a per-patient best rule beats MTD by only +1.7 d [+1.0, +3.0]; the family cannot host a dosing comparison as simulated (CLOSED #3 extended)
+**Verdict:** CLOSED — no headroom: MTD is the best rule for ~50% of patients and a patient-tuned rule adds <3 d (gate +10) · **Gate:** w=0.1, median U MTD 14.1/16.1/15.6 [IQR 6.6–117.6] vs best-per-patient 14.1/16.1/15.6 [IQR 7.5–120.0] (seeds 1/2/3), exposure 24 (MTD, all seeds), median escape 16.5–18.5 d, Wilcoxon not computed (CI is the registered gate), 3 seeds × 200 test patients · **Artifacts:** `research/w13_headroom.py`, `research/outputs/w13_headroom.json`
+
+### Context
+Stage 0 reproduced de Pillis 2006 (7/7 as amended, [L1616](RESEARCH_LOG.md#L1616)). PREREG W13 Stage 1: rule-based headroom, no training, chemo only; pass needs both P1 (per-patient best − MTD) and P2 (per-patient best − the single best rule chosen on training patients) to have lower CI > +10 d at w = 0.1.
+
+### What was tried
+Registered as written: 3 parameter sets (mouse, patients 9 and 10) cycled, initial conditions a log-uniform Latin hypercube over T0 [1e5, 2e7], N0 [1e3, 1e5], L0 [10, 100], C0 [6e8, 6e10]; 24 visits every 5 days, dose × the paper's pulse (v_M = 1 for one day), 5% observation noise; 9 rules (none, MTD, constant 1/4, 1/2, 3/4, thr 0.3/0.5/0.8/1.2); seeds 1–3, 200 train + 200 test patients per seed; fixed-step Tsit5 (dt 0.05 d, checked against the adaptive solver in a test). Seed+patient bootstrap via `w4.delta_draws`.
+
+### Results
+**Failed as registered, both parts.** P1 +1.7 d [+0.96, +2.95]; P2 +1.0 d [+0.30, +2.27]; both far below +10. Per-seed P1 1.03/1.95/2.12.
+- MTD is the best rule for 49–51% of patients and "none" for 35–38%; the other seven rules together win ≤ 15%. thr0.3/0.5/0.8 give identical U (43.8, 43.8, 44.5 by seed): they never switch off before the tumour is eradicated or escapes.
+- The outcome is set by the patient, not the policy: 22–31% of tumours are eradicated under every rule including no treatment (healthy immune states), and the rest escape (T ≥ 0.1/b) at a median day 16–19 under MTD. A pulse of strength 1 for one day every 5 days does not change the class of outcome for most patients.
+- Pre-run peek, declared: a smoke run on 8 patients of seed 1 (P1 +1.6, P2 +0.7) preceded the final script; it was then moved to unregistered seed 99. No criterion, rule, dose or box changed after any result. Stage 0's second amendment (made after its result) is inherited; it does not bear on a Stage 1 fail.
+
+### Decision
+**Kill as registered:** the family cannot host a dosing comparison as simulated; no three-arm comparison is registered. Added to [CLOSED #3](../CLOSED.md). Not tried, and not to be tried as a re-parametrization after this result: stronger pulses (the paper uses strength 5 for its human cases), other visit intervals or horizons, a different initial-condition box. Re-open only with a new mechanism that creates a dose trade-off at the scale of one patient's outcome (data or a new model).

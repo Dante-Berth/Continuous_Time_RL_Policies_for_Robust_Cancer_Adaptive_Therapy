@@ -478,7 +478,7 @@ but so is the LSTM, and the MLP never gains from the input ($+1.4$ [$-10.3$,
 $+14.4$]), so neither run tests whether a known schedule helps a continuous-time
 state. % W8 L1457, W9 L1498
 Before
-testing mechanism shift (Tier~2) we checked three other tumour models.
+testing mechanism shift (Tier~2) we checked four other tumour models.
 Kuznetsov has no resistant population, so MTD is optimal by construction;
 Hahnfeldt is a mouse model with no resistant population, which our
 implementation reproduces in its own units except for two narrow misses
@@ -486,6 +486,11 @@ implementation reproduces in its own units except for two narrow misses
 three-population model behind the clinical adaptive-therapy trial
 \cite{zhang2017} reproduces structurally (22/22 equilibria) but not in its
 published progression times (at most 15/40). % W5-pre L1004, V5 L1176, V5e L1248
+A tumour--immune model in which chemotherapy also kills immune cells
+\cite{depillis2006}, the one candidate with a built-in dose trade-off, reproduces
+its source's qualitative outcomes but leaves no room: a rule tuned to each
+patient beats MTD by only 1.7 d [1.0, 3.0] (gate: 10 d), because outcomes are set
+by the patient's immune state, not the dosing. % W13 L1616, L1633
 LV is the only family here with a resistance mechanism, so
 every result is LV-only. Within LV, the negatives hold on two parameter regimes,
 under a parameter shift, and on models fitted to 55 patients, and our
@@ -559,6 +564,8 @@ controlled differential equations for irregular time series. \emph{NeurIPS},
 2020. \url{https://arxiv.org/abs/2005.08926}.
 \bibitem[Hasani et~al.(2021)Hasani, Lechner, Amini, Rus, and Grosu]{hasani2021} R.~Hasani, M.~Lechner, A.~Amini, D.~Rus, R.~Grosu. Liquid
 time-constant networks. \emph{AAAI} 35(9), 2021. \url{https://arxiv.org/abs/2006.04439}.
+\bibitem[de Pillis et~al.(2006)de Pillis, Gu, and Radunskaya]{depillis2006} L.~G. de Pillis, W.~Gu, A.~E. Radunskaya. Mixed immunotherapy and
+chemotherapy of tumors: modeling, applications and biological interpretations. \emph{J. Theor. Biol.} 238(4):841--862, 2006. \url{https://doi.org/10.1016/j.jtbi.2005.06.037}.
 \end{thebibliography}
 
 \appendix
@@ -791,6 +798,7 @@ V9 & clock-dropout MLP & deficit removed ($+54.4$ vs positional MLP) & yes & L14
 W9 & W8 on a pool of schedules & gate failed; ODE $=$ LSTM & yes & L1498 \\
 V10 & state-dropout LSTM, ODE-RNN & deficit remains ($+4$\,d, CI spans 0) & yes & L1518 \\
 V11 & LSTM at 64, 128 units & inconclusive vs gate; still $-47$ to $-49$\,d vs MLP & yes & L1558 \\
+W13 & rules on de Pillis 2006 (chemo kills immune cells) & reproduced (7/7, amended); headroom FAIL: best rule $-$ MTD $+1.7$\,d vs gate 10 & yes & L1633 \\
 W11 & clone threshold teachers, then PQN fine-tune & clones match teacher; fine-tune costs LSTM $-69$, ODE-RNN $-88$\,d, MLP $-0.5$ & yes & L1597 \\
 V12 & S1 design under PPO & gate failed: uninformative about trainers & yes & L1578 \\
 W10 & PQN, LSTM vs MLP on POPGym memory tasks & met: headroom on 2 of 3 tasks & yes & L1540 \\
