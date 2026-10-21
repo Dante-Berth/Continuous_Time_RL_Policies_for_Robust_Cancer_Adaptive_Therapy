@@ -24,12 +24,13 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
-# 2026-10-21: 5 workers x 4 XLA threads, measured 0.43 s/generation on 4 cores
-# against 0.9 s with all 20 threads in one process (thread contention).
+# 2026-10-21: measured 0.43 s/generation on 4 cores against 0.9 s with all 20
+# threads in one process (thread contention). A worker only fills ~1.3 cores
+# (sureli1, pilot), so 14 of them keep 20 cores busy; 5 left 13 idle.
 os.environ.setdefault(
     "XLA_FLAGS", "--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=4"
 )
-N_PARALLEL = 5
+N_PARALLEL = 14
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import v12_ppo as v12  # noqa: E402  (imports s1_strobl: backend env first)
