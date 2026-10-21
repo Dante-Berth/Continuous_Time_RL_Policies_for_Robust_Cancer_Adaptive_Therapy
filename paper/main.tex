@@ -34,11 +34,12 @@ and when visits are missed. The task is not trivial, since a per-patient search
 on the true simulator finds better schedules, but most of that gap does not
 come from memory, and it is smaller than what training the recurrent networks
 costs. Cloning a threshold teacher shows that the recurrent networks can
-represent a good policy and that PQN fine-tuning then damages them, so the
-deficit looks like a learning cost of the trainer and not a limit of the
-architectures. We do not show that no memory policy, or no other trainer, could
-help. We also describe four evaluation mistakes that each gave a result that
-looked publishable, and the controls that caught them.
+represent a good policy and that PQN fine-tuning then damages them, which
+points to the trainer, not the architecture, as the bottleneck for memory in
+this setting.
+Along the way we identify evaluation pitfalls that can turn a spurious
+difference between architectures into an apparently significant one, and we
+propose a set of controls for comparisons under partial observation.
 \end{abstract}
 
 \section{Introduction}
