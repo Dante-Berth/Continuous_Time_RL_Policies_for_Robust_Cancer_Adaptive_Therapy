@@ -1647,3 +1647,20 @@ Registered as written: 3 parameter sets (mouse, patients 9 and 10) cycled, initi
 
 ### Decision
 **Kill as registered:** the family cannot host a dosing comparison as simulated; no three-arm comparison is registered. Added to [CLOSED #3](../CLOSED.md). Not tried, and not to be tried as a re-parametrization after this result: stronger pulses (the paper uses strength 5 for its human cases), other visit intervals or horizons, a different initial-condition box. Re-open only with a new mechanism that creates a dose trade-off at the scale of one patient's outcome (data or a new model).
+
+## [2026-10-21] — V13 gate FAILED as registered: under episodic-replay recurrent Q-learning the full-information reference does not beat the MLP (−3.9 d [−8.3, +0.9] at Tier 0); none of the three trainers tried can validate an architecture comparison
+**Verdict:** CLOSED — gate failed, so nothing is concluded about architectures and stage 2 (LSTM, ODE-RNN) was not run; CLOSED #1 re-closed with three trainers · **Gate:** Tier 0 U ref − mlp −3.9 [−8.3, +0.9] (median −4.7 [−9.2, −2.0]); Tier 1 −1.8 [−6.0, +2.2]; median TTP [IQR] Tier 0 mlp 357 [224–357], ref 357 [238–357]; exposure mlp 178.5 [145–184], ref 178.5 [179–289]; burden integral median mlp 1.44e6, ref 1.14e6; Wilcoxon not computed by the script (secondary, not reported); 10 seeds × 4 w, 0 non-finite · **Artifacts:** adaptive_therapy/rl/r2d2.py, research/v13_r2d2.py, research/outputs/v13_gate.json, v13_shards/, v13_policies/ (sureli1 run, copied back)
+### Context
+PREREG V13 [2026-10-21], **met as registered** (no amendment). CLOSED #1 was re-opened by the owner for this one registration. V12 ([L1578](RESEARCH_LOG.md#L1578)) and S2 ([L804](RESEARCH_LOG.md#L804)) never validated a trainer: the full-information MLP failed to beat the burden-only MLP under PPO and PQN. V13 asked whether a replay buffer, a target network and n-step double-Q (R2D2's recurrent-Q recipe, whole episodes so no stored state) can.
+### What was tried
+Stage 1 only, V12's cohort and seeds (31–40), Strobl ranges, w ∈ {0.05, 0.1, 0.2, 0.4}, S1's arm sizes, 600 updates × 32 episodes, 4 gradient steps per update on 32 replayed episodes, buffer 2048, 5-step double-Q, Polyak 0.005, Adam 3e-4. Arms r2d2_mlp and r2d2_ref (oracle "full"). 80 cells on sureli1 (about 110 s each). A seed-99 pilot (w = 0.1) checked the pipeline before launch: no code or hyperparameter change followed.
+### Results
+| Contrast, U (d), seed+patient CI | Tier 0 | Tier 1 |
+|---|---|---|
+| ref − mlp (gate) | −3.9 [−8.3, +0.9] (median −4.7 [−9.2, −2.0]) | −1.8 [−6.0, +2.2] (median −0.3 [−3.6, +0.3]) |
+Closed-loop share, mean: mlp 0.34 (Tier 0), ref 0.28; open-loop cells (share < 0.05, Tier 0): mlp 1, ref 1 of 40. Median TTP is the 357-d cap in both arms at Tier 0, so the capped median does not separate them; the reference doses the same median amount but with a wider spread (exposure Q3 289 vs 184) and a smaller median burden integral (1.14e6 vs 1.44e6).
+### Decision
+- **Gate failed as registered** (lower CI −8.3, not > 0): V13 is uninformative about architectures, stage 2 is not run, and the paper must not claim the deficit under a third trainer.
+- **Registered consequence:** no further trainer is registered; CLOSED #1 is re-closed (see its item). Three trainers (PPO, PQN, replay-Q), one failure: none lets a reference that sees the hidden state beat the memoryless MLP on U.
+- **Not concluded:** that no trainer could; only that the three tried cannot validate this comparison with the same budget and without tuning. The reference's smaller burden integral at equal median exposure hints that U (capped TTP − w·exposure) may under-credit it, which is an observation here, not a registered reading.
+- No hyperparameter, buffer size, n or budget is to be varied after this result (registered kill rule).

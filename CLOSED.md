@@ -36,7 +36,7 @@ Tier 1 on a seed+patient CI, intention-to-treat, 10 fresh seeds.
 updates, a tuned learning rate, a multi-mechanism curriculum, or a third RL
 algorithm on the same test. Each is a re-parametrization of a settled question.
 
-**Re-opened 2026-10-21 by the owner for PREREG V13 only:** a third trainer (episodic-replay recurrent Q-learning) on the same test, gate first. The rest of "Do not re-propose" stands. If V13's gate fails this item is re-closed with that fact added; no fourth trainer.
+**Re-opened 2026-10-21 by the owner for PREREG V13 only:** a third trainer (episodic-replay recurrent Q-learning) on the same test, gate first. The rest of "Do not re-propose" stands. **Re-closed 2026-10-21:** V13's gate failed (full-information reference − MLP −3.9 d [−8.3, +0.9] at Tier 0, [L1651](adaptive_therapy/RESEARCH_LOG.md#L1651)), so three trainers (PPO, PQN, replay Q-learning) have each failed to validate the comparison. No fourth trainer; re-open only with a new mechanism that lets a hidden-state-aware reference beat the memoryless MLP, shown before any architecture is compared.
 
 **Reserved re-open condition** — the one caveat this closure leaves open: the MLP
 dosed ~40% more, so "worse at equal drug" is not established. An
