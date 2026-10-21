@@ -92,7 +92,8 @@ produced a wrong result that looked publishable, the controls that found them,
 and a table of every registered run.
 \end{enumerate}
 We do not claim that no memory policy could help, that no other trainer would
-avoid the deficit, or anything about real patients; all patients are simulated.
+avoid the deficit (two others did not let a reference beat the memoryless
+network, so they cannot test it), or anything about real patients; all patients are simulated.
 
 \section{Related work}
 \paragraph{RL for tumour control.} Learned dosing policies on tumour ODEs have
@@ -332,17 +333,23 @@ lower because of a tail of earlier progressions, so on the mean it recovers none
 of the $+23$ days. The reward was part of the gap, and the rest is PQN's
 difficulty in using the true state. % S2 L804, S3 L840, T1 L1042, V2 L1344
 
-\paragraph{A second trainer: not informative.} The obvious objection is that the
-deficit belongs to PQN. To test it we re-ran the Tier~0 and Tier~1
-comparison with PPO instead of PQN (600 updates, untuned, all arms retrained).
-Our own rule for admitting a new trainer is that a policy shown the true hidden
-state must beat the burden-only MLP under it. It does not ($-1.6$ [$-10.4$,
-$+5.6$] at Tier~0), so this run cannot say whether the deficit belongs to the
-trainer, and we do not claim it holds under two trainers. Descriptively, the
+\paragraph{Other trainers: none passes our admission rule.} The obvious
+objection is that the deficit belongs to PQN. Our own rule for admitting a new
+trainer is that a policy shown the true hidden state must beat the burden-only
+MLP under it. We tried two. PPO (600 updates, untuned, all arms retrained) fails
+the rule ($-1.6$ [$-10.4$, $+5.6$] at Tier~0). So does recurrent Q-learning
+with an episode replay buffer, a target network and $n$-step double-Q targets,
+the recipe of R2D2 \cite{kapturowski2019} applied to whole episodes
+($-3.9$ [$-8.3$, $+0.9$] at Tier~0, $-1.8$ [$-6.0$, $+2.2$] at Tier~1; the
+recurrent arms were not run). The reference does have a smaller burden
+integral at the same median dose, which may mean that the capped-TTP score
+under-credits it. Neither run can say whether the deficit belongs to PQN, and
+we do not claim it holds under three trainers. Descriptively under PPO, the
 LSTM and ODE-RNN again trail the MLP ($-40.7$ and $-42.3$ days at Tier~1, and
 they tie each other), and in 12 and 22 of 40 cells they collapse to a fixed
 full-dose schedule, the failure described in \S\ref{sec:pitfalls}, item~1. We
-still lack a trainer under which the reference beats the MLP. % V12, L1578
+still lack a trainer under which the reference beats the MLP.
+% V12 L1578, V13 L1651
 
 \paragraph{Is the LSTM too small?} No evidence for it. An LSTM with 64 or 128
 units (5 and 22 times the parameters) scores $-5.1$ [$-26.8$, $+18.6$] and
@@ -363,7 +370,7 @@ was ($-0.5$ [$-5.1$, $+4.6$]), while the LSTM loses $-69.0$ [$-92.3$, $-48.1$]
 days and the ODE-RNN $-87.7$ [$-121.1$, $-60.2$], with 2 to 12\% of recurrent
 cells collapsing to open loop. So the recurrent deficit is a cost of training
 them with PQN, not a limit on what they can represent. It does not show that
-another trainer would avoid the cost, and the PPO run above cannot either.
+another trainer would avoid the cost, and the two trainers above cannot either.
 % W11 L1597
 
 \paragraph{Can this trainer use memory at all?} Yes, where memory pays. On
@@ -621,6 +628,9 @@ learning identifies personalized intermittent androgen deprivation therapy for p
 \bibitem[Kuosmanen et~al.(2021)Kuosmanen, Cairns, Noble, Beerenwinkel, Mononen, and Mustonen]{kuosmanen2021} T.~Kuosmanen, J.~Cairns, R.~Noble, N.~Beerenwinkel, T.~Mononen, V.~Mustonen.
 Drug-induced resistance evolution necessitates less aggressive treatment. \emph{PLoS Computational Biology} 17(9):e1009418, 2021.
 \url{https://doi.org/10.1371/journal.pcbi.1009418}.
+\bibitem[Kapturowski et~al.(2019)Kapturowski, Ostrovski, Quan, Munos, and Dabney]{kapturowski2019} S.~Kapturowski, G.~Ostrovski, J.~Quan, R.~Munos, W.~Dabney.
+Recurrent experience replay in distributed reinforcement learning. \emph{ICLR},
+2019. \url{https://openreview.net/forum?id=r1lyTjAqYX}.
 \end{thebibliography}
 
 \appendix
@@ -856,6 +866,7 @@ V11 & LSTM at 64, 128 units & inconclusive vs gate; still $-47$ to $-49$\,d vs M
 W13 & rules on de Pillis 2006 (chemo kills immune cells) & reproduced (7/7, amended); headroom FAIL: best rule $-$ MTD $+1.7$\,d vs gate 10 & yes & L1633 \\
 W11 & clone threshold teachers, then PQN fine-tune & clones match teacher; fine-tune costs LSTM $-69$, ODE-RNN $-88$\,d, MLP $-0.5$ & yes & L1597 \\
 V12 & S1 design under PPO & gate failed: uninformative about trainers & yes & L1578 \\
+V13 & reference and MLP under episodic-replay recurrent Q-learning & gate failed ($-3.9$ [$-8.3$, $+0.9$]); recurrent arms not run & yes & L1651 \\
 W10 & PQN, LSTM vs MLP on POPGym memory tasks & met: headroom on 2 of 3 tasks & yes & L1540 \\
 \bottomrule
 \end{tabular}}
