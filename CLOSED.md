@@ -38,6 +38,8 @@ algorithm on the same test. Each is a re-parametrization of a settled question.
 
 **Re-opened 2026-10-21 by the owner for PREREG V13 only:** a third trainer (episodic-replay recurrent Q-learning) on the same test, gate first. The rest of "Do not re-propose" stands. **Re-closed 2026-10-21:** V13's gate failed (full-information reference − MLP −3.9 d [−8.3, +0.9] at Tier 0, [L1651](adaptive_therapy/RESEARCH_LOG.md#L1651)), so three trainers (PPO, PQN, replay Q-learning) have each failed to validate the comparison. No fourth trainer; re-open only with a new mechanism that lets a hidden-state-aware reference beat the memoryless MLP, shown before any architecture is compared.
 
+**Re-opened again 2026-10-21 by the owner for PREREG V14 only:** a fourth trainer, evolution strategies on the episode outcome (no critic, no TD, no action exploration), gate first. This is the "new mechanism" the preceding paragraph requires; the gate decides, as for V13.
+
 **Reserved re-open condition** — the one caveat this closure leaves open: the MLP
 dosed ~40% more, so "worse at equal drug" is not established. An
 exposure-controlled comparison (the TTP-vs-exposure frontier, ROADMAP W2–W3)
