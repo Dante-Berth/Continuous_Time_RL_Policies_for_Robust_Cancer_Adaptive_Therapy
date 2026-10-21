@@ -29,14 +29,14 @@ hidden state is an ODE (an ODE-RNN) schedules better than an LSTM or a
 memoryless network, in a virtual-patient simulator, with the main hypotheses and
 kill criteria written down before the runs. It does not. Trained by the same
 algorithm (PQN), a memoryless network that learns a burden threshold matches or
-beats both recurrent networks in range, under a parameter shift, and when up to
-half of the visits are missed, over a one-year horizon. The task is not trivial:
-a per-patient search on the true simulator beats the memoryless network by 23
-days. But at most about 15 of those days could come from memory, and training
-the recurrent networks costs 40 to 50. Cloning a threshold teacher shows that
-the recurrent networks can represent a good policy, and PQN fine-tuning then
-damages them, so the deficit looks like a learning cost of PQN and not a limit
-on what the architectures can represent. We do not show that no memory policy, or no other trainer, could
+beats both recurrent networks across patient ranges, under a parameter shift,
+and when visits are missed. The task is not trivial, since a per-patient search
+on the true simulator finds better schedules, but most of that gap does not
+come from memory, and it is smaller than what training the recurrent networks
+costs. Cloning a threshold teacher shows that the recurrent networks can
+represent a good policy and that PQN fine-tuning then damages them, so the
+deficit looks like a learning cost of the trainer and not a limit of the
+architectures. We do not show that no memory policy, or no other trainer, could
 help. We also describe four evaluation mistakes that each gave a result that
 looked publishable, and the controls that caught them.
 \end{abstract}
