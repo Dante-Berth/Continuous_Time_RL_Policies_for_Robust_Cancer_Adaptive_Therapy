@@ -36,6 +36,8 @@ Tier 1 on a seed+patient CI, intention-to-treat, 10 fresh seeds.
 updates, a tuned learning rate, a multi-mechanism curriculum, or a third RL
 algorithm on the same test. Each is a re-parametrization of a settled question.
 
+**Re-opened 2026-10-21 by the owner for PREREG V13 only:** a third trainer (episodic-replay recurrent Q-learning) on the same test, gate first. The rest of "Do not re-propose" stands. If V13's gate fails this item is re-closed with that fact added; no fourth trainer.
+
 **Reserved re-open condition** — the one caveat this closure leaves open: the MLP
 dosed ~40% more, so "worse at equal drug" is not established. An
 exposure-controlled comparison (the TTP-vs-exposure frontier, ROADMAP W2–W3)
