@@ -56,6 +56,7 @@ planned and [CLOSED.md](../CLOSED.md) for what is dead program-wide.
 
 ## CLOSED — do not re-litigate
 
+- **V15 stage 1: re-scoring the gate on the burden integral does not rescue it — the reference's burden is smaller (ln ratio −0.22 under V13, −0.18 under V14 at Tier 0) but it doses more (+50 d [+31, +71], +22 [+10, +34]), failing the registered exposure guard**; stage 2 not run, metric hypothesis closed → [L1685](RESEARCH_LOG.md#L1685)
 - **V14: a fourth trainer (evolution strategies on the episode outcome) fails LAW L1's gate too — the full-information reference does not beat the MLP (−3.1 d [−7.0, +0.7] at Tier 0, Tier 1 +1.9 [−4.1, +7.1])**; both arms valid, stage 2 not run, nothing concluded about architectures, no fifth trainer (CLOSED #1 re-closed) → [L1668](RESEARCH_LOG.md#L1668)
 - **V13: a third trainer (episodic-replay recurrent Q-learning) fails LAW L1's gate too — the full-information reference does not beat the MLP (−3.9 d [−8.3, +0.9] at Tier 0, Tier 1 −1.8 [−6.0, +2.2])**; stage 2 not run, nothing concluded about architectures, no fourth trainer (CLOSED #1 re-closed) → [L1651](RESEARCH_LOG.md#L1651)
 - **W13: de Pillis 2006 (chemo also kills immune cells) reproduces 7/7 qualitative outcomes of the paper (Stage 0, as amended after a 6/7 result, selection risk), but has no dosing headroom — a per-patient best rule beats MTD by +1.7 d [+1.0, +3.0] and a training-chosen single rule by +1.0 [+0.3, +2.3] (gate +10 d); MTD is best for ~50% of patients** → [L1633](RESEARCH_LOG.md#L1633), Stage 0 [L1616](RESEARCH_LOG.md#L1616)

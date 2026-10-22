@@ -1681,3 +1681,21 @@ Per-seed Tier-0 deltas span −16.2 to +5.8 (7 of 10 negative); per-w: −12.7 (
 - **Registered consequence:** no further trainer is registered; CLOSED #1 is re-closed. Both arms are valid (non-finite 0, closed-loop in all cells), so unlike V12 this is not a pipeline failure.
 - **Not concluded:** that no trainer could; only that the four tried, at the registered budget and untuned, cannot. The reference's smaller burden integral at equal median exposure recurs from V13 and is an observation, not a registered reading.
 - No hyperparameter, σ or budget is to be varied after this result (registered kill rule).
+
+## [2026-10-22] — V15 stage 1 FAILED as registered: on the burden integral the full-information reference is smaller than the MLP (−0.22 and −0.18 in ln ratio at Tier 0) but only by dosing more (+50 and +22 d), so the metric does not rescue the gate
+**Verdict:** CLOSED — burden integral does not rescue LAW L1's gate; stage 2 (fresh seeds) not run, paper wording unchanged in substance · **Gate:** Tier 0 ln(B_ref/B_mlp) V13 −0.216 [−0.260, −0.174], V14 −0.182 [−0.260, −0.104] (smaller); exposure Δ V13 +50.1 d [+31.0, +70.7], V14 +21.7 [+10.0, +34.0] (guard lower CI > +5: fails both); median TTP [IQR] V13 ref 357 [238–357] vs mlp 357 [224–357], V14 ref 357 [322–357] vs mlp 357 [343–357]; median exposure V13 178.5 vs 178.5, V14 178.5 vs 180.3; paired Wilcoxon per w one-sided p < 1e-34 in every w for V13 and V14 (pooled patients, not independent, secondary); 10 seeds × 4 w · **Artifacts:** research/v15_rescore.py, research/outputs/v15_rescore.json
+### Context
+PREREG V15 [2026-10-22], **failed as registered**. Motivated by a hint read off V13 ([L1651](RESEARCH_LOG.md#L1651)) and V14 ([L1668](RESEARCH_LOG.md#L1668)): the reference holds a smaller median burden integral at the same median exposure. Re-analysis of saved shards, no training; selection risk declared in the registration (no shard was unseen).
+### What was tried
+Per matched patient ln(B_ref/B_mlp) at Tiers 0 and 1, seed+patient CI as every gate; guard on the exposure difference (reference may not use more drug: lower CI not > +5 d). Criteria under V13 and V14; V12's PPO as a check only.
+### Results
+| Trainer | Tier 0 ln B ratio | Tier 0 Δ exposure (d) | Tier 1 ln B ratio | Tier 1 Δ exposure (d) |
+|---|---|---|---|---|
+| V13 replay-Q | −0.216 [−0.260, −0.174] | +50.1 [+31.0, +70.7] | −0.074 [−0.118, −0.040] | −4.3 [−22.5, +16.7] |
+| V14 ES | −0.182 [−0.260, −0.104] | +21.7 [+10.0, +34.0] | −0.054 [−0.096, −0.015] | −38.9 [−51.0, −27.3] |
+| V12 PPO (check) | +0.196 [+0.178, +0.213] | −56.8 [−64.2, −49.1] | +0.181 [+0.165, +0.196] | −69.4 [−76.5, −61.8] |
+The reference's burden is about 17–20% smaller at Tier 0, in 10 of 10 seeds under V13 and 9 of 10 under V14 (per-seed means), but the median exposure matches while the mean is higher: it doses more in a tail of patients (V13 exposure Q3 289 vs 184). At Tier 1 the guard holds but the Tier-0 criterion does not. Under PPO the reference is larger on burden and uses less drug (a different failure, not a pass).
+### Decision
+- **Stage 1 failed** (exposure guard, Tier 0, both criterion trainers): the observation "smaller burden at the same median dose" holds for medians and fails for means, and the smaller burden is bought with extra drug in a tail. The capped-TTP score does not demonstrably under-credit the reference; the metric hypothesis is closed.
+- Stage 2 is not run. The paper's V13/V14 wording stands; the burden-integral remark is replaced by the measured trade.
+- Not concluded: that no endpoint combining burden and drug would favour the reference; a weighting would be a new registration with a free parameter.
