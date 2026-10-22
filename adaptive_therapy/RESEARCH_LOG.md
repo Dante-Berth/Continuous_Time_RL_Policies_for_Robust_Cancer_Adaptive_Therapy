@@ -1664,3 +1664,20 @@ Closed-loop share, mean: mlp 0.34 (Tier 0), ref 0.28; open-loop cells (share < 0
 - **Registered consequence:** no further trainer is registered; CLOSED #1 is re-closed (see its item). Three trainers (PPO, PQN, replay-Q), one failure: none lets a reference that sees the hidden state beat the memoryless MLP on U.
 - **Not concluded:** that no trainer could; only that the three tried cannot validate this comparison with the same budget and without tuning. The reference's smaller burden integral at equal median exposure hints that U (capped TTP − w·exposure) may under-credit it, which is an observation here, not a registered reading.
 - No hyperparameter, buffer size, n or budget is to be varied after this result (registered kill rule).
+
+## [2026-10-22] — V14 gate FAILED as registered: under evolution strategies on the episode outcome the full-information reference does not beat the MLP (−3.1 d [−7.0, +0.7] at Tier 0); none of four trainers can validate an architecture comparison
+**Verdict:** CLOSED — gate failed, so nothing is concluded about architectures and stage 2 (LSTM, ODE-RNN) was not run; CLOSED #1 re-closed with four trainers · **Gate:** Tier 0 U es_ref − es_mlp −3.1 [−7.0, +0.7] (median −1.2 [−5.4, −0.07]); Tier 1 +1.9 [−4.1, +7.1]; median TTP [IQR] Tier 0 mlp 357 [343–357], ref 357 [322–357]; exposure mlp 180 [158–236], ref 178.5 [178.5–236]; burden integral median mlp 1.42e6, ref 1.16e6; Wilcoxon not computed by the script (secondary, not reported); 10 seeds × 4 w, 0 non-finite · **Artifacts:** adaptive_therapy/rl/es.py, research/v14_es.py, research/outputs/v14_gate.json, v14_gate.log, v14_shards/, v14_policies/ (sureli1 run, copied back)
+### Context
+PREREG V14 [2026-10-21], **met as registered** (no amendment). CLOSED #1 was re-opened by the owner for this one registration. PPO (V12), PQN (S2) and replay Q-learning (V13, [L1651](RESEARCH_LOG.md#L1651)) all learn from per-step credit; V14 asked whether a direct parameter-space search on the episode return (antithetic OpenAI-ES, no critic, no TD) lets the reference that sees the hidden state beat the burden-only MLP.
+### What was tried
+Stage 1 only, V12's cohort and seeds (31–40), Strobl ranges, w ∈ {0.05, 0.1, 0.2, 0.4}, S1's arm sizes, 2000 generations × 64 members × 32 patients, σ 0.05, Adam 0.02 linear decay. Arms es_mlp and es_ref. 80 cells on sureli1 in about 7 h (14 workers) plus an unregistered seed-99 pilot at w = 0.1 (82 shards); no code or hyperparameter change followed the pilot.
+### Results
+| Contrast, U (d), seed+patient CI | Tier 0 | Tier 1 |
+|---|---|---|
+| es_ref − es_mlp (gate) | −3.1 [−7.0, +0.7] (median −1.2 [−5.4, −0.07]) | +1.9 [−4.1, +7.1] (median +0.9 [−5.2, +3.4]) |
+Per-seed Tier-0 deltas span −16.2 to +5.8 (7 of 10 negative); per-w: −12.7 (0.05), −1.3 (0.1), +0.7 (0.2), +0.8 (0.4), so the deficit sits in the cheapest-drug cell. A patients-only CI (seeds held fixed) is [−4.4, −1.9] at Tier 0, which is conditional on trained policies and not the registered interval. Closed-loop share, mean, Tier 0: mlp 0.44, ref 0.30; 0 open-loop cells in every arm and tier; non-finite share 0 in both arms. Median TTP is the 357-d cap in both arms at Tier 0; the reference doses the same median amount but has a smaller median burden integral (1.16e6 vs 1.42e6), as in V13.
+### Decision
+- **Gate failed as registered** (lower CI −7.0, not > 0): V14 is uninformative about architectures, stage 2 is not run, and the paper states that four trainers across three families cannot validate the comparison.
+- **Registered consequence:** no further trainer is registered; CLOSED #1 is re-closed. Both arms are valid (non-finite 0, closed-loop in all cells), so unlike V12 this is not a pipeline failure.
+- **Not concluded:** that no trainer could; only that the four tried, at the registered budget and untuned, cannot. The reference's smaller burden integral at equal median exposure recurs from V13 and is an observation, not a registered reading.
+- No hyperparameter, σ or budget is to be varied after this result (registered kill rule).

@@ -40,6 +40,8 @@ algorithm on the same test. Each is a re-parametrization of a settled question.
 
 **Re-opened again 2026-10-21 by the owner for PREREG V14 only:** a fourth trainer, evolution strategies on the episode outcome (no critic, no TD, no action exploration), gate first. This is the "new mechanism" the preceding paragraph requires; the gate decides, as for V13.
 
+**Re-closed 2026-10-22:** V14's gate failed (es_ref − es_mlp −3.1 d [−7.0, +0.7] at Tier 0, [L1668](adaptive_therapy/RESEARCH_LOG.md#L1668)), with both arms valid, so four trainers (PPO, PQN, replay Q-learning, evolution strategies) have each failed to validate the comparison. No fifth trainer; re-open only with a reason that is not a new trainer for the same reference-beats-MLP test.
+
 **Reserved re-open condition** — the one caveat this closure leaves open: the MLP
 dosed ~40% more, so "worse at equal drug" is not established. An
 exposure-controlled comparison (the TTP-vs-exposure frontier, ROADMAP W2–W3)
