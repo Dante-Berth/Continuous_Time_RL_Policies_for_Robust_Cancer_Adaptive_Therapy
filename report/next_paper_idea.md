@@ -3,6 +3,9 @@
 Status: an idea, not a result. Nothing here has been run. It is not part of the
 research record; if we pursue it, it must first be registered in PREREG.md.
 
+Target: arXiv preprint (no page limit and no reviewers, so the registration and
+the controls are the only quality check; keep them strict).
+
 ## 1. The main idea in three sentences
 
 In our first paper we asked if a special network (an ODE-RNN) can plan cancer
