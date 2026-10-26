@@ -15,3 +15,9 @@ V13 stage 1 finished 2026-10-21 (gate failed, [L1651](adaptive_therapy/RESEARCH_
 V14 stage 1 finished 2026-10-22 (gate failed, [L1668](adaptive_therapy/RESEARCH_LOG.md#L1668)); stage 2 is not to be run.
 
 V15 stage 1 (burden-integral re-score of saved shards) ran locally and finished 2026-10-22 (failed, [L1685](adaptive_therapy/RESEARCH_LOG.md#L1685)); stage 2 is not to be run.
+
+## Owner to-do (not research state; delete lines as done)
+
+- [ ] `ssh sureli1 'tmux kill-session -t v14_gate'` — idle since 2026-10-22, nothing to collect.
+- [ ] Push to origin when ready (commits 9b9b353 through this one are local only).
+- [ ] Paper is 15 pages incl. appendix; decide whether the main text fits the venue limit. No further experiments: CLOSED #1 is re-closed (four trainers + V15).
